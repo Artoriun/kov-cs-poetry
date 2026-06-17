@@ -756,3 +756,17 @@ h1, h2, h3 {
     margin-left: 8px;
   }
 }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .slick-prev {
+    left: 0;
+  }
+
+  .slick-next {
+    right: 0;
+  }
+
+  .carousel-image-container img {
+    height: 300px;
+  }
+}
