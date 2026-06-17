@@ -8,7 +8,7 @@ import './styles/global.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/kov-cs-poetry">
         <App />
       </BrowserRouter>
     </ThemeProvider>
