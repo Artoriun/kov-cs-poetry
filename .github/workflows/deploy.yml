@@ -32,8 +32,8 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Web Package with Turbo
-        run: npx turbo run build --filter=kov-cs-poetry... 
+      - name: Build All Packages
+        run: npx turbo run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
