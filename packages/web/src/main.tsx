@@ -5,10 +5,12 @@ import { ThemeProvider } from './context/ThemeContext';
 import App from './App';
 import './styles/global.css';
 
+const baseUrl = import.meta.env.DEV ? "" : "/kov-cs-poetry";
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
-      <BrowserRouter basename="/kov-cs-poetry">
+      <BrowserRouter basename={baseUrl}>
         <App />
       </BrowserRouter>
     </ThemeProvider>
