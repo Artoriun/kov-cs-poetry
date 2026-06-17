@@ -1,0 +1,45 @@
+/* ===== LIGHT MODE (DEFAULT) ===== */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555555;
+  --text-tertiary: #888888;
+  --text-light: #aaaaaa;
+  --text-hover: #000000;
+  --border-color: #e0e0e0;
+  --input-bg: #ffffff;
+  --input-border: #cccccc;
+  --input-border-focus: #999999;
+  --button-bg: #f0f0f0;
+  --button-bg-hover: #e0e0e0;
+  --button-text: #1a1a1a;
+  --button-text-hover: #000000;
+  --header-bg: #ffffff;
+  --footer-bg: #ffffff;
+  --dropdown-bg: #f8f8f8;
+}
+
+/* ===== DARK MODE ===== */
+html.dark-mode {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #222222;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: #ccc;
+  --text-secondary: #999;
+  --text-tertiary: #777;
+  --text-light: #aaa;
+  --text-hover: #fff;
+  --border-color: #2a2a2a;
+  --input-bg: #252525;
+  --input-border: #2a2a2a;
+  --input-border-focus: #555;
+  --button-bg: #333;
+  --button-bg-hover: #444;
+  --button-text: #ddd;
+  --button-text-hover: #fff;
+  --header-bg: #1a1a1a;
+  --footer-bg: #1a1a1a;
+  --dropdown-bg: #1e1e1e;
+}

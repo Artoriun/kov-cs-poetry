@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -11,14 +12,6 @@ export default function Header() {
           Kovács
         </Link>
         <p className="subtitle">POETRY</p>
-
-        <button
-          className={`hamburger ${mobileOpen ? 'open' : ''}`}
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          <span /><span /><span />
-        </button>
 
         <nav className={`main-nav ${mobileOpen ? 'open' : ''}`}>
           <ul>
@@ -39,6 +32,16 @@ export default function Header() {
             </li>
           </ul>
         </nav>
+
+        <ThemeToggle />
+
+        <button
+          className={`hamburger ${mobileOpen ? 'open' : ''}`}
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          <span /><span /><span />
+        </button>
       </div>
     </header>
   );
