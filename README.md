@@ -1,6 +1,6 @@
 # Kovács — Modern Poetry Portfolio
 
-A sophisticated, responsive poetry portfolio website built with **React**, **Vite**, and custom **CSS**. Designed to showcase poems with elegant typography and immersive image overlays — optimized for performance, accessibility, and mobile-first responsiveness.
+A sophisticated, responsive poetry portfolio website built with **React**, **Vite**, and custom **CSS**. Designed to showcase poems with elegant typography, immersive image overlays, and an auto-advancing carousel — optimized for performance, accessibility, and mobile-first responsiveness.
 
 ## 📱 Demo Webpage
 
@@ -12,12 +12,14 @@ Visit the live site: [https://gedichtenv2.vercel.app](https://gedichtenv2.vercel
 
 - ⚡ **Blazing-fast development** with Vite's instant hot module replacement (HMR)
 - 🎨 **Custom CSS theming** with light and dark mode support
-- 📱 **Fully responsive** — looks great on desktop, tablet, and mobile
-- 🖼️ **Image overlay text** for poems with elegant typography (Esteban font)
-- 🎞️ **Interactive carousel** on the home page with smooth navigation
+- 📱 **Fully responsive** — optimized for desktop, tablet, and mobile (including portrait/landscape modes)
+- 🖼️ **Image overlay text** for poems with elegant typography (Esteban font) on carousel and grid
+- 🎞️ **Auto-advancing carousel** on home page with smart timing based on poem line count
 - 🔄 **Theme toggle** with persistent storage in localStorage
 - 📐 **CSS custom properties** for easy color and styling customization
+- ✅ **Drag-aware navigation** — carousel slides without navigating to detail pages
 - 🚀 **Production-ready builds** with optimized assets and fast load times
+- 📱 **Mobile-optimized** carousel buttons and responsive layouts
 
 ---
 
@@ -71,20 +73,21 @@ npm run preview
 │       │   ├── App.tsx                    # Root application component
 │       │   ├── main.tsx                   # Application entry point
 │       │   ├── components/
+│       │   │   ├── Layout.tsx             # Layout wrapper with Header & Footer
 │       │   │   ├── Header.tsx             # Header with navigation & theme toggle
-│       │   │   ├── ThemeToggle.tsx        # Theme switcher button
-│       │   │   ├── ProjectCarousel.tsx    # Home page carousel
+│       │   │   ├── Footer.tsx             # Footer component
+│       │   │   ├── PoemCarousel.tsx       # Home page carousel with auto-advance
 │       │   │   └── ...                    # Other components
 │       │   ├── context/
-│       │   │   └── ThemeContext.tsx       # Theme state management
+│       │   │   └── ThemeContext.tsx       # Theme state management & persistence
 │       │   ├── pages/
-│       │   │   ├── Home.tsx               # Home page
+│       │   │   ├── Home.tsx               # Home page with carousel
 │       │   │   ├── Poems.tsx              # Poems grid & detail pages
 │       │   │   ├── Contact.tsx            # Contact form page
 │       │   │   └── ...                    # Other pages
 │       │   └── styles/
-│       │       ├── global.css             # Global styles & theme variables
-│       │       └── themes.css             # Light & dark mode definitions
+│       │       ├── global.css             # Global styles, theme variables, responsive design
+│       │       └── themes.css             # Light & dark mode CSS custom properties
 │       ├── index.html                     # HTML entry point
 │       └── package.json                   # Dependencies & scripts
 └── package.json              # Monorepo root configuration
@@ -101,7 +104,7 @@ npm run preview
 | **Vite** | Next-generation build tool & dev server |
 | **TurboRepo** | Monorepo build system |
 | **React Router** | Client-side routing |
-| **React Slick** | Carousel component |
+| **React Slick** | Carousel component with custom autoplay |
 | **CSS Custom Properties** | Dynamic theming & color management |
 | **Google Fonts** | Esteban serif font for poem text |
 
@@ -112,16 +115,18 @@ npm run preview
 The project uses **CSS custom properties** for easy theming. Two themes are included:
 
 ### Light Mode (Default)
-- White backgrounds
-- Dark text
+- Parchment background image
+- Dark text on light background
+- Light gray navigation buttons (#999999)
 - Light borders
 
 ### Dark Mode
-- Dark backgrounds
-- Light text
+- Dark parchment background image
+- Light text on dark background
+- Light gray navigation buttons (#999999)
 - Subtle borders
 
-Users can toggle between themes using the moon/sun icon in the header. Their preference is saved to localStorage.
+Users can toggle between themes using the moon/sun icon in the header. Their preference is saved to localStorage with smooth transitions.
 
 **Theme Configuration:** `packages/web/src/styles/themes.css`
 
@@ -137,7 +142,7 @@ export const POEMS = [
     id: "poem-1",
     title: "Poem Title",
     image: "https://path-to-image.jpg",
-    overlay: "Poem text or excerpt..." // Optional overlay text
+    overlay: "Poem text or excerpt..." // Optional overlay text displayed on image
   },
   // ... more poems
 ];
@@ -148,25 +153,33 @@ export const POEMS = [
 ## 🌐 Features in Detail
 
 ### Responsive Design
-- **Desktop:** Full navigation with centered menu, theme toggle on the right
-- **Mobile Portrait:** Hamburger menu, stacked layout
-- **Mobile Landscape:** Optimized carousel with visible navigation buttons
+- **Desktop (>768px):** Full navigation with centered menu, theme toggle on right, large carousel buttons
+- **Tablet (481-768px):** Hamburger menu, responsive layout
+- **Mobile Portrait (<480px):** Hamburger menu, stacked layout, optimized carousel with smaller buttons and adjusted text padding
+- **Mobile Landscape:** Fixed-position carousel buttons centered vertically on screen
 
-### Dark Mode
-- Automatic theme persistence
-- Smooth transitions between themes
-- All components support both themes
+### Auto-Advancing Carousel
+- Carousel automatically advances based on poem text length
+- Smart timing: 1 second per line of text with a 3-second minimum baseline
+- Pauses on hover
+- Click to navigate to poem detail page (drag-aware — dragging the carousel won't navigate)
 
-### Poem Overlays
-- Text overlaid on images with proper centering
-- Elegant Esteban serif typography
-- Text shadow for readability
-- Responsive padding and font sizes
+### Poem Display
+- **Grid view:** All poems displayed in responsive grid with titles above
+- **Carousel view:** Featured poems with auto-advance on home page
+- **Detail view:** Full poem with image and overlay text
+- **Image overlays:** Elegant text with shadow, centered, responsive padding
 
 ### Contact Form
 - Form validation
 - Responsive design
 - Theme-aware styling
+- Success message on submission
+
+### Drag-Aware Navigation
+- Carousel detects drag gestures (>10px movement)
+- Dragging slides between poems without navigating to detail page
+- Clicking static slides navigates to detail page
 
 ---
 
@@ -211,8 +224,9 @@ Edit `packages/web/src/styles/themes.css` to modify the CSS custom properties:
 
 ```css
 :root {
-  --bg-primary: #ffffff;
+  --bg-primary: url(...), #ffffff;  /* Background image with fallback color */
   --text-primary: #1a1a1a;
+  --arrow-color: #999999;           /* Carousel navigation buttons */
   /* ... more variables */
 }
 ```
@@ -223,26 +237,13 @@ Update font imports in `packages/web/src/styles/global.css`
 ### Modify Layout
 Component structure is in `packages/web/src/components/` and page layouts in `packages/web/src/pages/`
 
----
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
----
-
-## 👤 Author
-
-Created as a modern poetry portfolio website showcasing elegance and performance.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to fork this repository and submit pull requests for any improvements.
-
----
+### Adjust Carousel Timing
+Edit `PoemCarousel.tsx` to change the autoplay delay calculation:
+```typescript
+const delay = Math.max(3000, lineCount * 1000); // Base 3 seconds + 1 second per line
+```
 
 ## 📧 Support
 
 For issues, questions, or suggestions, please open an issue in the repository.
+
