@@ -20,6 +20,7 @@
   --header-bg: #ffffff;
   --footer-bg: #ffffff;
   --dropdown-bg: #f8f8f8;
+  --arrow-color: #ffffff;
 }
 
 /* ===== DARK MODE ===== */
@@ -43,5 +44,6 @@ html.dark-mode {
   --header-bg: #1a1a1a;
   --footer-bg: #1a1a1a;
   --dropdown-bg: #1e1e1e;
+  --arrow-color: #ffffff;
 }
 
