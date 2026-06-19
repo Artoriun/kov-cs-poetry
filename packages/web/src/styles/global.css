@@ -267,18 +267,27 @@ h1, h2, h3 {
   padding: 0 8px;
 }
 
+.slick-slider {
+  overflow: visible !important;
+}
+
 .slick-prev,
 .slick-next {
-  width: 48px;
-  height: 48px;
-  z-index: 10;
+  width: 56px !important;
+  height: 56px !important;
+  z-index: 10 !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  padding: 0 !important;
 }
 
 .slick-prev::before,
 .slick-next::before {
-  font-size: 36px;
-  color: var(--text-secondary);
-  opacity: 0.8;
+  font-size: 32px !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.8 !important;
+  line-height: 56px !important;
 }
 
 .slick-prev:hover::before,
@@ -288,15 +297,25 @@ h1, h2, h3 {
 }
 
 .slick-prev {
-  left: -48px;
+  left: 2px !important;
 }
 
 .slick-next {
-  right: -48px;
+  right: 2px !important;
 }
 
 .carousel-slide {
   outline: none;
+}
+
+.carousel-slide-title {
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .carousel-link {
@@ -345,7 +364,7 @@ h1, h2, h3 {
   z-index: 10;
   color: #fff;
   text-align: center;
-  padding: 40px 60px;
+  padding: 50px 60px;
   text-shadow: 0 0 10px rgba(0,0,0,0.7);
   font-size: 14px;
   line-height: 1.4;
@@ -373,6 +392,21 @@ h1, h2, h3 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
+}
+
+.poem-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.poem-card-title {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .poem-card {
@@ -464,10 +498,15 @@ h1, h2, h3 {
   text-align: center;
 }
 
+.poem-detail-title-section {
+  margin-bottom: 36px;
+}
+
 .poem-detail h1 {
   font-size: 22px;
-  letter-spacing: 2px;
-  margin-bottom: 32px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
   color: var(--text-primary);
 }
 
@@ -724,14 +763,6 @@ h1, h2, h3 {
     grid-template-columns: 1fr;
   }
 
-  .slick-prev {
-    left: -12px;
-  }
-
-  .slick-next {
-    right: -12px;
-  }
-
   .footer-inner {
     flex-direction: column;
     gap: 8px;
@@ -757,6 +788,22 @@ h1, h2, h3 {
     font-size: 18px;
     padding: 2px 4px;
     margin-left: 8px;
+  }
+
+  .carousel-image-container:has(.carousel-overlay) {
+    height: auto;
+    min-height: 300px;
+  }
+
+  .carousel-overlay {
+    padding: 30px 20px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .detail-overlay {
+    padding: 30px 20px;
+    font-size: 12px;
   }
 }
 
