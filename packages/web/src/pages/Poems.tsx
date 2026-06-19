@@ -19,16 +19,35 @@ export default function Poems() {
   }
 
   return (
-    <div className="page poems-grid-page">
-      <h1 className="poems-heading">Poems</h1>
-      <div className="poems-grid">
-        {POEMS.map((poem) => (
-          <Link key={poem.id} to={`/poems/${poem.id}`} className="poem-card">
-            <img src={poem.image} alt={poem.title} loading="lazy" />
-            {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
-          </Link>
-        ))}
-      </div>
-    </div>
+<div className="page poems-grid-page">
+  <h1 className="poems-heading">Poems</h1>
+  <div className="poems-grid">
+    {POEMS.map((poem) => (
+      <Link key={poem.id} to={`/poems/${poem.id}`} className="poem-card">
+        <img src={poem.image} alt={poem.title} loading="lazy" />
+        
+        {poem.overlay && (
+          <span 
+            className="poem-overlay" 
+            style={{ 
+              display: '-webkit-box',
+              WebkitLineClamp: '10',
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              whiteSpace: 'pre-line',
+              wordBreak: 'break-word',
+              
+              /* The Magic Sauce: Alpha mask for the text pixels */
+              WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)',
+              maskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)'
+            }}
+          >
+            {poem.overlay}
+          </span>
+        )}
+      </Link>
+    ))}
+  </div>
+</div>
   );
 }
