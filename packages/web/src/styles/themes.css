@@ -1,14 +1,15 @@
 /* ===== LIGHT MODE (DEFAULT) ===== */
 :root {
-  --bg-primary: #fafafa;
+  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/v1781887604/parchment-bg-white_p9qsg6.jpg'), #fafafa;
+  --bg-primary-color: #fafafa;
   --bg-secondary: #f5f5f5;
-  --bg-tertiary: url('https://media.istockphoto.com/id/903280608/photo/ivory-off-white-paper-texture.jpg?s=612x612&w=0&k=20&c=RNvOMEXLxLByGJuqjbJNtOZA_mhe9Vtprb_HcvzLBPI=');
+  --bg-tertiary: #f0f0f0;
   --text-primary: #2c2c2c;
   --text-secondary: #555555;
   --text-tertiary: #888888;
   --text-light: #aaaaaa;
   --text-hover: #000000;
-  --border-color: #e0e0e0;
+  --border-color: #0e0a0a;
   --input-bg: #ffffff;
   --input-border: #cccccc;
   --input-border-focus: #999999;
@@ -23,7 +24,7 @@
 
 /* ===== DARK MODE ===== */
 html.dark-mode {
-  --bg-primary: #1a1a1a;
+  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/v1781889359/parchment-bg-black_kcspmh.png'), #1a1a1a;
   --bg-secondary: #222222;
   --bg-tertiary: #2a2a2a;
   --text-primary: #ccc;
@@ -43,3 +44,4 @@ html.dark-mode {
   --footer-bg: #1a1a1a;
   --dropdown-bg: #1e1e1e;
 }
+
