@@ -10,6 +10,9 @@ export default function PoemCarousel() {
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
 
   // Custom Autoplay Logic
   useEffect(() => {
@@ -34,22 +37,37 @@ export default function PoemCarousel() {
     return () => clearTimeout(timer);
   }, [currentSlide, isHovered]);
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    const endX = e.clientX;
+    const endY = e.clientY;
+    const deltaX = Math.abs(endX - startXRef.current);
+    const deltaY = Math.abs(endY - startYRef.current);
+    
+    // If moved more than 10px in any direction, consider it a drag
+    if (deltaX > 10 || deltaY > 10) {
+      setIsDragging(true);
+    }
+  };
+
   const settings = {
     dots: false,
     infinite: true,
     speed: 600,
     slidesToShow: 1,
     slidesToScroll: 1,
-    autoplay: false, // <-- Turn off native autoplay so our useEffect handles it
+    autoplay: false,
     arrows: true,
     beforeChange: (_current: number, next: number) => {
-      // Track which slide we are moving to so the useEffect can recalculate the lines
       setCurrentSlide(next);
     },
   };
 
   return (
-    /* Mouse events recreate "pauseOnHover" feature manually */
     <div 
       className="poem-carousel-wrapper"
       onMouseEnter={() => setIsHovered(true)}
@@ -59,7 +77,18 @@ export default function PoemCarousel() {
         {POEMS.map((poem) => (
           <div key={poem.id} className="carousel-slide">
             <div className="carousel-slide-title">{poem.title}</div>
-            <Link to={`/poems/${poem.id}`} className="carousel-link">
+            <Link 
+              to={`/poems/${poem.id}`}
+              className="carousel-link"
+              onClick={(e) => {
+                if (isDragging) {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+            >
               <div className="carousel-image-container">
                 <img 
                   src={poem.image} 
@@ -76,4 +105,3 @@ export default function PoemCarousel() {
     </div>
   );
 }
-
