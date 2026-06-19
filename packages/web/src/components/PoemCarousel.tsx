@@ -58,6 +58,7 @@ export default function PoemCarousel() {
       <Slider ref={sliderRef} {...settings}>
         {POEMS.map((poem) => (
           <div key={poem.id} className="carousel-slide">
+            <div className="carousel-slide-title">{poem.title}</div>
             <Link to={`/poems/${poem.id}`} className="carousel-link">
               <div className="carousel-image-container">
                 <img 
@@ -75,3 +76,4 @@ export default function PoemCarousel() {
     </div>
   );
 }
+
