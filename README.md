@@ -3,8 +3,9 @@
 A sophisticated, responsive poetry portfolio website built with **React**, **Vite**, and custom **CSS**. Designed to showcase poems with elegant typography, immersive image overlays, and an auto-advancing carousel — optimized for performance, accessibility, and mobile-first responsiveness.
 
 ## 📱 Demo Webpage
+https://artoriun.github.io/kov-cs-poetry/
 
-Visit the live site: [https://gedichtenv2.vercel.app](https://gedichtenv2.vercel.app)
+<img width="1511" height="736" alt="Screenshot 2026-06-20 at 3 40 58" src="https://github.com/user-attachments/assets/a4869d85-daff-4916-b86f-ef086891a52a" />
 
 ---
 
