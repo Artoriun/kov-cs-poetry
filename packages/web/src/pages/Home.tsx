@@ -1,4 +1,4 @@
-import ProjectCarousel from '../components/ProjectCarousel';
+import PoemCarousel from '../components/PoemCarousel';
 
 export default function Home() {
   return (
@@ -13,7 +13,7 @@ export default function Home() {
 
       <section className="carousel-section">
         <h2 className="section-heading">Featured Poems</h2>
-        <ProjectCarousel />
+        <PoemCarousel />
       </section>
     </div>
   );

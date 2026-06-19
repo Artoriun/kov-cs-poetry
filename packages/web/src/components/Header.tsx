@@ -21,7 +21,7 @@ export default function Header() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/projects" onClick={() => setMobileOpen(false)}>
+              <NavLink to="/poems" onClick={() => setMobileOpen(false)}>
                 Poems
               </NavLink>
             </li>
