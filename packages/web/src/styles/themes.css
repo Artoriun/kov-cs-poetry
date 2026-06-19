@@ -1,9 +1,9 @@
 /* ===== LIGHT MODE (DEFAULT) ===== */
 :root {
-  --bg-primary: #ffffff;
+  --bg-primary: #fafafa;
   --bg-secondary: #f5f5f5;
-  --bg-tertiary: #eeeeee;
-  --text-primary: #1a1a1a;
+  --bg-tertiary: url('https://media.istockphoto.com/id/903280608/photo/ivory-off-white-paper-texture.jpg?s=612x612&w=0&k=20&c=RNvOMEXLxLByGJuqjbJNtOZA_mhe9Vtprb_HcvzLBPI=');
+  --text-primary: #2c2c2c;
   --text-secondary: #555555;
   --text-tertiary: #888888;
   --text-light: #aaaaaa;

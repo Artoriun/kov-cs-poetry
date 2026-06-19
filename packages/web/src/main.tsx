@@ -5,7 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import App from './App';
 import './styles/global.css';
 
-const baseUrl = import.meta.env.DEV ? "" : "/kov-cs-poetry";
+const baseUrl = import.meta.env.PROD ? "/kov-cs-poetry" : "/";
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

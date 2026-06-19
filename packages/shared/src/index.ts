@@ -20,7 +20,7 @@ export const POEMS: Poem[] = [
   { id: "poem-3", 
     title: "Temps perdu",
     image: "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png",
-    overlay: "Ha festő volnék, megfesteném a szádat,\nDe előbb kékre-zöldre festeném a vásznat.\\\nAzután a hajadat szőkének,\nAz arcodat rózsásnak\nA ruhádat pirospettyesnek\nA karodat pelyhespuhának\nMégegyszer megnézném\nÉs az egészet összetépném.\nMert egy kép, bármi gyönyörű\nAz életből csak ellopott bánat.\nAz isten is festő volt.\nGyönyörűen megfestett téged.\nSzép fejet adott néked,Szép alakot, csodásat,\nJó hű szívet is, tüzességet,\nEgészséget, pirospozsgásat,\nÉs mégse jó a kép,\nMért szállnak a felhők\nÉs mért hervadnak el a jegenyék,\nHa nézlek,\nAz Isten is tudja ezt\nÉs összetép\nMeglátod, egyszer összetép."
+    overlay: "Ha festő volnék, megfesteném a szádat,\nDe előbb kékre-zöldre festeném a vásznat.\\nAzután a hajadat szőkének,\nAz arcodat rózsásnak\nA ruhádat pirospettyesnek\nA karodat pelyhespuhának\nMégegyszer megnézném\nÉs az egészet összetépném.\nMert egy kép, bármi gyönyörű\nAz életből csak ellopott bánat.\nAz isten is festő volt.\nGyönyörűen megfestett téged.\nSzép fejet adott néked,Szép alakot, csodásat,\nJó hű szívet is, tüzességet,\nEgészséget, pirospozsgásat,\nÉs mégse jó a kép,\nMért szállnak a felhők\nÉs mért hervadnak el a jegenyék,\nHa nézlek,\nAz Isten is tudja ezt\nÉs összetép\nMeglátod, egyszer összetép."
   },
   { id: "poem-4",
     title: "Kaposszentbenedek",

@@ -375,6 +375,12 @@ h1, h2, h3 {
 .poem-card {
   display: block;
   text-align: center;
+  width: 100%;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .poems-card {
@@ -450,27 +456,25 @@ h1, h2, h3 {
   opacity: 0.5;
 }
 
-/* ===== PROJECT DETAIL ===== */
-.project-detail {
+/* ===== POEM DETAIL ===== */
+.poem-detail {
   text-align: center;
 }
 
-.project-detail h1 {
+.poem-detail h1 {
   font-size: 22px;
   letter-spacing: 2px;
   margin-bottom: 32px;
   color: var(--text-primary);
 }
 
-.detail-image-container {
-  max-width: 800px;
-  margin: 0 auto 24px;
-  background: var(--bg-secondary);
-}
-
 .detail-image-container img {
   width: 100%;
-  height: auto;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 /* ===== DETAIL PAGE OVERLAY ===== */
@@ -746,10 +750,6 @@ h1, h2, h3 {
     gap: 14px;
   }
 
-  .carousel-image-container img {
-    height: 280px;
-  }
-
   .theme-toggle {
     font-size: 18px;
     padding: 2px 4px;
@@ -765,8 +765,13 @@ h1, h2, h3 {
   .slick-next {
     right: 0;
   }
+}
 
-  .carousel-image-container img {
-    height: 300px;
-  }
+.carousel-image-container {
+  width: 100%;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%), linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
