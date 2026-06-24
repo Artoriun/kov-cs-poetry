@@ -16,7 +16,6 @@ export default function Home() {
       </section>
 
       <section className="carousel-section" id="carousel">
-        <h2 className="section-heading">Featured Poems</h2>
         <PoemCarousel />
       </section>
     </div>

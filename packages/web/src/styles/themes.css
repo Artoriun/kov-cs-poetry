@@ -21,6 +21,8 @@
   --footer-bg: #ffffff;
   --dropdown-bg: #f8f8f8;
   --arrow-color: #ffffff;
+  --img-brightness: 0.92;
+  --img-brightness-overlay: 0.78;
 }
 
 /* ===== DARK MODE ===== */
@@ -45,5 +47,7 @@ html.dark-mode {
   --footer-bg: #1a1a1a;
   --dropdown-bg: #1e1e1e;
   --arrow-color: #ffffff;
+  --img-brightness: 0.82;
+  --img-brightness-overlay: 0.68;
 }
 

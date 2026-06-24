@@ -10,11 +10,16 @@ function useFitDetailOverlay(active: boolean) {
       const container = document.querySelector('.detail-image-container') as HTMLElement | null;
       if (!overlay || !container) return;
       overlay.style.fontSize = '';
+      overlay.style.columnCount = '';
       let size = parseFloat(getComputedStyle(overlay).fontSize);
       const target = container.getBoundingClientRect().height * 0.85;
       while (overlay.scrollHeight > target && size > 10) {
         size -= 1;
         overlay.style.fontSize = `${size}px`;
+      }
+      if (overlay.scrollHeight > target) {
+        overlay.style.fontSize = '';
+        overlay.style.columnCount = '2';
       }
     };
     fit();

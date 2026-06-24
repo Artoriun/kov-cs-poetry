@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, SetStateAction } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
@@ -20,13 +20,19 @@ export default function PoemCarousel() {
       const container = document.querySelector('.slick-active .carousel-image-container') as HTMLElement | null;
       if (!overlay || !container) return;
       overlay.style.fontSize = '';
+      overlay.style.columnCount = '';
       let size = parseFloat(getComputedStyle(overlay).fontSize);
-      const target = window.innerHeight * 0.85;
+      const target = container.getBoundingClientRect().height * 0.85;
       while (overlay.scrollHeight > target && size > 10) {
         size -= 1;
         overlay.style.fontSize = `${size}px`;
       }
+      if (overlay.scrollHeight > target) {
+        overlay.style.fontSize = '';
+        overlay.style.columnCount = '2';
+      }
     };
+    fit();
     document.fonts.ready.then(fit);
     const ro = new ResizeObserver(fit);
     ro.observe(document.documentElement);
@@ -87,16 +93,16 @@ export default function PoemCarousel() {
   };
 
   return (
-    <div 
+    <div
       className="poem-carousel-wrapper"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <div className="carousel-section-label">Featured Poems</div>
       <Slider ref={sliderRef} {...settings}>
         {POEMS.map((poem) => (
           <div key={poem.id} className="carousel-slide">
-            <div className="carousel-slide-title">{poem.title}</div>
-            <Link 
+            <Link
               to={`/poems/${poem.id}`}
               className="carousel-link"
               onClick={(e) => {
@@ -109,12 +115,13 @@ export default function PoemCarousel() {
               onMouseUp={handleMouseUp}
             >
               <div className="carousel-image-container">
-                <img 
-                  src={poem.image} 
-                  alt={poem.title} 
+                <img
+                  src={poem.image}
+                  alt={poem.title}
                   loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
+                <div className="carousel-slide-title">{poem.title}</div>
                 {poem.overlay && <span className="carousel-overlay">{poem.overlay}</span>}
               </div>
             </Link>
