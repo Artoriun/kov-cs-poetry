@@ -217,29 +217,107 @@ h1, h2, h3 {
 
 /* ===== HOME ===== */
 .hero-section {
+  position: relative;
+  min-height: calc(100vh - 72px);
+  min-height: calc(100svh - 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 60px 24px 40px;
+  padding: 80px 24px;
+  gap: 0;
 }
 
 .hero-section h1 {
-  font-size: 28px;
-  letter-spacing: 4px;
-  font-weight: 700;
+  font-size: clamp(48px, 10vw, 120px);
+  letter-spacing: 0.2em;
+  font-weight: 400;
   color: var(--text-primary);
+  text-transform: uppercase;
+  line-height: 1;
 }
 
 .hero-subtitle {
-  font-size: 12px;
-  letter-spacing: 5px;
+  font-size: 11px;
+  letter-spacing: 0.5em;
   color: var(--text-tertiary);
-  margin-top: 8px;
+  text-transform: uppercase;
+  margin-top: 20px;
+}
+
+.hero-divider {
+  width: 40px;
+  height: 1px;
+  background: var(--border-color);
+  margin: 36px auto;
+  opacity: 0.4;
 }
 
 .hero-description {
-  font-size: 15px;
+  font-family: 'Esteban', serif;
+  font-size: clamp(15px, 2vw, 20px);
   color: var(--text-secondary);
-  max-width: 500px;
-  margin: 24px auto 0;
+  max-width: 480px;
+  line-height: 1.8;
+  font-style: italic;
+}
+
+.hero-scroll-arrow {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 36px;
+  height: 36px;
+  border-right: 1px solid var(--text-tertiary);
+  border-bottom: 1px solid var(--text-tertiary);
+  animation: hero-bounce 1.6s ease-in-out infinite;
+  transition: border-color 0.2s ease;
+}
+
+.hero-scroll-arrow::after {
+  content: '';
+  position: absolute;
+  inset: -24px;
+}
+
+.hero-scroll-arrow:hover {
+  border-color: var(--text-primary);
+}
+
+@keyframes hero-bounce {
+  0%, 100% { transform: translateX(-50%) rotate(45deg) translateY(0);    opacity: 1; }
+  50%       { transform: translateX(-50%) rotate(45deg) translateY(-8px); opacity: 0.5; }
+}
+
+@media (max-height: 500px) {
+  .hero-section {
+    min-height: calc(100svh - 64px);
+    padding: 32px 24px;
+    justify-content: flex-start;
+  }
+
+  .hero-section h1 {
+    font-size: clamp(28px, 8vh, 48px);
+  }
+
+  .hero-subtitle {
+    margin-top: 8px;
+  }
+
+  .hero-divider {
+    margin: 16px auto;
+  }
+
+  .hero-description {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .hero-scroll-arrow {
+    bottom: 16px;
+  }
 }
 
 /* ===== CAROUSEL SECTION ===== */
@@ -461,7 +539,8 @@ h1, h2, h3 {
 }
 
 .poems-grid .poem-card:has(.poem-overlay) .poem-overlay {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 10;
   color: #fff;
   text-align: center;
@@ -469,14 +548,36 @@ h1, h2, h3 {
   text-shadow: 0 0 10px rgba(0,0,0,0.7);
   font-size: 14px;
   line-height: 1.4;
-  max-width: 90%;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'Esteban', serif;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
+  mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
 }
 
 .poems-grid .poem-card:has(.poem-overlay):hover img {
   opacity: 0.5;
+}
+
+.btn-more {
+  display: block;
+  margin: 36px auto 0;
+  padding: 16px 48px;
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-more:hover {
+  background: var(--button-bg-hover);
+  color: var(--button-text-hover);
 }
 
 /* ===== POEM DETAIL ===== */

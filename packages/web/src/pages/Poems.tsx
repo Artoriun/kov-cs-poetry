@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
@@ -27,6 +27,7 @@ function useFitDetailOverlay(active: boolean) {
 
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
+  const [visible, setVisible] = useState(6);
   useFitDetailOverlay(!!id);
 
   if (id) {
@@ -49,35 +50,22 @@ export default function Poems() {
     <div className="page poems-grid-page">
       <h1 className="poems-heading">Poems</h1>
       <div className="poems-grid">
-        {POEMS.map((poem) => (
+        {POEMS.slice(0, visible).map((poem) => (
           <div key={poem.id} className="poem-card-wrapper">
             <div className="poem-card-title">{poem.title}</div>
             <Link to={`/poems/${poem.id}`} className="poem-card">
               <img src={poem.image} alt={poem.title} loading="lazy" />
               
               {poem.overlay && (
-                <span
-                  className="poem-overlay"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: '10',
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    whiteSpace: 'pre-line',
-                    wordBreak: 'break-word',
-                    
-                    /* The Magic Sauce: Alpha mask for the text pixels */
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)',
-                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 95%)'
-                  }}
-                >
-                  {poem.overlay}
-                </span>
+                <span className="poem-overlay">{poem.overlay}</span>
               )}
             </Link>
           </div>
         ))}
       </div>
+      {visible < POEMS.length && (
+        <button className="btn-more" onClick={() => setVisible(v => v + 6)}>More Poems</button>
+      )}
     </div>
   );
 }
