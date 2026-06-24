@@ -489,6 +489,51 @@ h1, h2, h3 {
 }
 
 
+/* ===== POEMS LAYOUT ===== */
+.poems-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.poems-toc {
+  position: sticky;
+  top: calc(var(--header-height, 72px) + 24px);
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.poems-toc ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.poems-toc-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+.poems-toc a {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+}
+
+.poems-toc a:hover {
+  color: var(--text-hover);
+}
+
+.poems-content {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ===== POEMS GRID ===== */
 .poems-heading {
   text-align: center;
@@ -510,8 +555,32 @@ h1, h2, h3 {
   flex-direction: column;
 }
 
+@keyframes poem-highlight-pulse {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 0 3px var(--poem-highlight-color); }
+}
+
+@keyframes poem-highlight-scale {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.04); }
+}
+
+.poem-highlight {
+  animation: poem-highlight-pulse 0.8s ease 3;
+  border-radius: 0.75px;
+}
+
+.poem-highlight img,
+.poem-highlight .poem-overlay {
+  animation: poem-highlight-scale 0.8s ease 3;
+}
+
 .poem-card {
   display: block;
+  position: relative;
+}
+
+.poem-card-img-wrap {
   overflow: hidden;
 }
 
@@ -563,6 +632,11 @@ h1, h2, h3 {
   justify-content: center;
   aspect-ratio: 1;
   height: auto;
+}
+
+.poems-grid .poem-card:has(.poem-overlay) .poem-card-img-wrap {
+  position: absolute;
+  inset: 0;
 }
 
 .poems-grid .poem-card:has(.poem-overlay) img {
@@ -912,6 +986,12 @@ html.dark-mode .theme-toggle {
   .footer-inner {
     flex-direction: column;
     gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .poems-toc {
+    display: none;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, useEffect } from 'react';
+import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
@@ -57,26 +57,61 @@ export default function Poems() {
     );
   }
 
+  const displayed = POEMS.slice(0, visible);
+
+  const activeCardRef = useRef<HTMLElement | null>(null);
+
+  const handleTocClick = (id: string) => {
+    if (activeCardRef.current) {
+      activeCardRef.current.classList.remove('poem-highlight');
+    }
+    const card = document.querySelector<HTMLElement>(`#${id} .poem-card`);
+    if (!card) return;
+    card.classList.remove('poem-highlight');
+    void card.offsetWidth;
+    card.classList.add('poem-highlight');
+    activeCardRef.current = card;
+    card.addEventListener('animationend', () => {
+      card.classList.remove('poem-highlight');
+      activeCardRef.current = null;
+    }, { once: true });
+  };
+
   return (
     <div className="page poems-grid-page">
       <h1 className="poems-heading">Poems</h1>
-      <div className="poems-grid">
-        {POEMS.slice(0, visible).map((poem) => (
-          <div key={poem.id} className="poem-card-wrapper">
-            <div className="poem-card-title">{poem.title}</div>
-            <Link to={`/poems/${poem.id}`} className="poem-card">
-              <img src={poem.image} alt={poem.title} loading="lazy" />
-              
-              {poem.overlay && (
-                <span className="poem-overlay">{poem.overlay}</span>
-              )}
-            </Link>
+      <div className="poems-layout">
+        <nav className="poems-toc">
+          <p className="poems-toc-title">Index</p>
+          <ul>
+            {displayed.map((poem) => (
+              <li key={poem.id}>
+                <a href={`#${poem.id}`} onClick={() => handleTocClick(poem.id)}>{poem.title}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="poems-content">
+          <div className="poems-grid">
+            {displayed.map((poem) => (
+              <div key={poem.id} id={poem.id} className="poem-card-wrapper">
+                <div className="poem-card-title">{poem.title}</div>
+                <Link to={`/poems/${poem.id}`} className="poem-card">
+                  <div className="poem-card-img-wrap">
+                    <img src={poem.image} alt={poem.title} loading="lazy" />
+                  </div>
+                  {poem.overlay && (
+                    <span className="poem-overlay">{poem.overlay}</span>
+                  )}
+                </Link>
+              </div>
+            ))}
           </div>
-        ))}
+          {visible < POEMS.length && (
+            <button className="btn-more" onClick={() => setVisible(v => v + 6)}>More Poems</button>
+          )}
+        </div>
       </div>
-      {visible < POEMS.length && (
-        <button className="btn-more" onClick={() => setVisible(v => v + 6)}>More Poems</button>
-      )}
     </div>
   );
 }
