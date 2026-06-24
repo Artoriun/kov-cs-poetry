@@ -8,7 +8,7 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link to="/" className="logo" onClick={() => setMobileOpen(false)}>
+        <Link to="/" className="logo" onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           Kovács
         </Link>
         <p className="subtitle">POETRY</p>
@@ -16,7 +16,7 @@ export default function Header() {
         <nav className={`main-nav ${mobileOpen ? 'open' : ''}`}>
           <ul>
             <li>
-              <NavLink to="/" end onClick={() => setMobileOpen(false)}>
+              <NavLink to="/" end onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                 Home
               </NavLink>
             </li>

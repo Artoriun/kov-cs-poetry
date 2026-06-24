@@ -21,14 +21,16 @@ export default function PoemCarousel() {
       if (!overlay || !container) return;
       overlay.style.fontSize = '';
       let size = parseFloat(getComputedStyle(overlay).fontSize);
-      while (overlay.scrollHeight > container.clientHeight && size > 10) {
+      const target = window.innerHeight * 0.85;
+      while (overlay.scrollHeight > target && size > 10) {
         size -= 1;
         overlay.style.fontSize = `${size}px`;
       }
     };
-    requestAnimationFrame(fit);
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    document.fonts.ready.then(fit);
+    const ro = new ResizeObserver(fit);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
   }, [currentSlide]);
 
   // Custom Autoplay Logic
