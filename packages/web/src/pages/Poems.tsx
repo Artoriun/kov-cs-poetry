@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useLayoutEffect, useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
 function useFitDetailOverlay(active: boolean) {
@@ -28,18 +28,24 @@ function useFitDetailOverlay(active: boolean) {
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
   const [visible, setVisible] = useState(6);
+  const navigate = useNavigate();
   useFitDetailOverlay(!!id);
+
+  useEffect(() => {
+    if (!id) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [id, navigate]);
 
   if (id) {
     const poem = POEMS.find((p) => p.id === id);
     if (!poem) return <div className="page"><p>Poem not found.</p></div>;
     return (
       <div className="page poem-detail">
-        <div className="poem-detail-title-section">
-          <h1>{poem.title}</h1>
-        </div>
         <div className="detail-image-container">
           <img src={poem.image} alt={poem.title} />
+          <h1 className="detail-title">{poem.title}</h1>
           {poem.overlay && <p className="detail-overlay">{poem.overlay}</p>}
         </div>
       </div>

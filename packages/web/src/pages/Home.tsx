@@ -10,7 +10,9 @@ export default function Home() {
         <p className="hero-description">
           Poet and writer exploring the depths of human emotion and experience.
         </p>
-        <a href="#carousel" className="hero-scroll-arrow" aria-label="Scroll to poems" />
+        <a href="#carousel" className="hero-scroll-arrow" aria-label="Scroll to poems">
+          <span className="hero-scroll-chevron" />
+        </a>
       </section>
 
       <section className="carousel-section" id="carousel">
