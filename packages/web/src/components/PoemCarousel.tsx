@@ -16,27 +16,28 @@ export default function PoemCarousel() {
 
   useEffect(() => {
     const fit = () => {
-      const overlay = document.querySelector('.slick-active .carousel-overlay') as HTMLElement | null;
-      const container = document.querySelector('.slick-active .carousel-image-container') as HTMLElement | null;
-      if (!overlay || !container) return;
-      overlay.style.fontSize = '';
-      overlay.style.columnCount = '';
-      let size = parseFloat(getComputedStyle(overlay).fontSize);
-      const target = container.getBoundingClientRect().height * 0.85;
-      while (overlay.scrollHeight > target && size > 10) {
-        size -= 1;
-        overlay.style.fontSize = `${size}px`;
-      }
-      if (overlay.scrollHeight > target) {
+      document.querySelectorAll<HTMLElement>('.carousel-overlay').forEach((overlay) => {
+        const container = overlay.closest<HTMLElement>('.carousel-image-container');
+        if (!container) return;
         overlay.style.fontSize = '';
-        overlay.style.columnCount = '2';
-      }
+        overlay.style.columnCount = '';
+        let size = parseFloat(getComputedStyle(overlay).fontSize);
+        const target = (container.getBoundingClientRect().height || window.innerHeight) * 0.85;
+        while (overlay.scrollHeight > target && size > 10) {
+          size -= 1;
+          overlay.style.fontSize = `${size}px`;
+        }
+        if (overlay.scrollHeight > target) {
+          overlay.style.fontSize = '';
+          overlay.style.columnCount = '2';
+        }
+      });
     };
     fit();
     document.fonts.ready.then(fit);
-    const ro = new ResizeObserver(fit);
-    ro.observe(document.documentElement);
-    return () => ro.disconnect();
+    const onResize = () => requestAnimationFrame(fit);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, [currentSlide]);
 
   // Custom Autoplay Logic

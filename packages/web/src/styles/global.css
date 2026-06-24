@@ -12,7 +12,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 72px;
+  scroll-padding-top: var(--header-height, 72px);
 }
 
 body {
@@ -219,8 +219,8 @@ h1, h2, h3 {
 /* ===== HOME ===== */
 .hero-section {
   position: relative;
-  min-height: calc(100vh - 72px);
-  min-height: calc(100svh - 72px);
+  min-height: calc(100vh - var(--header-height, 68px));
+  min-height: calc(100svh - var(--header-height, 68px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -301,7 +301,7 @@ h1, h2, h3 {
 
 @media (max-height: 500px) {
   .hero-section {
-    min-height: calc(100svh - 64px);
+    min-height: calc(100svh - var(--header-height, 64px));
     padding: 32px 24px;
     justify-content: flex-start;
   }
@@ -459,6 +459,7 @@ h1, h2, h3 {
   justify-content: center;
   height: 100vh;
   height: 100svh;
+  padding-top: 80px;
 }
 
 .carousel-image-container:has(.carousel-overlay) img {
@@ -664,6 +665,7 @@ h1, h2, h3 {
   justify-content: center;
   height: 100vh;
   height: 100svh;
+  padding-top: 80px;
 }
 
 .detail-image-container:has(.detail-overlay) img {
@@ -980,6 +982,7 @@ html.dark-mode .theme-toggle {
 
   .carousel-image-container:has(.carousel-overlay) {
     align-items: flex-start;
+    padding-top: 0;
   }
 
   .carousel-overlay {
@@ -993,6 +996,7 @@ html.dark-mode .theme-toggle {
 
   .detail-image-container:has(.detail-overlay) {
     align-items: flex-start;
+    padding-top: 0;
   }
 
   .detail-overlay {
