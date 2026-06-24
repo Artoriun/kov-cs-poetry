@@ -35,6 +35,7 @@ export default function Poems() {
   const [visible, setVisible] = useState(6);
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
+  const activeCardRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -58,8 +59,6 @@ export default function Poems() {
   }
 
   const displayed = POEMS.slice(0, visible);
-
-  const activeCardRef = useRef<HTMLElement | null>(null);
 
   const handleTocClick = (id: string) => {
     if (activeCardRef.current) {
