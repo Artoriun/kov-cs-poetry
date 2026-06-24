@@ -14,6 +14,23 @@ export default function PoemCarousel() {
   const startXRef = useRef(0);
   const startYRef = useRef(0);
 
+  useEffect(() => {
+    const fit = () => {
+      const overlay = document.querySelector('.slick-active .carousel-overlay') as HTMLElement | null;
+      const container = document.querySelector('.slick-active .carousel-image-container') as HTMLElement | null;
+      if (!overlay || !container) return;
+      overlay.style.fontSize = '';
+      let size = parseFloat(getComputedStyle(overlay).fontSize);
+      while (overlay.scrollHeight > container.clientHeight && size > 10) {
+        size -= 1;
+        overlay.style.fontSize = `${size}px`;
+      }
+    };
+    requestAnimationFrame(fit);
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [currentSlide]);
+
   // Custom Autoplay Logic
   useEffect(() => {
     // 1. If the user is hovering over the carousel, pause the timer

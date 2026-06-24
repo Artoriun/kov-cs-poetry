@@ -1,8 +1,33 @@
+import { useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
+function useFitDetailOverlay(active: boolean) {
+  useLayoutEffect(() => {
+    if (!active) return;
+    const fit = () => {
+      const overlay = document.querySelector('.detail-overlay') as HTMLElement | null;
+      const container = document.querySelector('.detail-image-container') as HTMLElement | null;
+      if (!overlay || !container) return;
+      overlay.style.fontSize = '';
+      let size = parseFloat(getComputedStyle(overlay).fontSize);
+      const target = container.getBoundingClientRect().height * 0.85;
+      while (overlay.scrollHeight > target && size > 10) {
+        size -= 1;
+        overlay.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    document.fonts.ready.then(fit);
+    const ro = new ResizeObserver(fit);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [active]);
+}
+
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
+  useFitDetailOverlay(!!id);
 
   if (id) {
     const poem = POEMS.find((p) => p.id === id);
