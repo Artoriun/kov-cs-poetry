@@ -91,7 +91,7 @@ export default function Poems() {
         <nav className="poems-toc">
           <p className="poems-toc-title">Index</p>
           <ul>
-            {displayed.map((poem) => (
+            {POEMS.map((poem) => (
               <li key={poem.id}>
                 <a href={`#${poem.id}`} onClick={() => handleTocClick(poem.id)}>{poem.title}</a>
               </li>
