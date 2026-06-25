@@ -687,6 +687,10 @@ h1, h2, h3 {
   position: absolute;
   inset: 0;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
   color: #fff;
   text-align: center;
   padding: 30px 20px;
@@ -723,6 +727,20 @@ h1, h2, h3 {
 .btn-more:hover {
   background: var(--button-bg-hover);
   color: var(--button-text-hover);
+}
+
+@keyframes btn-fade-out {
+  to { opacity: 0; }
+}
+@keyframes btn-fade-in {
+  from { opacity: 0; }
+}
+
+.btn-more-out {
+  animation: btn-fade-out var(--btn-fade-duration, 200ms) ease var(--btn-fade-delay, 0ms) both;
+}
+.btn-more-in {
+  animation: btn-fade-in var(--btn-fade-duration, 200ms) ease both;
 }
 
 /* ===== POEM DETAIL ===== */
