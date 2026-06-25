@@ -88,7 +88,7 @@ export default function Poems() {
     });
     ro.observe(ul);
     return () => { nav.removeEventListener('scroll', setTop); ro.disconnect(); };
-  }, [page]);
+  }, [page, id]);
 
   useEffect(() => {
     const line = tocLineRef.current;
@@ -181,6 +181,16 @@ export default function Poems() {
       void card.offsetWidth;
       card.classList.add('poem-highlight');
       activeCardRef.current = card;
+      const wrapper = card.closest<HTMLElement>('.poem-card-wrapper') ?? card;
+      const rect = wrapper.getBoundingClientRect();
+      const headerHeight = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--header-height')
+      ) || 72;
+      if (rect.top < headerHeight) {
+        window.scrollBy({ top: rect.top - headerHeight - 16, behavior: 'smooth' });
+      } else if (rect.bottom > window.innerHeight) {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     };
 
     if (targetPage === page) {
