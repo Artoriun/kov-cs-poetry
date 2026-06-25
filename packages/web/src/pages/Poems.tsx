@@ -75,6 +75,14 @@ export default function Poems() {
   }, [page]);
 
   useEffect(() => {
+    const line = tocLineRef.current;
+    if (!line || phase !== 'out') return;
+    line.style.animation = 'none';
+    void line.offsetHeight;
+    line.style.animation = 'toc-line-retract 0.4s ease forwards';
+  }, [phase]);
+
+  useEffect(() => {
     if (!id) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
     window.addEventListener('keydown', onKey);

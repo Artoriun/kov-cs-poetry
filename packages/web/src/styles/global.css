@@ -511,7 +511,7 @@ h1, h2, h3 {
 
 .toc-range-line {
   position: absolute;
-  right: -16px;
+  left: -16px;
   width: 1px;
   background-image: linear-gradient(var(--text-primary), var(--text-primary));
   background-repeat: no-repeat;
@@ -522,6 +522,11 @@ h1, h2, h3 {
 
 @keyframes toc-line-grow {
   to { background-size: 1px 100%; }
+}
+
+@keyframes toc-line-retract {
+  from { background-size: 1px 100%; background-position: top center; }
+  to   { background-size: 1px 0%;   background-position: top center; }
 }
 
 .poems-toc::-webkit-scrollbar {
