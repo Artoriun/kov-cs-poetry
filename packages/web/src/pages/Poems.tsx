@@ -44,6 +44,18 @@ export default function Poems() {
     return () => window.removeEventListener('keydown', onKey);
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (id) return;
+    const onClick = (e: MouseEvent) => {
+      if (activeCardRef.current && !(e.target as Element).closest('.poem-card, .poems-toc')) {
+        activeCardRef.current.classList.remove('poem-highlight');
+        activeCardRef.current = null;
+      }
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [id]);
+
   if (id) {
     const poem = POEMS.find((p) => p.id === id);
     if (!poem) return <div className="page"><p>Poem not found.</p></div>;
@@ -70,10 +82,6 @@ export default function Poems() {
     void card.offsetWidth;
     card.classList.add('poem-highlight');
     activeCardRef.current = card;
-    card.addEventListener('animationend', () => {
-      card.classList.remove('poem-highlight');
-      activeCardRef.current = null;
-    }, { once: true });
   };
 
   return (
