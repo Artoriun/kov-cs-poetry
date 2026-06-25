@@ -1,6 +1,15 @@
 @import './themes.css';
 @import url('https://fonts.googleapis.com/css2?family=Esteban&display=swap');
 
+/* ===== ANIMATION TIMING ===== */
+:root {
+  --page-fade-duration: 500ms;
+  --page-fade-stagger: 80ms;
+  --carousel-fade-duration: 600ms;
+  --nav-fade-duration: 350ms;
+  --nav-fade-stagger: 60ms;
+}
+
 /* ===== RESET & BASE ===== */
 *,
 *::before,
@@ -396,7 +405,7 @@ h1, h2, h3 {
 
 .poem-carousel-wrapper {
   position: relative;
-  animation: poem-fade-in 0.6s ease both;
+  animation: poem-fade-in var(--carousel-fade-duration) ease both;
 }
 
 .carousel-section-label {
@@ -616,16 +625,16 @@ h1, h2, h3 {
 
 /* ===== POEMS GRID ===== */
 .poems-heading {
-  animation: poem-fade-in 0.5s ease both;
+  animation: poem-fade-in var(--page-fade-duration) ease both;
 }
 
 .poems-toc-wrap {
-  animation: poem-fade-in 0.5s ease 80ms both;
+  animation: poem-fade-in var(--page-fade-duration) ease var(--page-fade-stagger) both;
 }
 
 .poem-card-wrapper {
-  animation: poem-fade-in 0.5s ease both;
-  animation-delay: calc(var(--stagger, 0ms) + 80ms);
+  animation: poem-fade-in var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--stagger, 0ms) + var(--page-fade-stagger));
 }
 
 .poems-heading {
@@ -927,14 +936,14 @@ h1, h2, h3 {
 }
 
 .contact-page h1 {
-  animation: contact-fade-up 0.5s ease both;
+  animation: contact-fade-up var(--page-fade-duration) ease both;
 }
 
-.contact-form > *:nth-child(1) { animation: contact-fade-up 0.5s ease both; animation-delay: 80ms; }
-.contact-form > *:nth-child(2) { animation: contact-fade-up 0.5s ease both; animation-delay: 160ms; }
-.contact-form > *:nth-child(3) { animation: contact-fade-up 0.5s ease both; animation-delay: 240ms; }
-.contact-form > *:nth-child(4) { animation: contact-fade-up 0.5s ease both; animation-delay: 320ms; }
-.contact-form > *:nth-child(5) { animation: contact-fade-up 0.5s ease both; animation-delay: 400ms; }
+.contact-form > *:nth-child(1) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 1); }
+.contact-form > *:nth-child(2) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 2); }
+.contact-form > *:nth-child(3) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 3); }
+.contact-form > *:nth-child(4) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 4); }
+.contact-form > *:nth-child(5) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 5); }
 
 .contact-page h1 {
   text-align: center;
@@ -1103,11 +1112,11 @@ html.dark-mode .theme-toggle {
   }
 
   .main-nav.open > ul > li {
-    animation: poem-fade-in 0.35s ease both;
+    animation: poem-fade-in var(--nav-fade-duration) ease both;
   }
   .main-nav.open > ul > li:nth-child(1) { animation-delay: 0ms; }
-  .main-nav.open > ul > li:nth-child(2) { animation-delay: 60ms; }
-  .main-nav.open > ul > li:nth-child(3) { animation-delay: 120ms; }
+  .main-nav.open > ul > li:nth-child(2) { animation-delay: var(--nav-fade-stagger); }
+  .main-nav.open > ul > li:nth-child(3) { animation-delay: calc(var(--nav-fade-stagger) * 2); }
 
   .hamburger {
     display: flex;
