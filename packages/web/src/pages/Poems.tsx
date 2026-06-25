@@ -42,6 +42,37 @@ export default function Poems() {
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
   const activeCardRef = useRef<HTMLElement | null>(null);
+  const [activePoemId, setActivePoemId] = useState<string | null>(null);
+  const tocListRef = useRef<HTMLUListElement>(null);
+  const tocLineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ul = tocListRef.current;
+    const line = tocLineRef.current;
+    if (!ul || !line) return;
+
+    const firstIndex = page * PER_PAGE;
+    const lastIndex = Math.min((page + 1) * PER_PAGE - 1, POEMS.length - 1);
+    const first = ul.children[firstIndex] as HTMLElement | undefined;
+    const last = ul.children[lastIndex] as HTMLElement | undefined;
+    if (!first || !last) return;
+
+    line.style.top = `${first.offsetTop}px`;
+    line.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
+    line.style.animation = 'none';
+    void line.offsetHeight; // force reflow so animation restarts
+    line.style.animation = '';
+
+    const ro = new ResizeObserver(() => {
+      const f = ul.children[firstIndex] as HTMLElement | undefined;
+      const l = ul.children[lastIndex] as HTMLElement | undefined;
+      if (!f || !l) return;
+      line.style.top = `${f.offsetTop}px`;
+      line.style.height = `${l.offsetTop + l.offsetHeight - f.offsetTop}px`;
+    });
+    ro.observe(ul);
+    return () => ro.disconnect();
+  }, [page]);
 
   useEffect(() => {
     if (!id) return;
@@ -56,6 +87,7 @@ export default function Poems() {
       if (activeCardRef.current && !(e.target as Element).closest('.poem-card, .poems-toc')) {
         activeCardRef.current.classList.remove('poem-highlight');
         activeCardRef.current = null;
+        setActivePoemId(null);
       }
     };
     document.addEventListener('click', onClick);
@@ -86,6 +118,7 @@ export default function Poems() {
       activeCardRef.current.classList.remove('poem-highlight');
       activeCardRef.current = null;
     }
+    setActivePoemId(null);
     setPhase('out');
     setTimeout(() => {
       setPage(p => ((p + 1) * PER_PAGE >= POEMS.length ? 0 : p + 1));
@@ -95,6 +128,7 @@ export default function Poems() {
   };
 
   const handleTocClick = (poemId: string) => {
+    setActivePoemId(poemId);
     const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
 
     const doHighlight = () => {
@@ -132,16 +166,19 @@ export default function Poems() {
     <div className="page poems-grid-page">
       <h1 className="poems-heading">Poems</h1>
       <div className="poems-layout">
-        <nav className="poems-toc">
-          <p className="poems-toc-title">Index</p>
-          <ul>
-            {POEMS.map((poem) => (
-              <li key={poem.id}>
-                <a href={`#${poem.id}`} onClick={() => handleTocClick(poem.id)}>{poem.title}</a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <div className="poems-toc-wrap">
+          <nav className="poems-toc">
+            <p className="poems-toc-title">Index</p>
+            <ul ref={tocListRef}>
+              {POEMS.map((poem) => (
+                <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
+                  <a href={`#${poem.id}`} onClick={() => handleTocClick(poem.id)}>{poem.title}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div ref={tocLineRef} className="toc-range-line" />
+        </div>
         <div className="poems-content">
           <div className={`poems-grid${phase === 'out' ? ' poems-fading-out' : phase === 'in' ? ' poems-fading-in' : ''}`}>
             {displayed.map((poem, i) => (
