@@ -129,7 +129,7 @@ export default function Poems() {
       <div className="page poem-detail">
         <div className="detail-image-container">
           <img src={poem.image} alt={poem.title} className="detail-img-anim" />
-          <h1 className="detail-title detail-img-anim">{poem.title}</h1>
+          <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>{poem.title}</h1>
           {poem.overlay && (
             <p className="detail-overlay">
               {lines.map((line, i) => (
