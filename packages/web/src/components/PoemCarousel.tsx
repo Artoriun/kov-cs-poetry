@@ -3,6 +3,8 @@ import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 import '../styles/global.css';
+
+const CAROUSEL_POEMS = POEMS.slice(0, 5);
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
@@ -47,7 +49,7 @@ export default function PoemCarousel() {
     if (isHovered) return;
 
     // 2. Count the lines of the current poem string
-    const currentPoem = POEMS[currentSlide];
+    const currentPoem = CAROUSEL_POEMS[currentSlide];
     const lineCount = currentPoem?.overlay ? currentPoem.overlay.split('\n').length : 3;
     
     // 3. Calculate delay: 1 second per line (with a 3-second minimum baseline so short ones don't vanish instantly)
@@ -103,7 +105,7 @@ export default function PoemCarousel() {
     >
       <div className="carousel-section-label">Featured Poems</div>
       <Slider ref={sliderRef} {...settings}>
-        {POEMS.map((poem) => (
+        {CAROUSEL_POEMS.map((poem) => (
           <div key={poem.id} className="carousel-slide">
             <Link
               to={`/poems/${poem.id}`}
@@ -124,13 +126,13 @@ export default function PoemCarousel() {
                   loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                {POEMS.indexOf(poem) === currentSlide
+                {CAROUSEL_POEMS.indexOf(poem) === currentSlide
                   ? <div key={animKey} className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
                   : <div className="carousel-slide-title">{poem.title}</div>
                 }
                 {poem.overlay && (
                   <span className="carousel-overlay">
-                    {POEMS.indexOf(poem) === currentSlide ? (
+                    {CAROUSEL_POEMS.indexOf(poem) === currentSlide ? (
                       <span key={animKey}>
                         {poem.overlay.split('\n').map((line, i) => (
                           <span
