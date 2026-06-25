@@ -45,6 +45,7 @@ export default function Poems() {
   const [activePoemId, setActivePoemId] = useState<string | null>(null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
+  const tocDirectionRef = useRef<'down' | 'up'>('down');
 
   useEffect(() => {
     const ul = tocListRef.current;
@@ -57,11 +58,14 @@ export default function Poems() {
     const last = ul.children[lastIndex] as HTMLElement | undefined;
     if (!first || !last) return;
 
+    const growAnim = tocDirectionRef.current === 'down'
+      ? 'toc-line-grow-down 0.65s ease forwards'
+      : 'toc-line-grow-up 0.65s ease forwards';
     line.style.top = `${first.offsetTop}px`;
     line.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
     line.style.animation = 'none';
-    void line.offsetHeight; // force reflow so animation restarts
-    line.style.animation = '';
+    void line.offsetHeight;
+    line.style.animation = growAnim;
 
     const ro = new ResizeObserver(() => {
       const f = ul.children[firstIndex] as HTMLElement | undefined;
@@ -77,9 +81,12 @@ export default function Poems() {
   useEffect(() => {
     const line = tocLineRef.current;
     if (!line || phase !== 'out') return;
+    const retractAnim = tocDirectionRef.current === 'down'
+      ? 'toc-line-retract-down 0.4s ease forwards'
+      : 'toc-line-retract-up 0.4s ease forwards';
     line.style.animation = 'none';
     void line.offsetHeight;
-    line.style.animation = 'toc-line-retract 0.4s ease forwards';
+    line.style.animation = retractAnim;
   }, [phase]);
 
   useEffect(() => {
@@ -122,6 +129,8 @@ export default function Poems() {
 
   const handleNextPage = () => {
     if (phase !== 'idle') return;
+    const nextPage = (page + 1) * PER_PAGE >= POEMS.length ? 0 : page + 1;
+    tocDirectionRef.current = nextPage > page ? 'down' : 'up';
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight');
       activeCardRef.current = null;
@@ -155,6 +164,7 @@ export default function Poems() {
     }
 
     if (phase !== 'idle') return;
+    tocDirectionRef.current = targetPage > page ? 'down' : 'up';
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight');
       activeCardRef.current = null;
