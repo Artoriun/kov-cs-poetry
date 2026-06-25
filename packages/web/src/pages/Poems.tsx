@@ -2,6 +2,8 @@ import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
+const PER_PAGE = 9;
+
 const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
 
@@ -37,7 +39,6 @@ export default function Poems() {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(0);
   const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
-  const PER_PAGE = 6;
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
   const activeCardRef = useRef<HTMLElement | null>(null);
@@ -162,7 +163,14 @@ export default function Poems() {
               </div>
             ))}
           </div>
-          <button className="btn-more" onClick={handleNextPage}>More Poems</button>
+          <button
+            className={`btn-more${phase === 'out' ? ' btn-more-out' : phase === 'in' ? ' btn-more-in' : ''}`}
+            style={{
+              '--btn-fade-delay': `${(PER_PAGE - 1) * STAGGER}ms`,
+              '--btn-fade-duration': `${FADE_DURATION}ms`,
+            } as React.CSSProperties}
+            onClick={handleNextPage}
+          >More Poems</button>
         </div>
       </div>
     </div>
