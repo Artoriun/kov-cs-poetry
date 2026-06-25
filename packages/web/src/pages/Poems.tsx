@@ -93,16 +93,38 @@ export default function Poems() {
     }, PER_PAGE * STAGGER + FADE_DURATION);
   };
 
-  const handleTocClick = (id: string) => {
+  const handleTocClick = (poemId: string) => {
+    const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
+
+    const doHighlight = () => {
+      if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight');
+      const card = document.querySelector<HTMLElement>(`#${poemId} .poem-card`);
+      if (!card) return;
+      card.classList.remove('poem-highlight');
+      void card.offsetWidth;
+      card.classList.add('poem-highlight');
+      activeCardRef.current = card;
+    };
+
+    if (targetPage === page) {
+      doHighlight();
+      return;
+    }
+
+    if (phase !== 'idle') return;
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight');
+      activeCardRef.current = null;
     }
-    const card = document.querySelector<HTMLElement>(`#${id} .poem-card`);
-    if (!card) return;
-    card.classList.remove('poem-highlight');
-    void card.offsetWidth;
-    card.classList.add('poem-highlight');
-    activeCardRef.current = card;
+    setPhase('out');
+    setTimeout(() => {
+      setPage(targetPage);
+      setPhase('in');
+      setTimeout(() => {
+        setPhase('idle');
+        doHighlight();
+      }, PER_PAGE * STAGGER + FADE_DURATION);
+    }, PER_PAGE * STAGGER + FADE_DURATION);
   };
 
   return (
