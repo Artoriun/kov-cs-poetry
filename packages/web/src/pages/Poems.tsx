@@ -51,6 +51,7 @@ export default function Poems() {
     const ul = tocListRef.current;
     const line = tocLineRef.current;
     if (!ul || !line) return;
+    const nav = ul.parentElement as HTMLElement;
 
     const firstIndex = page * PER_PAGE;
     const lastIndex = Math.min((page + 1) * PER_PAGE - 1, POEMS.length - 1);
@@ -58,24 +59,33 @@ export default function Poems() {
     const last = ul.children[lastIndex] as HTMLElement | undefined;
     if (!first || !last) return;
 
-    const growAnim = tocDirectionRef.current === 'down'
-      ? 'toc-line-grow-down 0.65s ease forwards'
-      : 'toc-line-grow-up 0.65s ease forwards';
-    line.style.top = `${first.offsetTop}px`;
-    line.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
+    const layoutTop = first.offsetTop;
+    const height = last.offsetTop + last.offsetHeight - layoutTop;
+
+    // Auto-scroll nav so the current page range is visible
+    nav.scrollTop = Math.max(0, layoutTop - 24);
+
+    const setTop = () => { line.style.top = `${layoutTop - nav.scrollTop}px`; };
+
+    setTop();
+    line.style.height = `${height}px`;
     line.style.animation = 'none';
     void line.offsetHeight;
-    line.style.animation = growAnim;
+    line.style.animation = tocDirectionRef.current === 'down'
+      ? 'toc-line-grow-down 0.65s ease forwards'
+      : 'toc-line-grow-up 0.65s ease forwards';
+
+    nav.addEventListener('scroll', setTop);
 
     const ro = new ResizeObserver(() => {
       const f = ul.children[firstIndex] as HTMLElement | undefined;
       const l = ul.children[lastIndex] as HTMLElement | undefined;
       if (!f || !l) return;
-      line.style.top = `${f.offsetTop}px`;
+      line.style.top = `${f.offsetTop - nav.scrollTop}px`;
       line.style.height = `${l.offsetTop + l.offsetHeight - f.offsetTop}px`;
     });
     ro.observe(ul);
-    return () => ro.disconnect();
+    return () => { nav.removeEventListener('scroll', setTop); ro.disconnect(); };
   }, [page]);
 
   useEffect(() => {
