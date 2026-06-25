@@ -1,25 +1,25 @@
 /* ===== LIGHT MODE (DEFAULT) ===== */
 :root {
-  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/w_1200,c_scale,q_auto/v1781887604/parchment-bg-white_p9qsg6.jpg'), #e8e8e8;
-  --bg-primary-color: #e8e8e8;
-  --bg-secondary: #e0e0e0;
-  --bg-tertiary: #d8d8d8;
+  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/v1781887604/parchment-bg-white_p9qsg6.jpg'), #fafafa;
+  --bg-primary-color: #fafafa;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #f0f0f0;
   --text-primary: #2c2c2c;
   --text-secondary: #555555;
   --text-tertiary: #888888;
   --text-light: #aaaaaa;
   --text-hover: #000000;
   --border-color: #0e0a0a;
-  --input-bg: #f0f0f0;
+  --input-bg: #ffffff;
   --input-border: #cccccc;
   --input-border-focus: #999999;
-  --button-bg: #e0e0e0;
-  --button-bg-hover: #d0d0d0;
+  --button-bg: #f0f0f0;
+  --button-bg-hover: #e0e0e0;
   --button-text: #1a1a1a;
   --button-text-hover: #000000;
-  --header-bg: #f0f0f0;
-  --footer-bg: #f0f0f0;
-  --dropdown-bg: #e8e8e8;
+  --header-bg: #ffffff;
+  --footer-bg: #ffffff;
+  --dropdown-bg: #f8f8f8;
   --arrow-color: #ffffff;
   --img-brightness: 0.92;
   --img-brightness-overlay: 0.78;
@@ -28,7 +28,7 @@
 
 /* ===== DARK MODE ===== */
 html.dark-mode {
-  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/w_1200,c_scale,q_auto/v1781889359/parchment-bg-black_kcspmh.png'), #1a1a1a;
+  --bg-primary: url('https://res.cloudinary.com/dgk299isx/image/upload/v1781889359/parchment-bg-black_kcspmh.png'), #1a1a1a;
   --bg-secondary: #222222;
   --bg-tertiary: #2a2a2a;
   --text-primary: #ccc;
