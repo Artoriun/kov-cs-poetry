@@ -35,7 +35,9 @@ function useFitDetailOverlay(active: boolean) {
 
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
-  const [visible, setVisible] = useState(6);
+  const [page, setPage] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
+  const PER_PAGE = 6;
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
   const activeCardRef = useRef<HTMLElement | null>(null);
@@ -73,7 +75,23 @@ export default function Poems() {
     );
   }
 
-  const displayed = POEMS.slice(0, visible);
+  const displayed = POEMS.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+  const STAGGER = 80; // ms between each card
+  const FADE_DURATION = 200; // ms per fade
+
+  const handleNextPage = () => {
+    if (phase !== 'idle') return;
+    if (activeCardRef.current) {
+      activeCardRef.current.classList.remove('poem-highlight');
+      activeCardRef.current = null;
+    }
+    setPhase('out');
+    setTimeout(() => {
+      setPage(p => ((p + 1) * PER_PAGE >= POEMS.length ? 0 : p + 1));
+      setPhase('in');
+      setTimeout(() => setPhase('idle'), PER_PAGE * STAGGER + FADE_DURATION);
+    }, PER_PAGE * STAGGER + FADE_DURATION);
+  };
 
   const handleTocClick = (id: string) => {
     if (activeCardRef.current) {
@@ -102,9 +120,14 @@ export default function Poems() {
           </ul>
         </nav>
         <div className="poems-content">
-          <div className="poems-grid">
-            {displayed.map((poem) => (
-              <div key={poem.id} id={poem.id} className="poem-card-wrapper">
+          <div className={`poems-grid${phase === 'out' ? ' poems-fading-out' : phase === 'in' ? ' poems-fading-in' : ''}`}>
+            {displayed.map((poem, i) => (
+              <div
+                key={poem.id}
+                id={poem.id}
+                className="poem-card-wrapper"
+                style={{ '--stagger': `${i * STAGGER}ms` } as React.CSSProperties}
+              >
                 <div className="poem-card-title">{poem.title}</div>
                 <Link to={`/poems/${poem.id}`} className="poem-card">
                   <div className="poem-card-img-wrap">
@@ -117,9 +140,7 @@ export default function Poems() {
               </div>
             ))}
           </div>
-          {visible < POEMS.length && (
-            <button className="btn-more" onClick={() => setVisible(v => v + 6)}>More Poems</button>
-          )}
+          <button className="btn-more" onClick={handleNextPage}>More Poems</button>
         </div>
       </div>
     </div>
