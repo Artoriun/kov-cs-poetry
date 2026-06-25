@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
 const PER_PAGE = 9;
+const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
+const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
 
 const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
@@ -122,12 +124,25 @@ export default function Poems() {
   if (id) {
     const poem = POEMS.find((p) => p.id === id);
     if (!poem) return <div className="page"><p>Poem not found.</p></div>;
+    const lines = poem.overlay ? poem.overlay.split('\n') : [];
     return (
       <div className="page poem-detail">
         <div className="detail-image-container">
-          <img src={poem.image} alt={poem.title} />
-          <h1 className="detail-title">{poem.title}</h1>
-          {poem.overlay && <p className="detail-overlay">{poem.overlay}</p>}
+          <img src={poem.image} alt={poem.title} className="detail-img-anim" />
+          <h1 className="detail-title detail-img-anim">{poem.title}</h1>
+          {poem.overlay && (
+            <p className="detail-overlay">
+              {lines.map((line, i) => (
+                <span
+                  key={i}
+                  className="detail-overlay-line"
+                  style={{ animationDelay: `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms` }}
+                >
+                  {line || ' '}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </div>
     );
