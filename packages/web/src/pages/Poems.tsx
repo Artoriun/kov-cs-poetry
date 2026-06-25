@@ -102,6 +102,10 @@ export default function Poems() {
   }, [phase]);
 
   useEffect(() => {
+    if (id) window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
     if (!id) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
     window.addEventListener('keydown', onKey);
