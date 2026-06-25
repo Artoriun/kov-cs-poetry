@@ -2,6 +2,9 @@ import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
 
+const optimizeUrl = (url: string) =>
+  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
+
 function useFitDetailOverlay(active: boolean) {
   useLayoutEffect(() => {
     if (!active) return;
@@ -105,7 +108,7 @@ export default function Poems() {
                 <div className="poem-card-title">{poem.title}</div>
                 <Link to={`/poems/${poem.id}`} className="poem-card">
                   <div className="poem-card-img-wrap">
-                    <img src={poem.image} alt={poem.title} loading="lazy" />
+                    <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
                   </div>
                   {poem.overlay && (
                     <span className="poem-overlay">{poem.overlay}</span>
