@@ -396,6 +396,7 @@ h1, h2, h3 {
 
 .poem-carousel-wrapper {
   position: relative;
+  animation: poem-fade-in 0.6s ease both;
 }
 
 .carousel-section-label {
@@ -614,6 +615,19 @@ h1, h2, h3 {
 }
 
 /* ===== POEMS GRID ===== */
+.poems-heading {
+  animation: poem-fade-in 0.5s ease both;
+}
+
+.poems-toc-wrap {
+  animation: poem-fade-in 0.5s ease 80ms both;
+}
+
+.poem-card-wrapper {
+  animation: poem-fade-in 0.5s ease both;
+  animation-delay: calc(var(--stagger, 0ms) + 80ms);
+}
+
 .poems-heading {
   text-align: center;
   font-size: 20px;
@@ -907,6 +921,21 @@ h1, h2, h3 {
 }
 
 /* ===== CONTACT ===== */
+@keyframes contact-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.contact-page h1 {
+  animation: contact-fade-up 0.5s ease both;
+}
+
+.contact-form > *:nth-child(1) { animation: contact-fade-up 0.5s ease both; animation-delay: 80ms; }
+.contact-form > *:nth-child(2) { animation: contact-fade-up 0.5s ease both; animation-delay: 160ms; }
+.contact-form > *:nth-child(3) { animation: contact-fade-up 0.5s ease both; animation-delay: 240ms; }
+.contact-form > *:nth-child(4) { animation: contact-fade-up 0.5s ease both; animation-delay: 320ms; }
+.contact-form > *:nth-child(5) { animation: contact-fade-up 0.5s ease both; animation-delay: 400ms; }
+
 .contact-page h1 {
   text-align: center;
   font-size: 22px;
@@ -1072,6 +1101,13 @@ html.dark-mode .theme-toggle {
   .main-nav.open {
     display: flex;
   }
+
+  .main-nav.open > ul > li {
+    animation: poem-fade-in 0.35s ease both;
+  }
+  .main-nav.open > ul > li:nth-child(1) { animation-delay: 0ms; }
+  .main-nav.open > ul > li:nth-child(2) { animation-delay: 60ms; }
+  .main-nav.open > ul > li:nth-child(3) { animation-delay: 120ms; }
 
   .hamburger {
     display: flex;
