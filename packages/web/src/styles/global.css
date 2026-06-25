@@ -515,16 +515,21 @@ h1, h2, h3 {
   width: 1px;
   background-image: linear-gradient(var(--text-primary), var(--text-primary));
   background-repeat: no-repeat;
-  background-position: top center;
-  background-size: 1px 0%;
-  animation: toc-line-grow 0.65s ease forwards;
 }
 
-@keyframes toc-line-grow {
-  to { background-size: 1px 100%; }
+@keyframes toc-line-grow-down {
+  from { background-size: 1px 0%;   background-position: top center; }
+  to   { background-size: 1px 100%; background-position: top center; }
 }
-
-@keyframes toc-line-retract {
+@keyframes toc-line-grow-up {
+  from { background-size: 1px 0%;   background-position: bottom center; }
+  to   { background-size: 1px 100%; background-position: bottom center; }
+}
+@keyframes toc-line-retract-down {
+  from { background-size: 1px 100%; background-position: bottom center; }
+  to   { background-size: 1px 0%;   background-position: bottom center; }
+}
+@keyframes toc-line-retract-up {
   from { background-size: 1px 100%; background-position: top center; }
   to   { background-size: 1px 0%;   background-position: top center; }
 }
