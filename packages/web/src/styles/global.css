@@ -501,6 +501,13 @@ h1, h2, h3 {
   top: calc(var(--header-height, 72px) + 24px);
   width: 160px;
   flex-shrink: 0;
+  height: calc(100svh - var(--header-height, 72px) - 48px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.poems-toc::-webkit-scrollbar {
+  display: none;
 }
 
 .poems-toc ul {
