@@ -9,6 +9,7 @@ import 'slick-carousel/slick/slick-theme.css';
 export default function PoemCarousel() {
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);
@@ -90,6 +91,7 @@ export default function PoemCarousel() {
     arrows: true,
     beforeChange: (_current: number, next: number) => {
       setCurrentSlide(next);
+      setAnimKey(k => k + 1);
     },
   };
 
@@ -122,8 +124,27 @@ export default function PoemCarousel() {
                   loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <div className="carousel-slide-title">{poem.title}</div>
-                {poem.overlay && <span className="carousel-overlay">{poem.overlay}</span>}
+                {POEMS.indexOf(poem) === currentSlide
+                  ? <div key={animKey} className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
+                  : <div className="carousel-slide-title">{poem.title}</div>
+                }
+                {poem.overlay && (
+                  <span className="carousel-overlay">
+                    {POEMS.indexOf(poem) === currentSlide ? (
+                      <span key={animKey}>
+                        {poem.overlay.split('\n').map((line, i) => (
+                          <span
+                            key={i}
+                            className="carousel-overlay-line"
+                            style={{ animationDelay: `${(i + 1) * 100}ms` }}
+                          >
+                            {line || ' '}
+                          </span>
+                        ))}
+                      </span>
+                    ) : poem.overlay}
+                  </span>
+                )}
               </div>
             </Link>
           </div>
