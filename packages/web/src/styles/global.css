@@ -683,7 +683,7 @@ h1, h2, h3 {
 
 .poem-highlight img,
 .poem-highlight .poem-overlay {
-  animation: poem-highlight-scale 2.4s linear forwards;
+  animation: poem-highlight-scale 2.4s ease forwards;
 }
 
 .poem-card {
