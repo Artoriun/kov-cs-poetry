@@ -496,14 +496,32 @@ h1, h2, h3 {
   align-items: flex-start;
 }
 
-.poems-toc {
+.poems-toc-wrap {
   position: sticky;
   top: calc(var(--header-height, 72px) + 24px);
   width: 160px;
   flex-shrink: 0;
+}
+
+.poems-toc {
   height: calc(100svh - var(--header-height, 72px) - 48px);
   overflow-y: auto;
   scrollbar-width: none;
+}
+
+.toc-range-line {
+  position: absolute;
+  right: -16px;
+  width: 1px;
+  background-image: linear-gradient(var(--text-primary), var(--text-primary));
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 1px 0%;
+  animation: toc-line-grow 0.65s ease forwards;
+}
+
+@keyframes toc-line-grow {
+  to { background-size: 1px 100%; }
 }
 
 .poems-toc::-webkit-scrollbar {
@@ -534,6 +552,19 @@ h1, h2, h3 {
 
 .poems-toc a:hover {
   color: var(--text-hover);
+}
+
+.poems-toc li.toc-active > a {
+  padding-bottom: 2px;
+  background-image: linear-gradient(var(--text-primary), var(--text-primary));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0% 1px;
+  animation: toc-underline 0.65s ease forwards;
+}
+
+@keyframes toc-underline {
+  to { background-size: 100% 1px; }
 }
 
 .poems-content {
@@ -1043,7 +1074,7 @@ html.dark-mode .theme-toggle {
 }
 
 @media (max-width: 768px) {
-  .poems-toc {
+  .poems-toc-wrap {
     display: none;
   }
 }
