@@ -169,7 +169,7 @@ export default function Poems() {
           <button
             type="button"
             className="detail-back-btn"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/poems')}
             style={{ animationDelay: `${buttonDelay}ms` }}
           >
             ← Poems
