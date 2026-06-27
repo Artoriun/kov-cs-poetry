@@ -226,9 +226,12 @@ export default function Poems() {
         wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      const pulseDuration = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue('--pulse-duration')
-      ) || 2400;
+      const rawPulse = getComputedStyle(document.documentElement).getPropertyValue('--pulse-duration').trim();
+      const pulseDuration = rawPulse.endsWith('ms')
+        ? parseFloat(rawPulse)
+        : rawPulse.endsWith('s')
+        ? parseFloat(rawPulse) * 1000
+        : 2400;
       const t1 = setTimeout(() => {
         document.querySelector('.poems-grid-page')?.classList.add('page-fade-out');
       }, pulseDuration - PAGE_FADE_OUT);
