@@ -48,7 +48,7 @@ export default function Poems() {
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
   const activeCardRef = useRef<HTMLElement | null>(null);
-  const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? null);
+  const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? id ?? null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
@@ -169,7 +169,12 @@ export default function Poems() {
           <button
             type="button"
             className="detail-back-btn"
-            onClick={() => navigate('/poems')}
+            onClick={(e) => {
+              e.stopPropagation();
+              const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
+              sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+              navigate('/poems');
+            }}
             style={{ animationDelay: `${buttonDelay}ms` }}
           >
             ← Poems
