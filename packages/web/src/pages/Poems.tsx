@@ -5,6 +5,7 @@ import { POEMS } from '@gedichtenv2/shared';
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
 const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
+const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 
 const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
@@ -39,15 +40,28 @@ function useFitDetailOverlay(active: boolean) {
 
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
-  const [page, setPage] = useState(0);
+  const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
+  const savedParsed = savedState ? JSON.parse(savedState) : null;
+  const [page, setPage] = useState<number>(savedParsed?.page ?? 0);
   const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
   const navigate = useNavigate();
   useFitDetailOverlay(!!id);
   const activeCardRef = useRef<HTMLElement | null>(null);
-  const [activePoemId, setActivePoemId] = useState<string | null>(null);
+  const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
+  const pulseNavRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
+
+  useEffect(() => {
+    if (id || !activePoemId) return;
+    const card = document.querySelector<HTMLElement>(`#${activePoemId} .poem-card`);
+    if (!card || card.classList.contains('poem-highlight') || card.classList.contains('poem-highlight-static')) return;
+    card.classList.add('poem-highlight-static');
+    activeCardRef.current = card;
+  }, [id, activePoemId]);
 
   useEffect(() => {
     const ul = tocListRef.current;
@@ -115,10 +129,11 @@ export default function Poems() {
   useEffect(() => {
     if (id) return;
     const onClick = (e: MouseEvent) => {
-      if (activeCardRef.current && !(e.target as Element).closest('.poem-card, .poems-toc')) {
-        activeCardRef.current.classList.remove('poem-highlight');
+      if (activeCardRef.current && !(e.target as Element).closest('.poem-card, .poems-toc, .site-header')) {
+        activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
         activeCardRef.current = null;
         setActivePoemId(null);
+        sessionStorage.removeItem('poems-grid-state');
       }
     };
     document.addEventListener('click', onClick);
@@ -161,10 +176,11 @@ export default function Poems() {
     const nextPage = (page + 1) * PER_PAGE >= POEMS.length ? 0 : page + 1;
     tocDirectionRef.current = nextPage > page ? 'down' : 'up';
     if (activeCardRef.current) {
-      activeCardRef.current.classList.remove('poem-highlight');
+      activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       activeCardRef.current = null;
     }
     setActivePoemId(null);
+    sessionStorage.removeItem('poems-grid-state');
     setPhase('out');
     setTimeout(() => {
       setPage(p => ((p + 1) * PER_PAGE >= POEMS.length ? 0 : p + 1));
@@ -174,14 +190,16 @@ export default function Poems() {
   };
 
   const handleTocClick = (poemId: string) => {
+    pulseNavRef.current.forEach(clearTimeout);
+    pulseNavRef.current = [];
     setActivePoemId(poemId);
     const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
 
     const doHighlight = () => {
-      if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight');
+      if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       const card = document.querySelector<HTMLElement>(`#${poemId} .poem-card`);
       if (!card) return;
-      card.classList.remove('poem-highlight');
+      card.classList.remove('poem-highlight', 'poem-highlight-static');
       void card.offsetWidth;
       card.classList.add('poem-highlight');
       activeCardRef.current = card;
@@ -195,6 +213,18 @@ export default function Poems() {
       } else if (rect.bottom > window.innerHeight) {
         wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+
+      const pulseDuration = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--pulse-duration')
+      ) || 2400;
+      const t1 = setTimeout(() => {
+        document.querySelector('.poems-grid-page')?.classList.add('page-fade-out');
+      }, pulseDuration - PAGE_FADE_OUT);
+      const t2 = setTimeout(() => {
+        sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: poemId }));
+        navigate(`/poems/${poemId}`);
+      }, pulseDuration);
+      pulseNavRef.current = [t1, t2];
     };
 
     if (targetPage === page) {
@@ -205,7 +235,7 @@ export default function Poems() {
     if (phase !== 'idle') return;
     tocDirectionRef.current = targetPage > page ? 'down' : 'up';
     if (activeCardRef.current) {
-      activeCardRef.current.classList.remove('poem-highlight');
+      activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       activeCardRef.current = null;
     }
     setPhase('out');
