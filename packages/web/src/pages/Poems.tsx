@@ -204,9 +204,9 @@ export default function Poems() {
   const handleTocClick = (poemId: string) => {
     pulseNavRef.current.forEach(clearTimeout);
     pulseNavRef.current = [];
-    if (activeCardRef.current) {
-      activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
-    }
+    document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
+      el.classList.remove('poem-highlight', 'poem-highlight-static');
+    });
     setActivePoemId(poemId);
     const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
 
@@ -294,7 +294,15 @@ export default function Poems() {
                 style={{ '--stagger': `${i * STAGGER}ms` } as React.CSSProperties}
               >
                 <div className="poem-card-title">{poem.title}</div>
-                <Link to={`/poems/${poem.id}`} className="poem-card">
+                <Link to={`/poems/${poem.id}`} className="poem-card" onClick={() => {
+                    pulseNavRef.current.forEach(clearTimeout);
+                    pulseNavRef.current = [];
+                    document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
+                      el.classList.remove('poem-highlight', 'poem-highlight-static');
+                    });
+                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page, activePoemId: poem.id }));
+                    setActivePoemId(poem.id);
+                  }}>
                   <div className="poem-card-img-wrap">
                     <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
                   </div>
