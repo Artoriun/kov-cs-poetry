@@ -271,7 +271,7 @@ export default function Poems() {
             <ul ref={tocListRef}>
               {POEMS.map((poem) => (
                 <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
-                  <a href={`#${poem.id}`} onClick={() => handleTocClick(poem.id)}>{poem.title}</a>
+                  <a href={`#${poem.id}`} onClick={(e) => { e.preventDefault(); handleTocClick(poem.id); }}>{poem.title}</a>
                 </li>
               ))}
             </ul>
