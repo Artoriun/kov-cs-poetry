@@ -204,6 +204,9 @@ export default function Poems() {
   const handleTocClick = (poemId: string) => {
     pulseNavRef.current.forEach(clearTimeout);
     pulseNavRef.current = [];
+    if (activeCardRef.current) {
+      activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
+    }
     setActivePoemId(poemId);
     const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
 
