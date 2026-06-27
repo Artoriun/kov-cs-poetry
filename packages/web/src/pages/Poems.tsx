@@ -20,7 +20,8 @@ function useFitDetailOverlay(active: boolean) {
       overlay.style.fontSize = '';
       overlay.style.columnCount = '';
       let size = parseFloat(getComputedStyle(overlay).fontSize);
-      const target = container.getBoundingClientRect().height * 0.85;
+      const btn = container.querySelector('.detail-back-btn') as HTMLElement | null;
+      const target = container.getBoundingClientRect().height - 80 - 32 - (btn?.getBoundingClientRect().height ?? 48);
       while (overlay.scrollHeight > target && size > 10) {
         size -= 1;
         overlay.style.fontSize = `${size}px`;
@@ -144,6 +145,9 @@ export default function Poems() {
     const poem = POEMS.find((p) => p.id === id);
     if (!poem) return <div className="page"><p>Poem not found.</p></div>;
     const lines = poem.overlay ? poem.overlay.split('\n') : [];
+    const buttonDelay = lines.length > 0
+      ? DETAIL_IMG_DURATION + (lines.length - 1) * DETAIL_LINE_STAGGER + 900
+      : DETAIL_IMG_DURATION + 400;
     return (
       <div className="page poem-detail">
         <div className="detail-image-container">
@@ -157,11 +161,19 @@ export default function Poems() {
                   className="detail-overlay-line"
                   style={{ animationDelay: `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms` }}
                 >
-                  {line || ' '}
+                  {line || ' '}
                 </span>
               ))}
             </p>
           )}
+          <button
+            type="button"
+            className="detail-back-btn"
+            onClick={() => navigate(-1)}
+            style={{ animationDelay: `${buttonDelay}ms` }}
+          >
+            ← Poems
+          </button>
         </div>
       </div>
     );
@@ -300,4 +312,3 @@ export default function Poems() {
     </div>
   );
 }
-
