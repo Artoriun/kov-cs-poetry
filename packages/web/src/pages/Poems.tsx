@@ -10,35 +10,6 @@ const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
 
-function useFitDetailOverlay(active: boolean) {
-  useLayoutEffect(() => {
-    if (!active) return;
-    const fit = () => {
-      const overlay = document.querySelector('.detail-overlay') as HTMLElement | null;
-      const container = document.querySelector('.detail-image-container') as HTMLElement | null;
-      if (!overlay || !container) return;
-      overlay.style.fontSize = '';
-      overlay.style.columnCount = '';
-      let size = parseFloat(getComputedStyle(overlay).fontSize);
-      const btn = container.querySelector('.detail-back-btn') as HTMLElement | null;
-      const target = container.getBoundingClientRect().height - 80 - 32 - (btn?.getBoundingClientRect().height ?? 48);
-      while (overlay.scrollHeight > target && size > 10) {
-        size -= 1;
-        overlay.style.fontSize = `${size}px`;
-      }
-      if (overlay.scrollHeight > target) {
-        overlay.style.fontSize = '';
-        overlay.style.columnCount = '2';
-      }
-    };
-    fit();
-    document.fonts.ready.then(fit);
-    const ro = new ResizeObserver(fit);
-    ro.observe(document.documentElement);
-    return () => ro.disconnect();
-  }, [active]);
-}
-
 export default function Poems() {
   const { id } = useParams<{ id: string }>();
   const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
@@ -46,13 +17,41 @@ export default function Poems() {
   const [page, setPage] = useState<number>(savedParsed?.page ?? 0);
   const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
   const navigate = useNavigate();
-  useFitDetailOverlay(!!id);
+  const detailPoem = id ? (POEMS.find((p) => p.id === id) ?? null) : null;
+  const detailLines = detailPoem?.overlay ? detailPoem.overlay.split('\n') : [];
+  const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? id ?? null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
   const pulseNavRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useLayoutEffect(() => { setDetailPages(null); }, [id]);
+
+  useLayoutEffect(() => {
+    if (!id || !detailPoem?.overlay || detailPages !== null) return;
+    const overlay = document.querySelector<HTMLElement>('.detail-overlay');
+    const container = document.querySelector<HTMLElement>('.detail-image-container');
+    if (!overlay || !container) { setDetailPages([detailLines]); return; }
+    const btn = container.querySelector<HTMLElement>('.detail-back-btn');
+    const os = getComputedStyle(overlay);
+    const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
+    const available = container.getBoundingClientRect().height - 80 - 32 - (btn?.getBoundingClientRect().height ?? 48) - overlayPadV;
+    const spans = Array.from(overlay.querySelectorAll<HTMLElement>('.detail-overlay-line'));
+    const pages: string[][] = [[]];
+    let accH = 0;
+    for (let i = 0; i < spans.length; i++) {
+      const h = spans[i].getBoundingClientRect().height;
+      if (accH + h > available && pages[pages.length - 1].length > 0) {
+        pages.push([]);
+        accH = 0;
+      }
+      pages[pages.length - 1].push(detailLines[i]);
+      accH += h;
+    }
+    setDetailPages(pages);
+  }, [id, detailPages]);
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
 
@@ -121,6 +120,21 @@ export default function Poems() {
   }, [id]);
 
   useEffect(() => {
+    if (!id || detailPages === null) return;
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          (e.target as HTMLElement).classList.add('in-view');
+          observer.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.5 }
+    );
+    document.querySelectorAll('.detail-image-container').forEach(c => observer.observe(c));
+    return () => observer.disconnect();
+  }, [id, detailPages]);
+
+  useEffect(() => {
     if (!id) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
     window.addEventListener('keydown', onKey);
@@ -142,44 +156,86 @@ export default function Poems() {
   }, [id]);
 
   if (id) {
-    const poem = POEMS.find((p) => p.id === id);
-    if (!poem) return <div className="page"><p>Poem not found.</p></div>;
-    const lines = poem.overlay ? poem.overlay.split('\n') : [];
-    const buttonDelay = lines.length > 0
-      ? DETAIL_IMG_DURATION + (lines.length - 1) * DETAIL_LINE_STAGGER + 900
-      : DETAIL_IMG_DURATION + 400;
+    if (!detailPoem) return <div className="page"><p>Poem not found.</p></div>;
+    const renderPages = detailPages ?? [detailLines];
+    const singlePage = renderPages.length === 1;
+    const btnDelay = singlePage
+      ? (detailLines.length > 0 ? DETAIL_IMG_DURATION + (detailLines.length - 1) * DETAIL_LINE_STAGGER + 900 : DETAIL_IMG_DURATION + 400)
+      : 0;
     return (
       <div className="page poem-detail">
-        <div className="detail-image-container">
-          <img src={poem.image} alt={poem.title} className="detail-img-anim" />
-          <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>{poem.title}</h1>
-          {poem.overlay && (
-            <p className="detail-overlay">
-              {lines.map((line, i) => (
-                <span
-                  key={i}
-                  className="detail-overlay-line"
-                  style={{ animationDelay: `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms` }}
+        <img src={detailPoem.image} alt={detailPoem.title} className="detail-fixed-bg detail-img-anim" />
+        {renderPages.map((pageLines, pageIdx) => {
+          const isFirst = pageIdx === 0;
+          const isLast = pageIdx === renderPages.length - 1;
+          const lineOffset = renderPages.slice(0, pageIdx).reduce((s, p) => s + p.length, 0);
+          return (
+            <div key={pageIdx} className="detail-image-container">
+              {isFirst ? (
+                <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
+                  {detailPoem.title}
+                </h1>
+              ) : (
+                <button
+                  type="button"
+                  className="detail-scroll-up-btn"
+                  onClick={() => {
+                    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+                    window.scrollTo({ top: (pageIdx - 1) * (window.innerHeight - headerH), behavior: 'smooth' });
+                  }}
                 >
-                  {line || ' '}
-                </span>
-              ))}
-            </p>
-          )}
-          <button
-            type="button"
-            className="detail-back-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
-              sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
-              navigate('/poems');
-            }}
-            style={{ animationDelay: `${buttonDelay}ms` }}
-          >
-            ← Poems
-          </button>
-        </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+              {pageLines.length > 0 && (
+                <p className="detail-overlay">
+                  {pageLines.map((line, i) => (
+                    <span
+                      key={i}
+                      className="detail-overlay-line"
+                      style={{ animationDelay: isFirst
+                        ? `${DETAIL_IMG_DURATION + (lineOffset + i) * DETAIL_LINE_STAGGER}ms`
+                        : `${i * DETAIL_LINE_STAGGER}ms`
+                      }}
+                    >
+                      {line || ' '}
+                    </span>
+                  ))}
+                </p>
+              )}
+              {isLast ? (
+                <button
+                  type="button"
+                  className="detail-back-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
+                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+                    navigate('/poems');
+                  }}
+                  style={{ animationDelay: `${btnDelay}ms` }}
+                >
+                  ← Poems
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="detail-scroll-down-btn"
+                  onClick={() => {
+                    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+                    window.scrollTo({ top: (pageIdx + 1) * (window.innerHeight - headerH), behavior: 'smooth' });
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
