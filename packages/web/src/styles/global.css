@@ -1012,6 +1012,15 @@ h1, h2, h3 {
   mask-image: linear-gradient(to right, black 75%, transparent 100%);
 }
 
+.detail-overlay-line-revealed {
+  display: block;
+  opacity: 1;
+  -webkit-mask-size: 130% 100%;
+  mask-size: 130% 100%;
+  -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  mask-image: linear-gradient(to right, black 75%, transparent 100%);
+}
+
 .detail-description {
   color: var(--text-secondary);
   font-size: 14px;

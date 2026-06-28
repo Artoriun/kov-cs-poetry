@@ -31,6 +31,8 @@ export default function Poems() {
   const [downBtnVisible, setDownBtnVisible] = useState(true);
   const [backBtnVisible, setBackBtnVisible] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [seenSlides, setSeenSlides] = useState<Set<number>>(new Set<number>());
+  const [incomingSlide, setIncomingSlide] = useState<number | null>(null);
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const poemDetailRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startY: number } | null>(null);
@@ -43,6 +45,8 @@ export default function Poems() {
     setDetailPages(null);
     setCurrentSlide(0);
     setAnimKey(0);
+    setSeenSlides(new Set<number>());
+    setIncomingSlide(null);
     setUpBtnVisible(false);
     setDownBtnVisible(true);
     setBackBtnVisible(false);
@@ -146,7 +150,7 @@ export default function Poems() {
     if (!id || !detailPages) return;
     if (currentSlide === detailPages.length - 1) return;
     const lines = detailPages[currentSlide]?.length ?? 1;
-    const timer = setTimeout(() => sliderRef.current?.slickNext(), Math.max(lines, 1) * 1000);
+    const timer = setTimeout(() => sliderRef.current?.slickNext(), Math.max(lines, 1) * 2500);
     return () => clearTimeout(timer);
   }, [id, currentSlide, detailPages]);
 
@@ -180,7 +184,7 @@ export default function Poems() {
     const textDelay = currentPageLines.length > 0
       ? (currentPageLines.length - 1) * DETAIL_LINE_STAGGER + DETAIL_BTN_OFFSET
       : DETAIL_BTN_OFFSET;
-    const btnDelay = isFirst ? DETAIL_IMG_DURATION + textDelay : textDelay;
+    const btnDelay = seenSlides.has(currentSlide) ? 0 : isFirst ? DETAIL_IMG_DURATION + textDelay : textDelay;
 
     const getList = () => poemDetailRef.current?.querySelector<HTMLElement>('.slick-list') ?? null;
 
@@ -243,12 +247,20 @@ export default function Poems() {
           arrows={false}
           speed={500}
           beforeChange={(_: number, next: number) => {
+            setIncomingSlide(next);
             setUpBtnVisible(next !== 0);
             setDownBtnVisible(next !== renderPages.length - 1);
             setBackBtnVisible(next === renderPages.length - 1);
           }}
           afterChange={(index: number) => {
-            if (index !== currentSlide) setAnimKey(k => k + 1);
+            setIncomingSlide(null);
+            if (index !== currentSlide) {
+              setSeenSlides(prev => {
+                if (prev.has(currentSlide)) return prev;
+                const s = new Set(prev); s.add(currentSlide); return s;
+              });
+              if (!seenSlides.has(index)) setAnimKey(k => k + 1);
+            }
             setCurrentSlide(index);
           }}
         >
@@ -267,8 +279,14 @@ export default function Poems() {
                       {pageLines.map((line, i) => (
                         <span
                           key={i}
-                          className={isCurrentPage ? 'detail-overlay-line' : 'detail-overlay-line-shown'}
-                          style={isCurrentPage ? {
+                          className={
+                            isCurrentPage || (pageIdx === incomingSlide && seenSlides.has(pageIdx))
+                              ? seenSlides.has(pageIdx)
+                                ? 'detail-overlay-line-revealed'
+                                : 'detail-overlay-line'
+                              : 'detail-overlay-line-shown'
+                          }
+                          style={isCurrentPage && !seenSlides.has(pageIdx) ? {
                             animationDelay: pageIdx === 0
                               ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
                               : `${i * DETAIL_LINE_STAGGER}ms`,
