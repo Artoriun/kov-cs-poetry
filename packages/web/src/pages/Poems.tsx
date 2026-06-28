@@ -143,6 +143,14 @@ export default function Poems() {
   }, [id]);
 
   useEffect(() => {
+    if (!id || !detailPages) return;
+    if (currentSlide === detailPages.length - 1) return;
+    const lines = detailPages[currentSlide]?.length ?? 1;
+    const timer = setTimeout(() => sliderRef.current?.slickNext(), Math.max(lines, 1) * 1000);
+    return () => clearTimeout(timer);
+  }, [id, currentSlide, detailPages]);
+
+  useEffect(() => {
     if (!id) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
     window.addEventListener('keydown', onKey);
