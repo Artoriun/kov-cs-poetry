@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
 import { POEMS } from '@gedichtenv2/shared';
@@ -7,6 +7,22 @@ import '../styles/global.css';
 const CAROUSEL_POEMS = POEMS.slice(0, 5);
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+
+const PrevArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
+  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label="Previous">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M11 7H3M7 11l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </button>
+);
+
+const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
+  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label="Next">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </button>
+);
 
 export default function PoemCarousel() {
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
@@ -91,6 +107,8 @@ export default function PoemCarousel() {
     slidesToScroll: 1,
     autoplay: false,
     arrows: true,
+    prevArrow: <PrevArrow />,
+    nextArrow: <NextArrow />,
     beforeChange: (_current: number, next: number) => {
       setCurrentSlide(next);
       setAnimKey(k => k + 1);
