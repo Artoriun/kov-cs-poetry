@@ -1,10 +1,14 @@
 import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
 import { POEMS } from '@gedichtenv2/shared';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
 const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
+const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button appears
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 
 const optimizeUrl = (url: string) =>
@@ -22,22 +26,37 @@ export default function Poems() {
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? id ?? null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [upBtnVisible, setUpBtnVisible] = useState(false);
+  const [downBtnVisible, setDownBtnVisible] = useState(true);
+  const [backBtnVisible, setBackBtnVisible] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
+  const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
+  const poemDetailRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startY: number } | null>(null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
   const pulseNavRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  useLayoutEffect(() => { setDetailPages(null); }, [id]);
+  useLayoutEffect(() => {
+    setDetailPages(null);
+    setCurrentSlide(0);
+    setAnimKey(0);
+    setUpBtnVisible(false);
+    setDownBtnVisible(true);
+    setBackBtnVisible(false);
+  }, [id]);
 
   useLayoutEffect(() => {
     if (!id || !detailPoem?.overlay || detailPages !== null) return;
     const overlay = document.querySelector<HTMLElement>('.detail-overlay');
-    const container = document.querySelector<HTMLElement>('.detail-image-container');
-    if (!overlay || !container) { setDetailPages([detailLines]); return; }
-    const btn = container.querySelector<HTMLElement>('.detail-back-btn');
+    if (!overlay) { setDetailPages([detailLines]); setBackBtnVisible(true); setDownBtnVisible(false); return; }
+    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+    const slideH = window.innerHeight - headerH;
     const os = getComputedStyle(overlay);
     const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
-    const available = container.getBoundingClientRect().height - 80 - 32 - (btn?.getBoundingClientRect().height ?? 48) - overlayPadV;
+    const available = slideH - 80 - 32 - 48 - overlayPadV;
     const spans = Array.from(overlay.querySelectorAll<HTMLElement>('.detail-overlay-line'));
     const pages: string[][] = [[]];
     let accH = 0;
@@ -51,6 +70,7 @@ export default function Poems() {
       accH += h;
     }
     setDetailPages(pages);
+    if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
   }, [id, detailPages]);
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
@@ -116,23 +136,11 @@ export default function Poems() {
   }, [phase]);
 
   useEffect(() => {
-    if (id) window.scrollTo(0, 0);
+    if (!id) return;
+    window.scrollTo(0, 0);
+    setCurrentSlide(0);
+    setAnimKey(0);
   }, [id]);
-
-  useEffect(() => {
-    if (!id || detailPages === null) return;
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          (e.target as HTMLElement).classList.add('in-view');
-          observer.unobserve(e.target);
-        }
-      }),
-      { threshold: 0.5 }
-    );
-    document.querySelectorAll('.detail-image-container').forEach(c => observer.observe(c));
-    return () => observer.disconnect();
-  }, [id, detailPages]);
 
   useEffect(() => {
     if (!id) return;
@@ -158,84 +166,143 @@ export default function Poems() {
   if (id) {
     if (!detailPoem) return <div className="page"><p>Poem not found.</p></div>;
     const renderPages = detailPages ?? [detailLines];
-    const singlePage = renderPages.length === 1;
-    const btnDelay = singlePage
-      ? (detailLines.length > 0 ? DETAIL_IMG_DURATION + (detailLines.length - 1) * DETAIL_LINE_STAGGER + 900 : DETAIL_IMG_DURATION + 400)
-      : 0;
+    const isFirst = currentSlide === 0;
+    const isLast = currentSlide === renderPages.length - 1;
+    const currentPageLines = renderPages[currentSlide] ?? [];
+    const textDelay = currentPageLines.length > 0
+      ? (currentPageLines.length - 1) * DETAIL_LINE_STAGGER + DETAIL_BTN_OFFSET
+      : DETAIL_BTN_OFFSET;
+    const btnDelay = isFirst ? DETAIL_IMG_DURATION + textDelay : textDelay;
+
+    const getList = () => poemDetailRef.current?.querySelector<HTMLElement>('.slick-list') ?? null;
+
+    const dragStart = (y: number) => {
+      dragRef.current = { startY: y };
+      poemDetailRef.current?.classList.add('dragging');
+    };
+    const dragMove = (y: number) => {
+      if (!dragRef.current) return;
+      const list = getList();
+      if (list) list.style.transform = `translateY(${(y - dragRef.current.startY) * 0.35}px)`;
+    };
+    const dragEnd = (y: number) => {
+      if (!dragRef.current) return;
+      const delta = y - dragRef.current.startY;
+      dragRef.current = null;
+      poemDetailRef.current?.classList.remove('dragging');
+      const list = getList();
+      if (list) {
+        list.style.transition = 'transform 0.3s ease';
+        list.style.transform = '';
+        setTimeout(() => { if (list) list.style.transition = ''; }, 300);
+      }
+      if (Math.abs(delta) < 50) return;
+      if (delta < 0) sliderRef.current?.slickNext();
+      else sliderRef.current?.slickPrev();
+    };
+
     return (
-      <div className="page poem-detail">
+      <div
+        ref={poemDetailRef}
+        className="page poem-detail"
+        onMouseDown={(e) => dragStart(e.clientY)}
+        onMouseMove={(e) => dragMove(e.clientY)}
+        onMouseUp={(e) => dragEnd(e.clientY)}
+        onMouseLeave={(e) => dragEnd(e.clientY)}
+        onTouchStart={(e) => dragStart(e.touches[0].clientY)}
+        onTouchMove={(e) => { e.preventDefault(); dragMove(e.touches[0].clientY); }}
+        onTouchEnd={(e) => dragEnd(e.changedTouches[0].clientY)}
+      >
         <img src={detailPoem.image} alt={detailPoem.title} className="detail-fixed-bg detail-img-anim" />
-        {renderPages.map((pageLines, pageIdx) => {
-          const isFirst = pageIdx === 0;
-          const isLast = pageIdx === renderPages.length - 1;
-          const lineOffset = renderPages.slice(0, pageIdx).reduce((s, p) => s + p.length, 0);
-          return (
-            <div key={pageIdx} className="detail-image-container">
-              {isFirst ? (
-                <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
-                  {detailPoem.title}
-                </h1>
-              ) : (
-                <button
-                  type="button"
-                  className="detail-scroll-up-btn"
-                  onClick={() => {
-                    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
-                    window.scrollTo({ top: (pageIdx - 1) * (window.innerHeight - headerH), behavior: 'smooth' });
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
-              {pageLines.length > 0 && (
-                <p className="detail-overlay">
-                  {pageLines.map((line, i) => (
-                    <span
-                      key={i}
-                      className="detail-overlay-line"
-                      style={{ animationDelay: isFirst
-                        ? `${DETAIL_IMG_DURATION + (lineOffset + i) * DETAIL_LINE_STAGGER}ms`
-                        : `${i * DETAIL_LINE_STAGGER}ms`
-                      }}
-                    >
-                      {line || ' '}
-                    </span>
-                  ))}
-                </p>
-              )}
-              {isLast ? (
-                <button
-                  type="button"
-                  className="detail-back-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
-                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
-                    navigate('/poems');
-                  }}
-                  style={{ animationDelay: `${btnDelay}ms` }}
-                >
-                  ← Poems
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="detail-scroll-down-btn"
-                  onClick={() => {
-                    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
-                    window.scrollTo({ top: (pageIdx + 1) * (window.innerHeight - headerH), behavior: 'smooth' });
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
-            </div>
-          );
-        })}
+
+        <button
+            type="button"
+            className={`detail-scroll-up-btn${upBtnVisible ? '' : ' is-hidden'}`}
+            onClick={() => sliderRef.current?.slickPrev()}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+        <Slider
+          key={`${id}-${detailPages ? 'loaded' : 'loading'}`}
+          ref={sliderRef}
+          vertical
+          swipe={false}
+          draggable={false}
+          infinite={false}
+          arrows={false}
+          speed={500}
+          beforeChange={(_: number, next: number) => {
+            setUpBtnVisible(next !== 0);
+            setDownBtnVisible(next !== renderPages.length - 1);
+            setBackBtnVisible(next === renderPages.length - 1);
+          }}
+          afterChange={(index: number) => {
+            if (index !== currentSlide) setAnimKey(k => k + 1);
+            setCurrentSlide(index);
+          }}
+        >
+          {renderPages.map((pageLines, pageIdx) => {
+            const isCurrentPage = pageIdx === currentSlide;
+            return (
+              <div key={pageIdx}>
+                <div className="detail-image-container">
+                  {pageIdx === 0 && (
+                    <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
+                      {detailPoem.title}
+                    </h1>
+                  )}
+                  {pageLines.length > 0 && (
+                    <p key={animKey} className="detail-overlay">
+                      {pageLines.map((line, i) => (
+                        <span
+                          key={i}
+                          className={isCurrentPage ? 'detail-overlay-line' : 'detail-overlay-line-shown'}
+                          style={isCurrentPage ? {
+                            animationDelay: pageIdx === 0
+                              ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
+                              : `${i * DETAIL_LINE_STAGGER}ms`,
+                          } : undefined}
+                        >
+                          {line || ' '}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </Slider>
+
+        {isLast && (
+          <button
+            key={`back-${animKey}`}
+            type="button"
+            className={`detail-back-btn${backBtnVisible ? '' : ' is-hidden'}`}
+            style={{ animationDelay: `${btnDelay}ms` }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
+              sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+              navigate('/poems');
+            }}
+          >
+            ← Poems
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={`detail-scroll-down-btn${isLast || !downBtnVisible ? ' is-hidden' : ''}`}
+          onClick={() => sliderRef.current?.slickNext()}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
     );
   }

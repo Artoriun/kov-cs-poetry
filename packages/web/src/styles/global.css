@@ -841,6 +841,10 @@ h1, h2, h3 {
   padding: 0;
   max-width: none;
   margin: 0;
+  position: relative;
+  height: calc(100vh - var(--header-height, 72px));
+  height: calc(100dvh - var(--header-height, 72px));
+  overflow: hidden;
 }
 
 /* ===== DETAIL PAGE OVERLAY ===== */
@@ -865,11 +869,39 @@ h1, h2, h3 {
   animation: detail-fade-in 0.6s ease both;
 }
 
+/* Slick overrides for vertical carousel */
+.poem-detail .slick-slider,
+.poem-detail .slick-list {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Prevent browser from consuming vertical swipes as page scroll */
+.poem-detail .slick-list {
+  touch-action: pan-x;
+  cursor: grab;
+}
+
+.poem-detail.dragging .slick-list {
+  cursor: grabbing;
+}
+
+/* Must beat .slick-vertical .slick-slide { height: auto } from slick.css */
+.poem-detail .slick-vertical .slick-slide {
+  height: calc(100vh - var(--header-height, 72px));
+  height: calc(100dvh - var(--header-height, 72px));
+  border: none;
+}
+
+.poem-detail .slick-vertical .slick-slide > div {
+  height: 100%;
+}
+
 .detail-image-container {
   position: relative;
   width: 100%;
+  height: 100%;
   overflow: hidden;
-  scroll-margin-top: var(--header-height, 72px);
 }
 
 .detail-scroll-up-btn {
@@ -890,7 +922,13 @@ h1, h2, h3 {
   justify-content: center;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease;
+  opacity: 1;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.4s ease;
+}
+
+.detail-scroll-up-btn.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .detail-title {
@@ -907,53 +945,13 @@ h1, h2, h3 {
   text-shadow: 0 0 16px rgba(0,0,0,0.6);
 }
 
-.detail-image-container img {
-  width: 100%;
-  height: calc(100vh - var(--header-height, 72px));
-  height: calc(100svh - var(--header-height, 72px));
-  object-fit: cover;
-  filter: brightness(var(--img-brightness));
-  transition: transform 0.4s ease, filter 0.4s ease;
-}
-
-.detail-image-container:hover img {
-  transform: scale(1.03);
-}
-
-.poem-detail .detail-image-container:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 85%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.25);
-  z-index: 10;
-}
-
-.detail-image-container:has(.detail-overlay) {
-  position: relative;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  grid-template-columns: 1fr;
+.poem-detail .detail-image-container:has(.detail-overlay) {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
-  height: calc(100vh - var(--header-height, 72px));
-  height: calc(100dvh - var(--header-height, 72px));
+  justify-content: center;
   padding-top: 80px;
-  padding-bottom: 32px;
-}
-
-.detail-image-container:has(.detail-overlay) img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: brightness(var(--img-brightness-overlay));
-  transition: transform 0.4s ease, filter 0.4s ease;
+  padding-bottom: 80px;
 }
 
 .detail-overlay {
@@ -965,6 +963,7 @@ h1, h2, h3 {
   text-shadow: 0 0 10px rgba(0,0,0,0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.6;
+  width: 100%;
   max-width: 85%;
   white-space: pre-wrap;
   word-break: break-word;
@@ -982,6 +981,7 @@ h1, h2, h3 {
 
 .detail-overlay-line {
   display: block;
+  opacity: 0;
   -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
   mask-image: linear-gradient(to right, black 75%, transparent 100%);
   -webkit-mask-repeat: no-repeat;
@@ -992,27 +992,30 @@ h1, h2, h3 {
 }
 
 @keyframes detail-line-reveal {
+  from {
+    opacity: 0;
+    -webkit-mask-size: 0% 100%;
+    mask-size: 0% 100%;
+  }
   to {
+    opacity: 1;
     -webkit-mask-size: 130% 100%;
     mask-size: 130% 100%;
   }
 }
 
-.detail-image-container:not(:first-of-type):not(.in-view) .detail-overlay-line {
-  animation-play-state: paused;
+.detail-overlay-line-shown {
+  display: block;
+  opacity: 0;
+  -webkit-mask-size: 0% 100%;
+  mask-size: 0% 100%;
+  -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  mask-image: linear-gradient(to right, black 75%, transparent 100%);
 }
 
 .detail-description {
   color: var(--text-secondary);
   font-size: 14px;
-}
-
-.detail-image-container:has(.detail-overlay) .detail-back-btn,
-.detail-image-container:has(.detail-overlay) .detail-scroll-down-btn {
-  position: relative;
-  bottom: auto;
-  left: auto;
-  transform: none;
 }
 
 .detail-scroll-down-btn {
@@ -1033,8 +1036,13 @@ h1, h2, h3 {
   justify-content: center;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease;
-  animation: detail-fade-in 0.6s ease both;
+  opacity: 1;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.4s ease;
+}
+
+.detail-scroll-down-btn.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .detail-back-btn {
@@ -1057,11 +1065,17 @@ h1, h2, h3 {
   cursor: pointer;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  animation: detail-fade-in 0.6s ease both;
+  opacity: 1;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.4s ease;
+  animation: detail-fade-in 0.6s ease backwards;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
   white-space: nowrap;
+}
+
+.detail-back-btn.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .detail-back-btn:hover {
@@ -1397,11 +1411,7 @@ html.dark-mode .theme-toggle {
   }
 
   .detail-image-container:has(.detail-overlay) {
-    align-items: flex-start;
-    padding-top: 0;
-  }
-
-  .detail-overlay {
     padding-top: 56px;
+    padding-bottom: 56px;
   }
 }
