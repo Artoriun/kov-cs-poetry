@@ -33,32 +33,6 @@ export default function PoemCarousel() {
   const startXRef = useRef(0);
   const startYRef = useRef(0);
 
-  useEffect(() => {
-    const fit = () => {
-      document.querySelectorAll<HTMLElement>('.carousel-overlay').forEach((overlay) => {
-        const container = overlay.closest<HTMLElement>('.carousel-image-container');
-        if (!container) return;
-        overlay.style.fontSize = '';
-        overlay.style.columnCount = '';
-        let size = parseFloat(getComputedStyle(overlay).fontSize);
-        const target = (container.getBoundingClientRect().height || window.innerHeight) * 0.85;
-        while (overlay.scrollHeight > target && size > 10) {
-          size -= 1;
-          overlay.style.fontSize = `${size}px`;
-        }
-        if (overlay.scrollHeight > target) {
-          overlay.style.fontSize = '';
-          overlay.style.columnCount = '2';
-        }
-      });
-    };
-    fit();
-    document.fonts.ready.then(fit);
-    const onResize = () => requestAnimationFrame(fit);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [currentSlide]);
-
   // Custom Autoplay Logic
   useEffect(() => {
     // 1. If the user is hovering over the carousel, pause the timer
@@ -123,52 +97,52 @@ export default function PoemCarousel() {
     >
       <div className="carousel-section-label">Featured Poems</div>
       <Slider ref={sliderRef} {...settings}>
-        {CAROUSEL_POEMS.map((poem) => (
-          <div key={poem.id} className="carousel-slide">
-            <Link
-              to={`/poems/${poem.id}`}
-              className="carousel-link"
-              onClick={(e) => {
-                if (isDragging) {
-                  e.preventDefault();
-                  setIsDragging(false);
-                }
-              }}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-            >
-              <div className="carousel-image-container">
-                <img
-                  src={poem.image}
-                  alt={poem.title}
-                  loading="lazy"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                {CAROUSEL_POEMS.indexOf(poem) === currentSlide
-                  ? <div key={animKey} className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
-                  : <div className="carousel-slide-title">{poem.title}</div>
-                }
-                {poem.overlay && (
-                  <span className="carousel-overlay">
-                    {CAROUSEL_POEMS.indexOf(poem) === currentSlide ? (
-                      <span key={animKey}>
-                        {poem.overlay.split('\n').map((line, i) => (
-                          <span
-                            key={i}
-                            className="carousel-overlay-line"
-                            style={{ animationDelay: `${(i + 1) * 100}ms` }}
-                          >
-                            {line || ' '}
-                          </span>
-                        ))}
-                      </span>
-                    ) : poem.overlay}
-                  </span>
-                )}
-              </div>
-            </Link>
-          </div>
-        ))}
+        {CAROUSEL_POEMS.map((poem) => {
+          const isActive = CAROUSEL_POEMS.indexOf(poem) === currentSlide;
+          const dragHandlers = {
+            onMouseDown: handleMouseDown,
+            onMouseUp: handleMouseUp,
+            onClick: (e: React.MouseEvent) => { if (isDragging) { e.preventDefault(); setIsDragging(false); } },
+          };
+          return (
+            <div key={poem.id} className="carousel-slide">
+              <Link to={`/poems/${poem.id}`} className="carousel-link" {...dragHandlers}>
+                <div className="carousel-image-container">
+                  <img
+                    src={poem.image}
+                    alt={poem.title}
+                    loading="lazy"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {isActive
+                    ? <div key={animKey} className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
+                    : <div className="carousel-slide-title">{poem.title}</div>
+                  }
+                  {poem.overlay && (
+                    <span className="carousel-overlay">
+                      {isActive ? (
+                        <span key={animKey}>
+                          {poem.overlay.split('\n').map((line, i) => (
+                            <span
+                              key={i}
+                              className="carousel-overlay-line"
+                              style={{ animationDelay: `${(i + 1) * 100}ms` }}
+                            >
+                              {line || ' '}
+                            </span>
+                          ))}
+                        </span>
+                      ) : poem.overlay}
+                    </span>
+                  )}
+                </div>
+              </Link>
+              <Link to={`/poems/${poem.id}`} className="carousel-read-more-btn" {...dragHandlers}>
+                Read More
+              </Link>
+            </div>
+          );
+        })}
       </Slider>
     </div>
   );
