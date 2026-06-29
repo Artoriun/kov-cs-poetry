@@ -703,9 +703,18 @@ h1, h2, h3 {
   flex-direction: column;
 }
 
-@keyframes border-shimmer {
-  from { background-position: 150% 50%; }
-  to   { background-position: -150% 50%; }
+@keyframes border-flow {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes border-pulse {
+  0%        { opacity: 0; }
+  8%, 25%   { opacity: 1; }
+  33%       { opacity: 0; }
+  41%, 58%  { opacity: 1; }
+  66%       { opacity: 0; }
+  74%, 100% { opacity: 1; }
 }
 
 @keyframes poem-highlight-scale {
@@ -727,20 +736,23 @@ h1, h2, h3 {
 .poem-highlight-static::before {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: -3px;
   z-index: -1;
   background: linear-gradient(
-    90deg,
-    transparent 20%,
-    rgba(100, 149, 237, 0.9) 50%,
-    transparent 80%
+    120deg,
+    rgba(30, 80, 180, 0.75) 0%,
+    rgba(100, 149, 237, 1) 35%,
+    rgba(200, 225, 255, 1) 50%,
+    rgba(100, 149, 237, 1) 65%,
+    rgba(30, 80, 180, 0.75) 100%
   );
-  background-size: 300% 100%;
-  animation: border-shimmer 2s ease-in-out infinite;
+  background-size: 250% 250%;
+  animation: border-flow 5s ease-in-out infinite alternate;
 }
 
-.poem-highlight-static::before {
-  animation-duration: 3.5s;
+.poem-highlight::before {
+  animation: border-flow 5s ease-in-out infinite alternate,
+             border-pulse var(--pulse-duration) ease forwards;
 }
 
 .poem-highlight img,
