@@ -703,13 +703,9 @@ h1, h2, h3 {
   flex-direction: column;
 }
 
-@keyframes poem-highlight-pulse {
-  0%        { box-shadow: none; }
-  8%, 25%   { box-shadow: 0 0 0 3px var(--poem-highlight-color); }
-  33%       { box-shadow: none; }
-  41%, 58%  { box-shadow: 0 0 0 3px var(--poem-highlight-color); }
-  66%       { box-shadow: none; }
-  74%, 100% { box-shadow: 0 0 0 3px var(--poem-highlight-color); }
+@keyframes border-shimmer {
+  from { background-position: 150% 50%; }
+  to   { background-position: -150% 50%; }
 }
 
 @keyframes poem-highlight-scale {
@@ -722,14 +718,29 @@ h1, h2, h3 {
   100%      { transform: scale(1); }
 }
 
-.poem-highlight {
-  animation: poem-highlight-pulse var(--pulse-duration) ease forwards;
-  border-radius: 0.75px;
+.poem-highlight,
+.poem-highlight-static {
+  position: relative;
 }
 
-.poem-highlight-static {
-  box-shadow: 0 0 0 3px var(--poem-highlight-color);
-  border-radius: 0.75px;
+.poem-highlight::before,
+.poem-highlight-static::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    rgba(100, 149, 237, 0.9) 50%,
+    transparent 80%
+  );
+  background-size: 300% 100%;
+  animation: border-shimmer 2s ease-in-out infinite;
+}
+
+.poem-highlight-static::before {
+  animation-duration: 3.5s;
 }
 
 .poem-highlight img,

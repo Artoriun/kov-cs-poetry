@@ -23,7 +23,6 @@
   --arrow-color: #ffffff;
   --img-brightness: 0.92;
   --img-brightness-overlay: 0.78;
-  --poem-highlight-color: rgba(60, 130, 220, 0.9);
 }
 
 /* ===== DARK MODE ===== */
@@ -50,6 +49,5 @@ html.dark-mode {
   --arrow-color: #ffffff;
   --img-brightness: 0.82;
   --img-brightness-overlay: 0.68;
-  --poem-highlight-color: rgba(160, 200, 255, 0.95);
 }
 
