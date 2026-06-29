@@ -388,6 +388,11 @@ h1, h2, h3 {
   transition: background 0.25s ease, border-color 0.25s ease;
 }
 
+.carousel-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
 .carousel-nav-prev {
   left: 16px;
 }
@@ -402,6 +407,33 @@ h1, h2, h3 {
 
 .carousel-slide {
   outline: none;
+  position: relative;
+}
+
+.carousel-read-more-btn {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 10px 28px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.25s ease, border-color 0.25s ease;
+  white-space: nowrap;
+}
+
+.carousel-read-more-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .poem-carousel-wrapper {
@@ -494,9 +526,13 @@ h1, h2, h3 {
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
   max-width: 90%;
+  max-height: calc(100svh - var(--header-height, 72px) - 120px);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'Esteban', serif;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
+  mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
 }
 
 .carousel-overlay-line {
@@ -930,6 +966,11 @@ h1, h2, h3 {
   pointer-events: none;
 }
 
+.detail-scroll-up-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
 .detail-title {
   position: absolute;
   top: 32px;
@@ -1053,6 +1094,11 @@ h1, h2, h3 {
   pointer-events: none;
 }
 
+.detail-scroll-down-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
 .detail-back-btn {
   position: absolute;
   bottom: 32px;
@@ -1088,8 +1134,7 @@ h1, h2, h3 {
 
 .detail-back-btn:hover {
   background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 /* ===== CONTACT ===== */
@@ -1359,10 +1404,6 @@ html.dark-mode .theme-toggle {
   .carousel-image-container:has(.carousel-overlay) {
     height: calc(100vh - var(--header-height, 72px));
     height: calc(100svh - var(--header-height, 72px));
-  }
-
-  .carousel-slide {
-    position: relative;
   }
 
   .carousel-overlay {
