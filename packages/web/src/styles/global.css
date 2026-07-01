@@ -1456,6 +1456,10 @@ html.dark-mode .theme-toggle {
 
   .carousel-overlay {
     padding-top: 56px;
+    padding-bottom: 12px;
+    max-height: calc(100svh - var(--header-height, 72px) - 16px);
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
+    mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
   }
 
   .detail-title {
