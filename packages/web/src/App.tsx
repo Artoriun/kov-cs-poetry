@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -5,6 +6,18 @@ import Poems from './pages/Poems';
 import Contact from './pages/Contact';
 
 export default function App() {
+  useEffect(() => {
+    const handler = () => window.location.reload();
+    screen.orientation
+      ? screen.orientation.addEventListener('change', handler)
+      : window.addEventListener('orientationchange', handler);
+    return () => {
+      screen.orientation
+        ? screen.orientation.removeEventListener('change', handler)
+        : window.removeEventListener('orientationchange', handler);
+    };
+  }, []);
+
   return (
     <Routes>
       <Route element={<Layout />}>

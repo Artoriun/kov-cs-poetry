@@ -1471,8 +1471,12 @@ html.dark-mode .theme-toggle {
     top: 12px;
   }
 
-  .detail-image-container:has(.detail-overlay) {
-    padding-top: 56px;
-    padding-bottom: 56px;
+  .poem-detail .detail-image-container:has(.detail-overlay) {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+
+  .detail-overlay {
+    padding: 8px 16px;
   }
 }
