@@ -35,7 +35,7 @@ export default function Poems() {
   const [incomingSlide, setIncomingSlide] = useState<number | null>(null);
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const poemDetailRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startY: number } | null>(null);
+  const dragRef = useRef<{ startY: number; lastY: number; atTop: boolean; atBottom: boolean } | null>(null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
@@ -56,12 +56,13 @@ export default function Poems() {
     if (!id || !detailPoem?.overlay || detailPages !== null) return;
     const overlay = document.querySelector<HTMLElement>('.detail-overlay');
     if (!overlay) { setDetailPages([detailLines]); setBackBtnVisible(true); setDownBtnVisible(false); return; }
-    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
-    const slideH = window.innerHeight - headerH;
-    const os = getComputedStyle(overlay);
-    const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
     const container = overlay.closest<HTMLElement>('.detail-image-container');
     const cs = container ? getComputedStyle(container) : null;
+    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+    const landscape = window.innerHeight <= 500;
+    const slideH = landscape ? 2 * (window.innerHeight - headerH) : window.innerHeight - headerH;
+    const os = getComputedStyle(overlay);
+    const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
     const containerPadV = cs ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 160;
     const available = slideH - containerPadV - overlayPadV;
     const spans = Array.from(overlay.querySelectorAll<HTMLElement>('.detail-overlay-line'));
@@ -192,17 +193,35 @@ export default function Poems() {
     const getList = () => poemDetailRef.current?.querySelector<HTMLElement>('.slick-list') ?? null;
 
     const dragStart = (y: number) => {
-      dragRef.current = { startY: y };
+      const landscape = window.innerHeight <= 500;
+      const rect = landscape ? poemDetailRef.current?.getBoundingClientRect() : null;
+      dragRef.current = {
+        startY: y, lastY: y,
+        atTop: !landscape || !rect || rect.top >= -1,
+        atBottom: !landscape || !rect || rect.bottom <= window.innerHeight + 1,
+      };
       poemDetailRef.current?.classList.add('dragging');
+    };
+    const isNavGesture = (deltaY: number) => {
+      if (!dragRef.current) return false;
+      return (deltaY < 0 && dragRef.current.atBottom) || (deltaY > 0 && dragRef.current.atTop);
     };
     const dragMove = (y: number) => {
       if (!dragRef.current) return;
-      const list = getList();
-      if (list) list.style.transform = `translateY(${(y - dragRef.current.startY) * 0.35}px)`;
+      const totalDelta = y - dragRef.current.startY;
+      const step = y - dragRef.current.lastY;
+      dragRef.current.lastY = y;
+      if (isNavGesture(totalDelta)) {
+        const list = getList();
+        if (list) list.style.transform = `translateY(${totalDelta * 0.35}px)`;
+      } else {
+        window.scrollBy({ top: -step, behavior: 'instant' });
+      }
     };
     const dragEnd = (y: number) => {
       if (!dragRef.current) return;
       const delta = y - dragRef.current.startY;
+      const nav = isNavGesture(delta);
       dragRef.current = null;
       poemDetailRef.current?.classList.remove('dragging');
       const list = getList();
@@ -211,7 +230,7 @@ export default function Poems() {
         list.style.transform = '';
         setTimeout(() => { if (list) list.style.transition = ''; }, 300);
       }
-      if (Math.abs(delta) < 50) return;
+      if (!nav || Math.abs(delta) < 50) return;
       if (delta < 0) sliderRef.current?.slickNext();
       else sliderRef.current?.slickPrev();
     };
@@ -269,6 +288,7 @@ export default function Poems() {
         >
           {renderPages.map((pageLines, pageIdx) => {
             const isCurrentPage = pageIdx === currentSlide;
+            const isLastPage = pageIdx === renderPages.length - 1;
             return (
               <div key={pageIdx}>
                 <div className="detail-image-container">
@@ -300,28 +320,27 @@ export default function Poems() {
                       ))}
                     </p>
                   )}
+                  {isLastPage && (
+                    <button
+                      key={`back-${animKey}`}
+                      type="button"
+                      className={`detail-back-btn${backBtnVisible ? '' : ' is-hidden'}`}
+                      style={{ animationDelay: `${btnDelay}ms` }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
+                        sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+                        navigate('/poems');
+                      }}
+                    >
+                      ← Poems
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </Slider>
-
-        {isLast && (
-          <button
-            key={`back-${animKey}`}
-            type="button"
-            className={`detail-back-btn${backBtnVisible ? '' : ' is-hidden'}`}
-            style={{ animationDelay: `${btnDelay}ms` }}
-            onClick={(e) => {
-              e.stopPropagation();
-              const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
-              sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
-              navigate('/poems');
-            }}
-          >
-            ← Poems
-          </button>
-        )}
 
         <button
           type="button"
