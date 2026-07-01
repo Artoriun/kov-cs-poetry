@@ -282,6 +282,9 @@ export default function Poems() {
                 const s = new Set(prev); s.add(currentSlide); return s;
               });
               if (!seenSlides.has(index)) setAnimKey(k => k + 1);
+              if (window.innerHeight <= 500 && poemDetailRef.current) {
+                window.scrollTo({ top: poemDetailRef.current.offsetTop, behavior: 'smooth' });
+              }
             }
             setCurrentSlide(index);
           }}
