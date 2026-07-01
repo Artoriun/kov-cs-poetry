@@ -934,7 +934,6 @@ h1, h2, h3 {
   overflow: hidden;
 }
 
-/* Prevent browser from consuming vertical swipes as page scroll */
 .poem-detail .slick-list {
   touch-action: pan-x;
   cursor: grab;
@@ -1462,18 +1461,34 @@ html.dark-mode .theme-toggle {
     mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
   }
 
+  .site-header {
+    position: relative;
+  }
+
+  .poem-detail {
+    height: calc(2 * (100svh - var(--header-height, 72px)));
+  }
+
+  .poem-detail .slick-vertical .slick-slide {
+    height: calc(2 * (100svh - var(--header-height, 72px)));
+  }
+
+  .poem-detail .slick-list {
+    touch-action: none;
+  }
+
   .detail-title {
-    top: 12px;
+    top: 24px;
     font-size: 16px;
   }
 
   .detail-scroll-up-btn {
-    top: 12px;
+    top: 24px;
   }
 
   .poem-detail .detail-image-container:has(.detail-overlay) {
-    padding-top: 48px;
-    padding-bottom: 48px;
+    padding-top: 72px;
+    padding-bottom: 100px;
   }
 
   .detail-overlay {
