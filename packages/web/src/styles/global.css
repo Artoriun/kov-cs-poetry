@@ -1332,14 +1332,21 @@ html.dark-mode .theme-toggle {
     width: 100%;
     background: var(--dropdown-bg);
     border-bottom: 1px solid var(--border-color);
-    display: none;
+    display: flex;
     flex-direction: column;
     padding: 16px 0;
     order: unset;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
   }
 
   .main-nav.open {
-    display: flex;
+    max-height: 300px;
+    opacity: 1;
+    padding: 16px 0;
   }
 
   .main-nav.open > ul > li {

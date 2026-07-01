@@ -16,6 +16,17 @@ export default function Header() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMobileOpen(false);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [mobileOpen]);
+
   return (
     <header ref={headerRef} className="site-header">
       <div className="header-inner">
