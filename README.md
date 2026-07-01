@@ -5,7 +5,7 @@ A responsive poetry portfolio website built with **React**, **TypeScript**, **Vi
 ## Demo
 https://artoriun.github.io/kov-cs-poetry/
 
-<img width="1511" height="736" alt="Screenshot 2026-06-20 at 3 40 58" src="https://github.com/user-attachments/assets/a4869d85-daff-4916-b86f-ef086891a52a" />
+<img width="1511" height="729" alt="Screenshot 2026-07-01 at 19 03 43" src="https://github.com/user-attachments/assets/309af18e-225e-4bd6-a0da-be411f6d72d1" />
 
 ---
 
