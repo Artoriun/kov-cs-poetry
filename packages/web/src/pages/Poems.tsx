@@ -60,7 +60,10 @@ export default function Poems() {
     const slideH = window.innerHeight - headerH;
     const os = getComputedStyle(overlay);
     const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
-    const available = slideH - 80 - 32 - 48 - overlayPadV;
+    const container = overlay.closest<HTMLElement>('.detail-image-container');
+    const cs = container ? getComputedStyle(container) : null;
+    const containerPadV = cs ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 160;
+    const available = slideH - containerPadV - overlayPadV;
     const spans = Array.from(overlay.querySelectorAll<HTMLElement>('.detail-overlay-line'));
     const pages: string[][] = [[]];
     let accH = 0;
