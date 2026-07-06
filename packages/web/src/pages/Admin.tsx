@@ -5,7 +5,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
-const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='100'%3E%3Crect width='140' height='100' fill='%23888'/%3E%3C/svg%3E";
+const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
 import '../styles/admin.css';
 
 type EditState = {
@@ -414,6 +414,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('admin_token'));
+  const { refreshPoems } = usePoemsContext();
+
+  useEffect(() => {
+    return () => { refreshPoems(); };
+  }, [refreshPoems]);
 
   const handleLogin = (t: string) => {
     localStorage.setItem('admin_token', t);
