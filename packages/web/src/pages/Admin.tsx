@@ -120,18 +120,37 @@ function PoemCard({
           e.preventDefault();
           return;
         }
+        const el = e.currentTarget as HTMLElement;
+        const ghost = el.cloneNode(true) as HTMLElement;
+        ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        requestAnimationFrame(() => document.body.removeChild(ghost));
         onDragStart();
       }}
       onDragEnd={onDragEnd}
     >
       {poem.featured && <span className="admin-featured-label">Featured</span>}
       <div className="admin-poem-image-col">
+        <span className="admin-field-label">Background image</span>
         <img
           src={edit.imagePreview ?? poem.image}
           alt={poem.title}
           className="admin-poem-thumb"
         />
-        <p className="admin-poem-id">{poem.id}</p>
+        <label className="admin-file-label">
+          Choose file
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="admin-file-input"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+        </label>
+        {edit.imageFile && (
+          <span className="admin-file-name">{edit.imageFile.name}</span>
+        )}
       </div>
 
       <div className="admin-poem-fields">
@@ -151,28 +170,6 @@ function PoemCard({
             value={edit.overlay}
             onChange={e => onChange({ overlay: e.target.value })}
           />
-        </div>
-
-        <div>
-          <label className="admin-field-label">Background image</label>
-          <div className="admin-image-row">
-            <label className="admin-file-label">
-              Choose file
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="admin-file-input"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </label>
-            {edit.imageFile && (
-              <span className="admin-file-name">{edit.imageFile.name}</span>
-            )}
-            {edit.imagePreview && (
-              <img src={edit.imagePreview} className="admin-image-preview" alt="Preview" />
-            )}
-          </div>
         </div>
 
         <div className="admin-actions">

@@ -106,10 +106,18 @@
   .admin-poem-card {
     grid-template-columns: 1fr;
   }
+
+  .admin-file-label {
+    width: 140px;
+    box-sizing: border-box;
+    justify-content: center;
+  }
 }
 
 .admin-poem-card {
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .admin-featured-label {
