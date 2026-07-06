@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
-export default function Header() {
+export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -53,14 +53,18 @@ export default function Header() {
               </NavLink>
             </li>
             <li className="nav-login-mobile">
-              <NavLink to="/admin" onClick={() => setMobileOpen(false)}>
-                Admin
-              </NavLink>
+              {onLogout
+                ? <button type="button" className="nav-logout-btn" onClick={() => { setMobileOpen(false); onLogout(); }}>Log out</button>
+                : <NavLink to="/admin" onClick={() => setMobileOpen(false)}>Admin</NavLink>
+              }
             </li>
           </ul>
         </nav>
 
-        <Link to="/admin" className="header-login-btn">Admin</Link>
+        {onLogout
+          ? <button type="button" className="header-login-btn" onClick={onLogout}>Log out</button>
+          : <Link to="/admin" className="header-login-btn">Admin</Link>
+        }
         <ThemeToggle />
 
         <button

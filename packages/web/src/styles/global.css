@@ -205,6 +205,22 @@ h1, h2, h3 {
   display: none;
 }
 
+.nav-logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 6px 0;
+}
+
+.nav-logout-btn:hover {
+  color: var(--text-hover);
+}
+
 /* ===== HAMBURGER ===== */
 .hamburger {
   display: none;
@@ -1402,8 +1418,11 @@ html.dark-mode .theme-toggle {
     width: 100%;
   }
 
-  .main-nav > ul > li > a {
+  .main-nav > ul > li > a,
+  .main-nav > ul > li > .nav-logout-btn {
     display: block;
+    width: 100%;
+    text-align: left;
     padding: 14px 24px;
     border-bottom: 1px solid var(--border-color);
   }
