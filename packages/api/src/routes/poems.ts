@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { db, storage } from '../firebaseAdmin';
+import { v2 as cloudinary } from 'cloudinary';
+import { db } from '../firebaseAdmin';
+
 import { POEMS } from '@gedichtenv2/shared';
 import { requireAuth } from '../middleware/requireAuth';
 
@@ -56,17 +58,17 @@ poemsRouter.delete('/:id', requireAuth, async (req, res) => {
 });
 
 poemsRouter.post('/:id/image', requireAuth, upload.single('image'), async (req, res) => {
-  if (!req.file) {
-    res.status(400).json({ error: 'No file provided' });
-    return;
+  if (!req.file) { res.status(400).json({ error: 'No file provided' }); return; }
+  try {
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'poems', public_id: `${req.params.id}-${Date.now()}` },
+        (error, result) => error ? reject(error) : resolve(result as { secure_url: string })
+      ).end(req.file!.buffer);
+    });
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    console.error('Image upload failed:', err);
+    res.status(500).json({ error: 'Image upload failed' });
   }
-  const { id } = req.params;
-  const ext = req.file.originalname.split('.').pop() ?? 'jpg';
-  const filePath = `poems/${id}/${Date.now()}.${ext}`;
-  const bucket = storage.bucket();
-  const file = bucket.file(filePath);
-  await file.save(req.file.buffer, { metadata: { contentType: req.file.mimetype } });
-  await file.makePublic();
-  const url = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-  res.json({ url });
 });

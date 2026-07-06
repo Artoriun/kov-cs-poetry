@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder } from '../lib/api';
@@ -17,6 +18,7 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,18 +39,31 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   return (
     <div className="admin-login-wrap">
       <form className="admin-login" onSubmit={handleSubmit}>
-        <h1>Admin</h1>
+        <div className="admin-login-top">
+          <h1>Admin</h1>
+          <Link to="/" className="admin-btn">← Home</Link>
+        </div>
         <div>
           <label className="admin-field-label" htmlFor="admin-password">Password</label>
-          <input
-            id="admin-password"
-            type="password"
-            className="admin-input"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            autoFocus
-            required
-          />
+          <div className="admin-password-wrap">
+            <input
+              id="admin-password"
+              type={showPassword ? 'text' : 'password'}
+              className="admin-input"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoFocus
+              required
+            />
+            <button
+              type="button"
+              className="admin-password-toggle"
+              onClick={() => setShowPassword(v => !v)}
+              tabIndex={-1}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </div>
         {error && <p className="admin-login-error">{error}</p>}
         <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
@@ -91,17 +106,19 @@ function PoemCard({
   };
 
   return (
-    <div className={`admin-poem-card${isDragging ? ' dragging' : ''}`}>
+    <div
+      className={`admin-poem-card${isDragging ? ' dragging' : ''}`}
+      draggable
+      onDragStart={e => {
+        if ((e.target as Element).closest('input, textarea, button, img, label')) {
+          e.preventDefault();
+          return;
+        }
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+    >
       <div className="admin-poem-image-col">
-        <div
-          className="admin-drag-handle"
-          draggable
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          title="Drag to reorder"
-        >
-          ⠿
-        </div>
         <img
           src={edit.imagePreview ?? poem.image}
           alt={poem.title}
