@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
-import { POEMS } from '@gedichtenv2/shared';
+import { usePoems } from '../context/PoemsContext';
 import '../styles/global.css';
-
-const CAROUSEL_POEMS = POEMS.slice(0, 5);
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
@@ -25,6 +23,9 @@ const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
 );
 
 export default function PoemCarousel() {
+  const allPoems = usePoems();
+  const featured = allPoems.filter(p => p.featured);
+  const CAROUSEL_POEMS = featured.length > 0 ? featured : allPoems.slice(0, 5);
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [animKey, setAnimKey] = useState(0);

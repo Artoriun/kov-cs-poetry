@@ -1,0 +1,377 @@
+.admin-page {
+  min-height: 100vh;
+  padding: 0 0 64px;
+  font-family: var(--font-body, sans-serif);
+}
+
+/* ── Login ── */
+
+.admin-login-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.admin-login {
+  width: 100%;
+  max-width: 360px;
+  padding: 40px;
+  background: var(--card-bg, var(--bg-secondary));
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-login-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-login h1 {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.admin-login-error {
+  font-size: 13px;
+  color: #e05a5a;
+}
+
+/* ── Dashboard header ── */
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-header h1 {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ── Poem grid ── */
+
+.admin-poem-list {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Poem card ── */
+
+.admin-card-wrapper {
+  position: relative;
+}
+
+.admin-card-wrapper.drop-target::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text-primary);
+  pointer-events: none;
+}
+
+.admin-poem-card {
+  border: 1px solid var(--border-color);
+  background: var(--card-bg, var(--bg-secondary));
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 600px) {
+  .admin-poem-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-file-label {
+    width: 140px;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+}
+
+.admin-poem-card {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.admin-featured-label {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: cornflowerblue;
+  pointer-events: none;
+}
+
+.admin-poem-card:active {
+  cursor: grabbing;
+}
+
+.admin-poem-card input,
+.admin-poem-card textarea {
+  cursor: text;
+}
+
+.admin-poem-card button,
+.admin-poem-card label {
+  cursor: pointer;
+}
+
+.admin-poem-card img {
+  cursor: default;
+}
+
+.admin-poem-card.dragging {
+  opacity: 0.4;
+}
+
+.admin-poem-image-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-poem-thumb {
+  width: 140px;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-poem-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.admin-poem-id {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.admin-poem-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-field-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.admin-overlay-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.admin-overlay-textarea:focus {
+  border-color: var(--text-secondary);
+}
+
+/* ── Image upload ── */
+
+.admin-image-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-image-preview {
+  width: 100px;
+  height: 70px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.admin-file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-file-label:hover {
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+  border-color: var(--text-secondary);
+}
+
+.admin-file-input {
+  display: none;
+}
+
+.admin-file-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  align-self: center;
+}
+
+/* ── Actions ── */
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  padding: 9px 20px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.admin-btn:hover:not(:disabled) {
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+  border-color: var(--text-secondary);
+}
+
+.admin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-btn-featured {
+  border-color: cornflowerblue;
+  color: cornflowerblue;
+}
+
+.admin-btn-primary {
+  background: rgba(44, 44, 44, 0.85);
+  border: 1px solid rgba(44, 44, 44, 0.5);
+  color: #fafafa;
+  letter-spacing: 0.15em;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 1);
+  border-color: rgba(0, 0, 0, 0.8);
+}
+
+html.dark-mode .admin-btn-primary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html.dark-mode .admin-btn-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-save-status {
+  font-size: 12px;
+  align-self: center;
+  color: var(--text-secondary);
+}
+
+/* ── Shared inputs ── */
+
+.admin-password-wrap {
+  position: relative;
+}
+
+.admin-password-wrap .admin-input {
+  padding-right: 60px;
+}
+
+.admin-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.admin-password-toggle:hover {
+  opacity: 1;
+}
+
+.admin-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.admin-input:focus {
+  border-color: var(--text-secondary);
+}
