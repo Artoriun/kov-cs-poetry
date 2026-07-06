@@ -24,8 +24,9 @@ const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
 
 export default function PoemCarousel() {
   const allPoems = usePoems();
-  const featured = allPoems.filter(p => p.featured);
-  const CAROUSEL_POEMS = featured.length > 0 ? featured : allPoems.slice(0, 5);
+  const withOverlay = allPoems.filter(p => p.overlay);
+  const featured = withOverlay.filter(p => p.featured);
+  const CAROUSEL_POEMS = featured.length > 0 ? featured : withOverlay.slice(0, 5);
   const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [animKey, setAnimKey] = useState(0);

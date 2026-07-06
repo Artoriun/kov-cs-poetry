@@ -54,13 +54,13 @@ export default function Header() {
             </li>
             <li className="nav-login-mobile">
               <NavLink to="/admin" onClick={() => setMobileOpen(false)}>
-                Log In
+                Admin
               </NavLink>
             </li>
           </ul>
         </nav>
 
-        <Link to="/admin" className="header-login-btn">Log In</Link>
+        <Link to="/admin" className="header-login-btn">Admin</Link>
         <ThemeToggle />
 
         <button
