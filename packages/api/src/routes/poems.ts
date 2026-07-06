@@ -16,7 +16,7 @@ poemsRouter.get('/', async (_req, res) => {
       db.collection('poems').get(),
       db.collection('config').doc('poemOrder').get(),
     ]);
-    const overrides: Record<string, { title?: string; image?: string; overlay?: string }> = {};
+    const overrides: Record<string, { title?: string; image?: string; overlay?: string; featured?: boolean }> = {};
     poemsSnap.forEach(doc => { overrides[doc.id] = doc.data() as typeof overrides[string]; });
     const merged = POEMS.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
 
@@ -43,11 +43,12 @@ poemsRouter.put('/order', requireAuth, async (req, res) => {
 
 poemsRouter.put('/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
-  const { title, overlay, image } = req.body as { title?: string; overlay?: string; image?: string };
-  const data: Record<string, string> = {};
+  const { title, overlay, image, featured } = req.body as { title?: string; overlay?: string; image?: string; featured?: boolean };
+  const data: Record<string, string | boolean> = {};
   if (title !== undefined) data.title = title;
   if (overlay !== undefined) data.overlay = overlay;
   if (image !== undefined) data.image = image;
+  if (featured !== undefined) data.featured = featured;
   await db.collection('poems').doc(id).set(data, { merge: true });
   res.json({ ok: true });
 });
