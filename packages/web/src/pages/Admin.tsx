@@ -87,6 +87,7 @@ function PoemCard({
   onSave,
   onReset,
   onToggleFeature,
+  onDelete,
   status,
   onDragStart,
   onDragEnd,
@@ -98,6 +99,7 @@ function PoemCard({
   onSave: () => void;
   onReset: () => void;
   onToggleFeature: () => void;
+  onDelete: () => void;
   status: SaveStatus;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -131,6 +133,7 @@ function PoemCard({
       onDragEnd={onDragEnd}
     >
       {poem.featured && <span className="admin-featured-label">Featured</span>}
+      <button type="button" className="admin-delete-btn" onClick={onDelete} title="Delete poem">×</button>
       <div className="admin-poem-image-col">
         <span className="admin-field-label">Background image</span>
         <img
@@ -292,6 +295,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setOrderedPoems(prev => prev.filter(p => p.id !== id));
+    try {
+      await apiUpdatePoem(id, { deleted: true });
+    } catch {
+      await refreshPoems();
+    }
+  };
+
   const handleToggleFeature = async (id: string) => {
     const poem = orderedPoems.find(p => p.id === id);
     if (!poem) return;
@@ -355,6 +367,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onSave={() => handleSave(poem.id)}
                 onReset={() => handleReset(poem.id)}
                 onToggleFeature={() => handleToggleFeature(poem.id)}
+                onDelete={() => handleDelete(poem.id)}
                 status={statuses[poem.id] ?? 'idle'}
                 onDragStart={() => setDragIndex(i)}
                 onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
