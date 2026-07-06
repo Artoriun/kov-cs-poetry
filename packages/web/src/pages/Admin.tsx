@@ -82,6 +82,7 @@ function PoemCard({
   onChange,
   onSave,
   onReset,
+  onToggleFeature,
   status,
   onDragStart,
   onDragEnd,
@@ -92,6 +93,7 @@ function PoemCard({
   onChange: (patch: Partial<EditState>) => void;
   onSave: () => void;
   onReset: () => void;
+  onToggleFeature: () => void;
   status: SaveStatus;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -107,7 +109,7 @@ function PoemCard({
 
   return (
     <div
-      className={`admin-poem-card${isDragging ? ' dragging' : ''}`}
+      className={`admin-poem-card${isDragging ? ' dragging' : ''}${poem.featured ? ' poem-highlight-static' : ''}`}
       draggable
       onDragStart={e => {
         if ((e.target as Element).closest('input, textarea, button, img, label')) {
@@ -118,6 +120,7 @@ function PoemCard({
       }}
       onDragEnd={onDragEnd}
     >
+      {poem.featured && <span className="admin-featured-label">Featured</span>}
       <div className="admin-poem-image-col">
         <img
           src={edit.imagePreview ?? poem.image}
@@ -176,6 +179,14 @@ function PoemCard({
             disabled={status === 'saving'}
           >
             {status === 'saving' ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            type="button"
+            className={`admin-btn${poem.featured ? ' admin-btn-featured' : ''}`}
+            onClick={onToggleFeature}
+            disabled={status === 'saving'}
+          >
+            {poem.featured ? 'Unfeature' : 'Feature'}
           </button>
           <button
             type="button"
@@ -280,6 +291,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
+  const handleToggleFeature = async (id: string) => {
+    const poem = orderedPoems.find(p => p.id === id);
+    if (!poem) return;
+    const featured = !poem.featured;
+    setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, featured } : p));
+    try {
+      await apiUpdatePoem(id, { featured });
+      await refreshPoems();
+    } catch {
+      setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, featured: !featured } : p));
+    }
+  };
+
   const handleDrop = async (toIndex: number) => {
     if (dragIndex === null || dragIndex === toIndex) return;
     // Snapshot FIRST positions for FLIP animation
@@ -326,6 +350,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onChange={patch => patchEdit(poem.id, patch)}
                 onSave={() => handleSave(poem.id)}
                 onReset={() => handleReset(poem.id)}
+                onToggleFeature={() => handleToggleFeature(poem.id)}
                 status={statuses[poem.id] ?? 'idle'}
                 onDragStart={() => setDragIndex(i)}
                 onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}

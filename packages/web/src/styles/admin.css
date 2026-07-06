@@ -112,6 +112,17 @@
   cursor: grab;
 }
 
+.admin-featured-label {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: cornflowerblue;
+  pointer-events: none;
+}
+
 .admin-poem-card:active {
   cursor: grabbing;
 }
@@ -269,6 +280,11 @@
 .admin-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.admin-btn-featured {
+  border-color: cornflowerblue;
+  color: cornflowerblue;
 }
 
 .admin-btn-primary {

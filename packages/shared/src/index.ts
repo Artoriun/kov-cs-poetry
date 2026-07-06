@@ -3,6 +3,7 @@ export interface Poem {
   title: string;
   image: string;
   overlay?: string;
+  featured?: boolean;
 }
 
 export const POEMS: Poem[] = [
