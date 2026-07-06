@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { POEMS } from '@gedichtenv2/shared';
+import { usePoems } from '../context/PoemsContext';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
@@ -15,13 +15,14 @@ const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
 
 export default function Poems() {
+  const poems = usePoems();
   const { id } = useParams<{ id: string }>();
   const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
   const savedParsed = savedState ? JSON.parse(savedState) : null;
   const [page, setPage] = useState<number>(savedParsed?.page ?? 0);
   const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
   const navigate = useNavigate();
-  const detailPoem = id ? (POEMS.find((p) => p.id === id) ?? null) : null;
+  const detailPoem = id ? (poems.find((p) => p.id === id) ?? null) : null;
   const detailLines = detailPoem?.overlay ? detailPoem.overlay.split('\n') : [];
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
@@ -98,7 +99,7 @@ export default function Poems() {
     const nav = ul.parentElement as HTMLElement;
 
     const firstIndex = page * PER_PAGE;
-    const lastIndex = Math.min((page + 1) * PER_PAGE - 1, POEMS.length - 1);
+    const lastIndex = Math.min((page + 1) * PER_PAGE - 1, poems.length - 1);
     const first = ul.children[firstIndex] as HTMLElement | undefined;
     const last = ul.children[lastIndex] as HTMLElement | undefined;
     if (!first || !last) return;
@@ -331,7 +332,7 @@ export default function Poems() {
                       style={{ animationDelay: `${btnDelay}ms` }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const targetPage = Math.floor(POEMS.findIndex(p => p.id === id) / PER_PAGE);
+                        const targetPage = Math.floor(poems.findIndex(p => p.id === id) / PER_PAGE);
                         sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
                         navigate('/poems');
                       }}
@@ -358,13 +359,13 @@ export default function Poems() {
     );
   }
 
-  const displayed = POEMS.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+  const displayed = poems.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
   const STAGGER = 80; // ms between each card
   const FADE_DURATION = 200; // ms per fade
 
   const handleNextPage = () => {
     if (phase !== 'idle') return;
-    const nextPage = (page + 1) * PER_PAGE >= POEMS.length ? 0 : page + 1;
+    const nextPage = (page + 1) * PER_PAGE >= poems.length ? 0 : page + 1;
     tocDirectionRef.current = nextPage > page ? 'down' : 'up';
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
@@ -374,7 +375,7 @@ export default function Poems() {
     sessionStorage.removeItem('poems-grid-state');
     setPhase('out');
     setTimeout(() => {
-      setPage(p => ((p + 1) * PER_PAGE >= POEMS.length ? 0 : p + 1));
+      setPage(p => ((p + 1) * PER_PAGE >= poems.length ? 0 : p + 1));
       setPhase('in');
       setTimeout(() => setPhase('idle'), PER_PAGE * STAGGER + FADE_DURATION);
     }, PER_PAGE * STAGGER + FADE_DURATION);
@@ -387,7 +388,7 @@ export default function Poems() {
       el.classList.remove('poem-highlight', 'poem-highlight-static');
     });
     setActivePoemId(poemId);
-    const targetPage = Math.floor(POEMS.findIndex(p => p.id === poemId) / PER_PAGE);
+    const targetPage = Math.floor(poems.findIndex(p => p.id === poemId) / PER_PAGE);
 
     const doHighlight = () => {
       if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
@@ -454,7 +455,7 @@ export default function Poems() {
           <nav className="poems-toc">
             <p className="poems-toc-title">Index</p>
             <ul ref={tocListRef}>
-              {POEMS.map((poem) => (
+              {poems.map((poem) => (
                 <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
                   <a href={`#${poem.id}`} onClick={(e) => { e.preventDefault(); handleTocClick(poem.id); }}>{poem.title}</a>
                 </li>
