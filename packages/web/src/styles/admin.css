@@ -72,6 +72,21 @@
 
 /* ── Poem card ── */
 
+.admin-card-wrapper {
+  position: relative;
+}
+
+.admin-card-wrapper.drop-target::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text-primary);
+  pointer-events: none;
+}
+
 .admin-poem-card {
   border: 1px solid var(--border-color);
   background: var(--card-bg, var(--bg-secondary));
@@ -85,6 +100,29 @@
   .admin-poem-card {
     grid-template-columns: 1fr;
   }
+}
+
+.admin-poem-card.dragging {
+  opacity: 0.4;
+}
+
+.admin-drag-handle {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: grab;
+  user-select: none;
+  padding: 2px 0;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.admin-drag-handle:hover {
+  opacity: 1;
+}
+
+.admin-drag-handle:active {
+  cursor: grabbing;
 }
 
 .admin-poem-image-col {
@@ -225,15 +263,18 @@
 }
 
 .admin-btn-primary {
-  background: var(--text-primary);
-  color: var(--bg-primary, #fff);
-  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  letter-spacing: 0.15em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .admin-btn-primary:hover:not(:disabled) {
-  opacity: 0.85;
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .admin-save-status {
