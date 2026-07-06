@@ -278,7 +278,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <h1>Admin Portal</h1>
+        <Link to="/" className="logo">Kovács</Link>
         <button type="button" className="admin-btn" onClick={onLogout}>Log out</button>
       </header>
 
