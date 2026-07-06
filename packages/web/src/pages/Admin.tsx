@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
 import ThemeToggle from '../components/ThemeToggle';
 import { usePoemsContext } from '../context/PoemsContext';
-import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder } from '../lib/api';
+import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
+
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='100'%3E%3Crect width='140' height='100' fill='%23888'/%3E%3C/svg%3E";
 import '../styles/admin.css';
 
 type EditState = {
@@ -137,7 +139,7 @@ function PoemCard({
       <div className="admin-poem-image-col">
         <span className="admin-field-label">Background image</span>
         <img
-          src={edit.imagePreview ?? poem.image}
+          src={edit.imagePreview ?? (poem.image || PLACEHOLDER_IMAGE)}
           alt={poem.title}
           className="admin-poem-thumb"
         />
@@ -231,11 +233,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     );
   }, [poems, loading]);
 
-  // After refreshPoems: update per-poem data in orderedPoems while preserving drag order
+  // After refreshPoems: update existing poems and append any newly added ones
   useEffect(() => {
     if (!initialized.current) return;
     const map = new Map(poems.map(p => [p.id, p]));
-    setOrderedPoems(prev => prev.map(p => map.get(p.id) ?? p));
+    setOrderedPoems(prev => {
+      const updated = prev.map(p => map.get(p.id) ?? p);
+      const existingIds = new Set(prev.map(p => p.id));
+      const added = poems.filter(p => !existingIds.has(p.id));
+      return [...updated, ...added];
+    });
+    setEdits(prev => {
+      const next = { ...prev };
+      for (const p of poems) {
+        if (!next[p.id]) next[p.id] = { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null };
+      }
+      return next;
+    });
   }, [poems]);
 
   // FLIP animation: after orderedPoems reorders, animate cards from old positions to new
@@ -292,6 +306,17 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     } catch {
       setStatus(id, 'error');
       setTimeout(() => setStatus(id, 'idle'), 4000);
+    }
+  };
+
+  const handleAddPoem = async () => {
+    try {
+      const newPoem = await apiAddPoem();
+      setOrderedPoems(prev => [newPoem, ...prev]);
+      setEdits(prev => ({ ...prev, [newPoem.id]: { title: newPoem.title, overlay: newPoem.overlay ?? '', imageFile: null, imagePreview: null } }));
+      await apiUpdateOrder([newPoem.id, ...orderedPoems.map(p => p.id)]);
+    } catch (err) {
+      console.error('Failed to add poem', err);
     }
   };
 
@@ -352,6 +377,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <p style={{ textAlign: 'center', padding: '64px 0', opacity: 0.5 }}>Loading poems…</p>
       ) : (
         <div className="admin-poem-list">
+          <div className="admin-add-row">
+            <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
+            <span className="admin-add-label">Add Poem</span>
+          </div>
           {orderedPoems.map((poem, i) => (
             <div
               key={poem.id}
