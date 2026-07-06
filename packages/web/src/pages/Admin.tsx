@@ -1,9 +1,11 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
-import ThemeToggle from '../components/ThemeToggle';
+import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
-import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder } from '../lib/api';
+import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
+
+const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
+const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
 import '../styles/admin.css';
 
 type EditState = {
@@ -39,10 +41,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
 
   return (
     <div className="admin-page">
-      <header className="admin-header">
-        <Link to="/" className="logo">Kovács</Link>
-        <ThemeToggle />
-      </header>
+      <Header />
       <div className="admin-login-wrap">
       <form className="admin-login" onSubmit={handleSubmit}>
         <h1>Admin</h1>
@@ -87,6 +86,7 @@ function PoemCard({
   onSave,
   onReset,
   onToggleFeature,
+  onDelete,
   status,
   onDragStart,
   onDragEnd,
@@ -98,6 +98,7 @@ function PoemCard({
   onSave: () => void;
   onReset: () => void;
   onToggleFeature: () => void;
+  onDelete: () => void;
   status: SaveStatus;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -131,10 +132,11 @@ function PoemCard({
       onDragEnd={onDragEnd}
     >
       {poem.featured && <span className="admin-featured-label">Featured</span>}
+      <button type="button" className="admin-delete-btn" onClick={onDelete} title="Delete poem">×</button>
       <div className="admin-poem-image-col">
         <span className="admin-field-label">Background image</span>
         <img
-          src={edit.imagePreview ?? poem.image}
+          src={edit.imagePreview ?? (poem.image || PLACEHOLDER_IMAGE)}
           alt={poem.title}
           className="admin-poem-thumb"
         />
@@ -214,6 +216,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [statuses, setStatuses] = useState<Record<string, SaveStatus>>({});
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
   const initialized = useRef(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevPositions = useRef<Record<string, DOMRect> | null>(null);
@@ -228,11 +231,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     );
   }, [poems, loading]);
 
-  // After refreshPoems: update per-poem data in orderedPoems while preserving drag order
+  // After refreshPoems: update existing poems and append any newly added ones
   useEffect(() => {
     if (!initialized.current) return;
     const map = new Map(poems.map(p => [p.id, p]));
-    setOrderedPoems(prev => prev.map(p => map.get(p.id) ?? p));
+    setOrderedPoems(prev => {
+      const updated = prev.map(p => map.get(p.id) ?? p);
+      const existingIds = new Set(prev.map(p => p.id));
+      const added = poems.filter(p => !existingIds.has(p.id));
+      return [...updated, ...added];
+    });
+    setEdits(prev => {
+      const next = { ...prev };
+      for (const p of poems) {
+        if (!next[p.id]) next[p.id] = { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null };
+      }
+      return next;
+    });
   }, [poems]);
 
   // FLIP animation: after orderedPoems reorders, animate cards from old positions to new
@@ -264,13 +279,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (!edit) return;
     setStatus(id, 'saving');
     try {
+      let realId = id;
+      if (draftIds.has(id)) {
+        const created = await apiAddPoem();
+        realId = created.id;
+        setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, id: realId } : p));
+        setEdits(prev => { const next = { ...prev, [realId]: prev[id] }; delete next[id]; return next; });
+        setStatuses(prev => { const next = { ...prev, [realId]: 'saving' as SaveStatus }; delete next[id]; return next; });
+        setDraftIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+        await apiUpdateOrder([realId, ...orderedPoems.filter(p => p.id !== id).map(p => p.id)]);
+      }
       let imageUrl: string | undefined;
-      if (edit.imageFile) imageUrl = await apiUploadImage(id, edit.imageFile);
-      await apiUpdatePoem(id, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
-      patchEdit(id, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
+      if (edit.imageFile) imageUrl = await apiUploadImage(realId, edit.imageFile);
+      await apiUpdatePoem(realId, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
+      patchEdit(realId, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
       await refreshPoems();
-      setStatus(id, 'saved');
-      setTimeout(() => setStatus(id, 'idle'), 3000);
+      setStatus(realId, 'saved');
+      setTimeout(() => setStatus(realId, 'idle'), 3000);
     } catch {
       setStatus(id, 'error');
       setTimeout(() => setStatus(id, 'idle'), 4000);
@@ -289,6 +314,28 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     } catch {
       setStatus(id, 'error');
       setTimeout(() => setStatus(id, 'idle'), 4000);
+    }
+  };
+
+  const handleAddPoem = () => {
+    const tempId = `poem-draft-${Date.now()}`;
+    const newPoem: Poem = { id: tempId, title: 'New Poem', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
+    setOrderedPoems(prev => [newPoem, ...prev]);
+    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null } }));
+    setDraftIds(prev => new Set([...prev, tempId]));
+  };
+
+  const handleDelete = async (id: string) => {
+    setOrderedPoems(prev => prev.filter(p => p.id !== id));
+    if (draftIds.has(id)) {
+      setDraftIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+      return;
+    }
+    try {
+      await apiUpdatePoem(id, { deleted: true });
+      await refreshPoems();
+    } catch {
+      await refreshPoems();
     }
   };
 
@@ -328,18 +375,16 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="admin-page">
-      <header className="admin-header">
-        <Link to="/" className="logo">Kovács</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ThemeToggle />
-          <button type="button" className="admin-btn" onClick={onLogout}>Log out</button>
-        </div>
-      </header>
+      <Header onLogout={onLogout} />
 
       {loading ? (
         <p style={{ textAlign: 'center', padding: '64px 0', opacity: 0.5 }}>Loading poems…</p>
       ) : (
         <div className="admin-poem-list">
+          <div className="admin-add-row">
+            <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
+            <span className="admin-add-label">Add Poem</span>
+          </div>
           {orderedPoems.map((poem, i) => (
             <div
               key={poem.id}
@@ -355,6 +400,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onSave={() => handleSave(poem.id)}
                 onReset={() => handleReset(poem.id)}
                 onToggleFeature={() => handleToggleFeature(poem.id)}
+                onDelete={() => handleDelete(poem.id)}
                 status={statuses[poem.id] ?? 'idle'}
                 onDragStart={() => setDragIndex(i)}
                 onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
@@ -372,6 +418,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('admin_token'));
+  const { refreshPoems } = usePoemsContext();
+
+  useEffect(() => {
+    return () => { refreshPoems(); };
+  }, [refreshPoems]);
 
   const handleLogin = (t: string) => {
     localStorage.setItem('admin_token', t);
