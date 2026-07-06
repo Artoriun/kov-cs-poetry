@@ -759,6 +759,7 @@ h1, h2, h3 {
   position: absolute;
   inset: -3px;
   z-index: -1;
+  border-radius: 9px;
   background: linear-gradient(
     120deg,
     rgba(30, 80, 180, 0.75) 0%,

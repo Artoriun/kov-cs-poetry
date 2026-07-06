@@ -1,3 +1,11 @@
+:root {
+  --admin-card-bg: rgba(245, 245, 245, 0.95);
+}
+
+html.dark-mode {
+  --admin-card-bg: rgba(34, 34, 34, 0.95);
+}
+
 .admin-page {
   min-height: 100vh;
   padding: 0 0 64px;
@@ -95,7 +103,8 @@
 
 .admin-poem-card {
   border: 1px solid var(--border-color);
-  background: var(--card-bg, var(--bg-secondary));
+  background: var(--admin-card-bg);
+  border-radius: 6px;
   padding: 24px;
   display: grid;
   grid-template-columns: 140px 1fr;
