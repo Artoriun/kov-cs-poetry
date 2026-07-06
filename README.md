@@ -18,7 +18,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Auto-reload on device orientation change to ensure correct layout
 
 ### Home Page Carousel
-- Displays poems marked as **Featured** in the admin portal (falls back to the first five poems if none are featured)
+- Displays poems marked as **Featured** in the admin portal (falls back to the first five poems if none are featured); poems without overlay text are excluded
 - Auto-advances based on poem line count (2.5 seconds per line)
 - Pauses on hover; drag-aware (dragging doesn't navigate to detail page)
 - Text overlay fades out at the bottom when content is long
@@ -58,7 +58,8 @@ https://artoriun.github.io/kov-cs-poetry/
 - **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
 - Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
 - Smooth FLIP animation when cards are reordered
-- Theme toggle and Kovács logo in the header, consistent with the main site
+- Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
+- New poem cards are drafts until **Save** is pressed — unsaved cards disappear on page refresh
 
 ---
 
