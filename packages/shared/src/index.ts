@@ -4,6 +4,7 @@ export interface Poem {
   image: string;
   overlay?: string;
   featured?: boolean;
+  deleted?: boolean;
 }
 
 export const POEMS: Poem[] = [
