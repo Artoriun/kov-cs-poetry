@@ -21,7 +21,7 @@ export async function apiGetPoems(): Promise<Poem[]> {
   return res.json() as Promise<Poem[]>;
 }
 
-export async function apiUpdatePoem(id: string, data: { overlay?: string; image?: string }): Promise<void> {
+export async function apiUpdatePoem(id: string, data: { title?: string; overlay?: string; image?: string }): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
@@ -41,6 +41,15 @@ export async function apiUploadImage(id: string, file: File): Promise<string> {
   if (!res.ok) throw new Error('Failed to upload image');
   const { url } = await res.json() as { url: string };
   return url;
+}
+
+export async function apiUpdateOrder(ids: string[]): Promise<void> {
+  const res = await fetch(`${BASE}/api/poems/order`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Failed to update order');
 }
 
 export async function apiResetPoem(id: string): Promise<void> {

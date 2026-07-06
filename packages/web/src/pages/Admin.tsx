@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { POEMS } from '@gedichtenv2/shared';
+import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { usePoemsContext } from '../context/PoemsContext';
-import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem } from '../lib/api';
+import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder } from '../lib/api';
 import '../styles/admin.css';
 
 type EditState = {
+  title: string;
   overlay: string;
   imageFile: File | null;
   imagePreview: string | null;
@@ -67,36 +68,58 @@ function PoemCard({
   onSave,
   onReset,
   status,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: {
-  poem: (typeof POEMS)[number];
+  poem: Poem;
   edit: EditState;
   onChange: (patch: Partial<EditState>) => void;
   onSave: () => void;
   onReset: () => void;
   status: SaveStatus;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    onChange({ imageFile: file, imagePreview: preview });
+    onChange({ imageFile: file, imagePreview: URL.createObjectURL(file) });
   };
 
   return (
-    <div className="admin-poem-card">
+    <div className={`admin-poem-card${isDragging ? ' dragging' : ''}`}>
       <div className="admin-poem-image-col">
+        <div
+          className="admin-drag-handle"
+          draggable
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          title="Drag to reorder"
+        >
+          ⠿
+        </div>
         <img
           src={edit.imagePreview ?? poem.image}
           alt={poem.title}
           className="admin-poem-thumb"
         />
-        <p className="admin-poem-title">{poem.title}</p>
         <p className="admin-poem-id">{poem.id}</p>
       </div>
 
       <div className="admin-poem-fields">
+        <div>
+          <label className="admin-field-label">Title</label>
+          <input
+            type="text"
+            className="admin-input"
+            value={edit.title}
+            onChange={e => onChange({ title: e.target.value })}
+          />
+        </div>
         <div>
           <label className="admin-field-label">Overlay text</label>
           <textarea
@@ -155,28 +178,37 @@ function PoemCard({
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+function Dashboard({ onLogout }: { onLogout: () => void }) {
   const { poems, loading, refreshPoems } = usePoemsContext();
+  const [orderedPoems, setOrderedPoems] = useState<Poem[]>([]);
   const [edits, setEdits] = useState<Record<string, EditState>>({});
   const [statuses, setStatuses] = useState<Record<string, SaveStatus>>({});
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const initialized = useRef(false);
 
-  // Initialize edit state once the live poem data has loaded
+  // Initialize once when live poem data loads
   useEffect(() => {
     if (initialized.current || loading) return;
     initialized.current = true;
+    setOrderedPoems(poems);
     setEdits(
-      Object.fromEntries(poems.map(p => [p.id, { overlay: p.overlay ?? '', imageFile: null, imagePreview: null }]))
+      Object.fromEntries(poems.map(p => [p.id, { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null }]))
     );
   }, [poems, loading]);
 
-  const patchEdit = (id: string, patch: Partial<EditState>) => {
-    setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
-  };
+  // After refreshPoems: update per-poem data in orderedPoems while preserving drag order
+  useEffect(() => {
+    if (!initialized.current) return;
+    const map = new Map(poems.map(p => [p.id, p]));
+    setOrderedPoems(prev => prev.map(p => map.get(p.id) ?? p));
+  }, [poems]);
 
-  const setStatus = (id: string, status: SaveStatus) => {
-    setStatuses(prev => ({ ...prev, [id]: status }));
-  };
+  const patchEdit = (id: string, patch: Partial<EditState>) =>
+    setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+
+  const setStatus = (id: string, s: SaveStatus) =>
+    setStatuses(prev => ({ ...prev, [id]: s }));
 
   const handleSave = async (id: string) => {
     const edit = edits[id];
@@ -184,11 +216,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setStatus(id, 'saving');
     try {
       let imageUrl: string | undefined;
-      if (edit.imageFile) {
-        imageUrl = await apiUploadImage(id, edit.imageFile);
-      }
-      await apiUpdatePoem(id, { overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
-      // clear the pending file after successful upload
+      if (edit.imageFile) imageUrl = await apiUploadImage(id, edit.imageFile);
+      await apiUpdatePoem(id, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
       patchEdit(id, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
       await refreshPoems();
       setStatus(id, 'saved');
@@ -204,16 +233,28 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     try {
       await apiResetPoem(id);
       await refreshPoems();
-      // Reset local edit to original hardcoded values
       const original = POEMS.find(p => p.id === id);
-      if (original) {
-        patchEdit(id, { overlay: original.overlay ?? '', imageFile: null, imagePreview: null });
-      }
+      if (original) patchEdit(id, { title: original.title, overlay: original.overlay ?? '', imageFile: null, imagePreview: null });
       setStatus(id, 'saved');
       setTimeout(() => setStatus(id, 'idle'), 3000);
     } catch {
       setStatus(id, 'error');
       setTimeout(() => setStatus(id, 'idle'), 4000);
+    }
+  };
+
+  const handleDrop = async (toIndex: number) => {
+    if (dragIndex === null || dragIndex === toIndex) return;
+    const next = [...orderedPoems];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setOrderedPoems(next);
+    setDragIndex(null);
+    setDropIndex(null);
+    try {
+      await apiUpdateOrder(next.map(p => p.id));
+    } catch {
+      setOrderedPoems(orderedPoems); // revert on error
     }
   };
 
@@ -228,16 +269,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <p style={{ textAlign: 'center', padding: '64px 0', opacity: 0.5 }}>Loading poems…</p>
       ) : (
         <div className="admin-poem-list">
-          {poems.map(poem => (
-            <PoemCard
+          {orderedPoems.map((poem, i) => (
+            <div
               key={poem.id}
-              poem={poem}
-              edit={edits[poem.id] ?? { overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
-              onChange={patch => patchEdit(poem.id, patch)}
-              onSave={() => handleSave(poem.id)}
-              onReset={() => handleReset(poem.id)}
-              status={statuses[poem.id] ?? 'idle'}
-            />
+              className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+              onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
+              onDrop={() => handleDrop(i)}
+            >
+              <PoemCard
+                poem={poem}
+                edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
+                onChange={patch => patchEdit(poem.id, patch)}
+                onSave={() => handleSave(poem.id)}
+                onReset={() => handleReset(poem.id)}
+                status={statuses[poem.id] ?? 'idle'}
+                onDragStart={() => setDragIndex(i)}
+                onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
+                isDragging={dragIndex === i}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -261,5 +311,5 @@ export default function Admin() {
   };
 
   if (!token) return <LoginPage onLogin={handleLogin} />;
-  return <Dashboard token={token} onLogout={handleLogout} />;
+  return <Dashboard onLogout={handleLogout} />;
 }
