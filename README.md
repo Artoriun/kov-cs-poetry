@@ -18,6 +18,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Auto-reload on device orientation change to ensure correct layout
 
 ### Home Page Carousel
+- Displays poems marked as **Featured** in the admin portal (falls back to the first five poems if none are featured)
 - Auto-advances based on poem line count (2.5 seconds per line)
 - Pauses on hover; drag-aware (dragging doesn't navigate to detail page)
 - Text overlay fades out at the bottom when content is long
@@ -46,6 +47,16 @@ https://artoriun.github.io/kov-cs-poetry/
 - Sticky on desktop; scrolls away in landscape mobile
 - Hamburger menu on mobile with smooth open/close animation
 - Tapping outside the menu closes it
+- **Log In** link navigates to the admin portal
+
+### Admin Portal (`/admin`)
+- Password-protected login page (JWT-based auth, 7-day token)
+- Edit each poem's title, overlay text, and background image
+- Upload replacement images (stored on Cloudinary)
+- **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
+- Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
+- Smooth FLIP animation when cards are reordered
+- Theme toggle and Kovács logo in the header, consistent with the main site
 
 ---
 
@@ -59,6 +70,10 @@ https://artoriun.github.io/kov-cs-poetry/
 | **TurboRepo** | Monorepo build orchestration |
 | **React Router** | Client-side routing |
 | **React Slick** | Carousel component |
+| **Express** | Admin API backend (`packages/api`) |
+| **Firebase Firestore** | Poem overrides and display order persistence |
+| **Cloudinary** | Image upload and hosting |
+| **JWT** | Admin authentication |
 | **CSS Custom Properties** | Theming & responsive design |
 | **Google Fonts (Esteban)** | Serif font for poem text |
 
@@ -70,23 +85,36 @@ https://artoriun.github.io/kov-cs-poetry/
 .
 ├── packages/
 │   ├── shared/
-│   │   └── src/index.ts          # Poem data (id, title, image, overlay text)
+│   │   └── src/index.ts              # Poem type + hardcoded fallback data
+│   ├── api/
+│   │   └── src/
+│   │       ├── index.ts              # Express server (port 4000)
+│   │       ├── firebaseAdmin.ts      # Firestore client
+│   │       ├── routes/
+│   │       │   ├── auth.ts           # POST /api/auth/login
+│   │       │   └── poems.ts          # GET/PUT/DELETE poems, image upload
+│   │       └── middleware/
+│   │           └── requireAuth.ts    # JWT verification
 │   └── web/
 │       ├── src/
-│       │   ├── App.tsx           # Root component, orientation-change reload
+│       │   ├── App.tsx               # Root component, routes, PoemsProvider
+│       │   ├── context/
+│       │   │   └── PoemsContext.tsx  # Fetches poems from API, exposes refreshPoems()
+│       │   ├── lib/
+│       │   │   └── api.ts            # Typed API client functions
 │       │   ├── components/
-│       │   │   ├── Header.tsx    # Navigation, theme toggle, mobile menu
-│       │   │   ├── Footer.tsx
-│       │   │   ├── Layout.tsx
-│       │   │   ├── PoemCarousel.tsx  # Home page carousel
+│       │   │   ├── Header.tsx        # Navigation, theme toggle, Log In link
+│       │   │   ├── PoemCarousel.tsx  # Home page carousel (featured poems)
 │       │   │   └── ThemeToggle.tsx
 │       │   ├── pages/
-│       │   │   ├── Home.tsx      # Home page with carousel
-│       │   │   ├── Poems.tsx     # Grid view + full-screen poem detail reader
+│       │   │   ├── Home.tsx          # Home page with carousel
+│       │   │   ├── Poems.tsx         # Grid view + full-screen poem detail reader
+│       │   │   ├── Admin.tsx         # Admin portal (login + dashboard)
 │       │   │   └── Contact.tsx
 │       │   └── styles/
-│       │       ├── global.css    # All layout, animation, and responsive styles
-│       │       └── themes.css    # Light & dark mode CSS custom properties
+│       │       ├── global.css        # All layout, animation, and responsive styles
+│       │       ├── themes.css        # Light & dark mode CSS custom properties
+│       │       └── admin.css         # Admin portal styles
 │       └── index.html
 └── package.json
 ```
@@ -99,35 +127,50 @@ https://artoriun.github.io/kov-cs-poetry/
 # Install dependencies
 npm install
 
-# Development server
-npm run dev -- --host
+# Development (starts both web and API)
+npm run dev
 
 # Production build
 npm run build
+```
 
-# Preview production build
-npm run preview
+The web dev server runs on `http://localhost:3000` and the API on `http://localhost:4000`. Vite proxies `/api` requests to the API in development.
+
+---
+
+## Environment Variables
+
+Create `packages/api/.env`:
+
+```env
+ADMIN_PASSWORD="your-password"
+JWT_SECRET=your-jwt-secret
+
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
 ```
 
 ---
 
-## Adding Poems
+## Managing Poems
 
-Add entries to `packages/shared/src/index.ts`:
+Poem content lives in `packages/shared/src/index.ts` as the hardcoded fallback. Edits made in the admin portal (title, overlay text, background image, order, featured status) are stored in Firestore and take precedence over the hardcoded data at runtime.
+
+To add a new poem, add an entry to `POEMS` in `packages/shared/src/index.ts`:
 
 ```typescript
-export const POEMS = [
-  {
-    id: "poem-1",
-    title: "Title",
-    image: "https://cdn-url/image.jpg",
-    overlay: "First line\nSecond line\nThird line"
-  },
-  // ...
-];
+{
+  id: "poem-6",
+  title: "Title",
+  image: "https://res.cloudinary.com/your-cloud/image/upload/v.../image.jpg",
+  overlay: "First line\nSecond line\nThird line"
+}
 ```
 
-`overlay` is newline-separated text displayed over the image in both the carousel and the detail reader. The first five poems in the array appear in the home page carousel.
+`overlay` is newline-separated text displayed over the image in the carousel and detail reader.
 
 ---
 
