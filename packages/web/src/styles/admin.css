@@ -120,6 +120,45 @@
   -webkit-user-select: none;
 }
 
+.admin-delete-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-delete-btn:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+html.dark-mode .admin-delete-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html.dark-mode .admin-delete-btn:hover {
+  background: rgba(192, 57, 43, 0.7);
+  border-color: rgba(192, 57, 43, 0.9);
+}
+
 .admin-featured-label {
   position: absolute;
   top: -20px;
