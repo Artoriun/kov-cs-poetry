@@ -51,6 +51,8 @@ https://artoriun.github.io/kov-cs-poetry/
 
 ### Admin Portal (`/admin`)
 - Password-protected login page (JWT-based auth, 7-day token)
+- **Add** new poems via the + button above the poem list
+- **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide)
 - Edit each poem's title, overlay text, and background image
 - Upload replacement images (stored on Cloudinary)
 - **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
@@ -92,7 +94,7 @@ https://artoriun.github.io/kov-cs-poetry/
 │   │       ├── firebaseAdmin.ts      # Firestore client
 │   │       ├── routes/
 │   │       │   ├── auth.ts           # POST /api/auth/login
-│   │       │   └── poems.ts          # GET/PUT/DELETE poems, image upload
+│   │       │   └── poems.ts          # GET/POST/PUT/DELETE poems, image upload
 │   │       └── middleware/
 │   │           └── requireAuth.ts    # JWT verification
 │   └── web/
@@ -157,9 +159,11 @@ CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
 
 ## Managing Poems
 
-Poem content lives in `packages/shared/src/index.ts` as the hardcoded fallback. Edits made in the admin portal (title, overlay text, background image, order, featured status) are stored in Firestore and take precedence over the hardcoded data at runtime.
+Poem content lives in `packages/shared/src/index.ts` as the hardcoded fallback. Edits made in the admin portal (title, overlay text, background image, order, featured status, deletion) are stored in Firestore and take precedence over the hardcoded data at runtime.
 
-To add a new poem, add an entry to `POEMS` in `packages/shared/src/index.ts`:
+New poems can be created directly from the admin portal using the **+ Add Poem** button — no code changes required. These are stored entirely in Firestore with a generated ID.
+
+To add a hardcoded poem (as a fallback), add an entry to `POEMS` in `packages/shared/src/index.ts`:
 
 ```typescript
 {

@@ -21,6 +21,15 @@ export async function apiGetPoems(): Promise<Poem[]> {
   return res.json() as Promise<Poem[]>;
 }
 
+export async function apiAddPoem(): Promise<Poem> {
+  const res = await fetch(`${BASE}/api/poems`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error('Failed to add poem');
+  return res.json() as Promise<Poem>;
+}
+
 export async function apiUpdatePoem(id: string, data: { title?: string; overlay?: string; image?: string; featured?: boolean; deleted?: boolean }): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/${id}`, {
     method: 'PUT',
