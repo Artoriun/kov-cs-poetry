@@ -1,7 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
-import ThemeToggle from '../components/ThemeToggle';
+import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
@@ -42,10 +41,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
 
   return (
     <div className="admin-page">
-      <header className="admin-header">
-        <Link to="/" className="logo">Kovács</Link>
-        <ThemeToggle />
-      </header>
+      <Header />
       <div className="admin-login-wrap">
       <form className="admin-login" onSubmit={handleSubmit}>
         <h1>Admin</h1>
@@ -379,13 +375,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="admin-page">
-      <header className="admin-header">
-        <Link to="/" className="logo">Kovács</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ThemeToggle />
-          <button type="button" className="admin-btn" onClick={onLogout}>Log out</button>
-        </div>
-      </header>
+      <Header onLogout={onLogout} />
 
       {loading ? (
         <p style={{ textAlign: 'center', padding: '64px 0', opacity: 0.5 }}>Loading poems…</p>
