@@ -160,16 +160,12 @@ html.dark-mode {
 }
 
 .admin-add-btn:hover {
-  background: #27ae60;
-  border-color: #27ae60;
-  color: #fff;
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  border-color: var(--text-secondary);
 }
 
-.admin-add-btn:focus:not(:hover) {
+.admin-add-btn:focus {
   outline: none;
-  background: var(--bg-secondary);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
 }
 
 html.dark-mode .admin-add-btn {
@@ -181,8 +177,8 @@ html.dark-mode .admin-add-btn {
 }
 
 html.dark-mode .admin-add-btn:hover {
-  background: rgba(39, 174, 96, 0.7);
-  border-color: rgba(39, 174, 96, 0.9);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .admin-delete-btn {

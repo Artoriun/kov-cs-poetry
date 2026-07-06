@@ -6,6 +6,7 @@ import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
+const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
 import '../styles/admin.css';
 
 type EditState = {
@@ -219,6 +220,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [statuses, setStatuses] = useState<Record<string, SaveStatus>>({});
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
   const initialized = useRef(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevPositions = useRef<Record<string, DOMRect> | null>(null);
@@ -281,13 +283,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (!edit) return;
     setStatus(id, 'saving');
     try {
+      let realId = id;
+      if (draftIds.has(id)) {
+        const created = await apiAddPoem();
+        realId = created.id;
+        setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, id: realId } : p));
+        setEdits(prev => { const next = { ...prev, [realId]: prev[id] }; delete next[id]; return next; });
+        setStatuses(prev => { const next = { ...prev, [realId]: 'saving' as SaveStatus }; delete next[id]; return next; });
+        setDraftIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+        await apiUpdateOrder([realId, ...orderedPoems.filter(p => p.id !== id).map(p => p.id)]);
+      }
       let imageUrl: string | undefined;
-      if (edit.imageFile) imageUrl = await apiUploadImage(id, edit.imageFile);
-      await apiUpdatePoem(id, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
-      patchEdit(id, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
+      if (edit.imageFile) imageUrl = await apiUploadImage(realId, edit.imageFile);
+      await apiUpdatePoem(realId, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
+      patchEdit(realId, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
       await refreshPoems();
-      setStatus(id, 'saved');
-      setTimeout(() => setStatus(id, 'idle'), 3000);
+      setStatus(realId, 'saved');
+      setTimeout(() => setStatus(realId, 'idle'), 3000);
     } catch {
       setStatus(id, 'error');
       setTimeout(() => setStatus(id, 'idle'), 4000);
@@ -309,21 +321,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleAddPoem = async () => {
-    try {
-      const newPoem = await apiAddPoem();
-      setOrderedPoems(prev => [newPoem, ...prev]);
-      setEdits(prev => ({ ...prev, [newPoem.id]: { title: newPoem.title, overlay: newPoem.overlay ?? '', imageFile: null, imagePreview: null } }));
-      await apiUpdateOrder([newPoem.id, ...orderedPoems.map(p => p.id)]);
-    } catch (err) {
-      console.error('Failed to add poem', err);
-    }
+  const handleAddPoem = () => {
+    const tempId = `poem-draft-${Date.now()}`;
+    const newPoem: Poem = { id: tempId, title: 'New Poem', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
+    setOrderedPoems(prev => [newPoem, ...prev]);
+    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null } }));
+    setDraftIds(prev => new Set([...prev, tempId]));
   };
 
   const handleDelete = async (id: string) => {
     setOrderedPoems(prev => prev.filter(p => p.id !== id));
+    if (draftIds.has(id)) {
+      setDraftIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+      return;
+    }
     try {
       await apiUpdatePoem(id, { deleted: true });
+      await refreshPoems();
     } catch {
       await refreshPoems();
     }
