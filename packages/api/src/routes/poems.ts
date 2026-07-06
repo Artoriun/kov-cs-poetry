@@ -18,20 +18,33 @@ poemsRouter.get('/', async (_req, res) => {
     ]);
     const overrides: Record<string, { title?: string; image?: string; overlay?: string; featured?: boolean; deleted?: boolean }> = {};
     poemsSnap.forEach(doc => { overrides[doc.id] = doc.data() as typeof overrides[string]; });
+
+    const hardcodedIds = new Set(POEMS.map(p => p.id));
     const merged = POEMS.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p).filter(p => !p.deleted);
+    const custom = Object.entries(overrides)
+      .filter(([id, d]) => !hardcodedIds.has(id) && !d.deleted)
+      .map(([id, d]) => ({ id, title: d.title ?? 'New Poem', image: d.image ?? '', overlay: d.overlay, featured: d.featured }));
+    const all = [...merged, ...custom];
 
     if (orderDoc.exists) {
       const ids = orderDoc.data()?.ids as string[];
-      const map = new Map(merged.map(p => [p.id, p]));
-      const sorted = ids.map(id => map.get(id)).filter(Boolean) as typeof merged;
+      const map = new Map(all.map(p => [p.id, p]));
+      const sorted = ids.map(id => map.get(id)).filter(Boolean) as typeof all;
       const inOrder = new Set(ids);
-      res.json([...sorted, ...merged.filter(p => !inOrder.has(p.id))]);
+      res.json([...sorted, ...all.filter(p => !inOrder.has(p.id))]);
     } else {
-      res.json(merged);
+      res.json(all);
     }
   } catch {
     res.json(POEMS);
   }
+});
+
+poemsRouter.post('/', requireAuth, async (req, res) => {
+  const id = `poem-custom-${Date.now()}`;
+  const data = { title: 'New Poem', overlay: '', image: '' };
+  await db.collection('poems').doc(id).set(data);
+  res.json({ id, ...data });
 });
 
 poemsRouter.put('/order', requireAuth, async (req, res) => {
