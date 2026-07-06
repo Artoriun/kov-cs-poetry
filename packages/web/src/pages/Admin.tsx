@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { usePoemsContext } from '../context/PoemsContext';
@@ -203,6 +203,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const initialized = useRef(false);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevPositions = useRef<Record<string, DOMRect> | null>(null);
 
   // Initialize once when live poem data loads
   useEffect(() => {
@@ -220,6 +222,24 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     const map = new Map(poems.map(p => [p.id, p]));
     setOrderedPoems(prev => prev.map(p => map.get(p.id) ?? p));
   }, [poems]);
+
+  // FLIP animation: after orderedPoems reorders, animate cards from old positions to new
+  useLayoutEffect(() => {
+    const snapshots = prevPositions.current;
+    if (!snapshots) return;
+    prevPositions.current = null;
+    for (const [id, el] of Object.entries(cardRefs.current)) {
+      if (!el || !snapshots[id]) continue;
+      const dy = snapshots[id].top - el.getBoundingClientRect().top;
+      if (dy === 0) continue;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${dy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.35s ease';
+        el.style.transform = '';
+      });
+    }
+  }, [orderedPoems]);
 
   const patchEdit = (id: string, patch: Partial<EditState>) =>
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -262,6 +282,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleDrop = async (toIndex: number) => {
     if (dragIndex === null || dragIndex === toIndex) return;
+    // Snapshot FIRST positions for FLIP animation
+    const snapshots: Record<string, DOMRect> = {};
+    for (const [id, el] of Object.entries(cardRefs.current)) {
+      if (el) snapshots[id] = el.getBoundingClientRect();
+    }
+    prevPositions.current = snapshots;
     const next = [...orderedPoems];
     const [moved] = next.splice(dragIndex, 1);
     next.splice(toIndex, 0, moved);
@@ -289,6 +315,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           {orderedPoems.map((poem, i) => (
             <div
               key={poem.id}
+              ref={el => { cardRefs.current[poem.id] = el; }}
               className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
               onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
               onDrop={() => handleDrop(i)}
