@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { POEMS, type Poem } from '@gedichtenv2/shared';
+import ThemeToggle from '../components/ThemeToggle';
 import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder } from '../lib/api';
 import '../styles/admin.css';
@@ -37,12 +38,14 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   };
 
   return (
-    <div className="admin-login-wrap">
+    <div className="admin-page">
+      <header className="admin-header">
+        <Link to="/" className="logo">Kovács</Link>
+        <ThemeToggle />
+      </header>
+      <div className="admin-login-wrap">
       <form className="admin-login" onSubmit={handleSubmit}>
-        <div className="admin-login-top">
-          <h1>Admin</h1>
-          <Link to="/" className="admin-btn">← Home</Link>
-        </div>
+        <h1>Admin</h1>
         <div>
           <label className="admin-field-label" htmlFor="admin-password">Password</label>
           <div className="admin-password-wrap">
@@ -70,6 +73,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
           {loading ? 'Logging in…' : 'Log in'}
         </button>
       </form>
+      </div>
     </div>
   );
 }
@@ -329,7 +333,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="admin-page">
       <header className="admin-header">
         <Link to="/" className="logo">Kovács</Link>
-        <button type="button" className="admin-btn" onClick={onLogout}>Log out</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <ThemeToggle />
+          <button type="button" className="admin-btn" onClick={onLogout}>Log out</button>
+        </div>
       </header>
 
       {loading ? (
