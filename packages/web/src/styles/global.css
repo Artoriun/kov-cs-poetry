@@ -801,7 +801,6 @@ h1, h2, h3 {
 }
 
 .poem-highlight::before {
-  border-radius: 9px;
   animation: border-flow 5s ease-in-out infinite alternate,
              border-pulse var(--pulse-duration) ease forwards;
 }
