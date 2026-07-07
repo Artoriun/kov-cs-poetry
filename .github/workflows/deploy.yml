@@ -34,6 +34,8 @@ jobs:
 
       - name: Build All Packages
         run: npx turbo run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Copy index.html to 404.html for SPA routing
         run: cp packages/web/dist/index.html packages/web/dist/404.html
