@@ -1066,6 +1066,10 @@ h1, h2, h3 {
   padding-bottom: 80px;
 }
 
+.poem-detail .detail-image-container.has-title:has(.detail-overlay) {
+  padding-top: 140px;
+}
+
 .detail-overlay {
   position: relative;
   z-index: 10;

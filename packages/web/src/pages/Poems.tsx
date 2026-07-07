@@ -295,7 +295,7 @@ export default function Poems() {
             const isLastPage = pageIdx === renderPages.length - 1;
             return (
               <div key={pageIdx}>
-                <div className="detail-image-container">
+                <div className={`detail-image-container${pageIdx === 0 ? ' has-title' : ''}`}>
                   {pageIdx === 0 && (
                     <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
                       {detailPoem.title}
