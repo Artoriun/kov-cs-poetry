@@ -343,6 +343,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setDropIndex(null);
     try {
       await apiUpdateOrder(next.map(p => p.id));
+      refreshPoems();
     } catch {
       setOrderedPoems(orderedPoems); // revert on error
     }
