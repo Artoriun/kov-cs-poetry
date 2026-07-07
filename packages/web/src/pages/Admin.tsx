@@ -207,6 +207,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const initialized = useRef(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevPositions = useRef<Record<string, DOMRect> | null>(null);
@@ -376,7 +377,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onChange={patch => patchEdit(poem.id, patch)}
                 onSave={() => handleSave(poem.id)}
                 onToggleFeature={() => handleToggleFeature(poem.id)}
-                onDelete={() => handleDelete(poem.id)}
+                onDelete={() => setPendingDeleteId(poem.id)}
                 status={statuses[poem.id] ?? 'idle'}
                 onDragStart={() => setDragIndex(i)}
                 onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
@@ -384,6 +385,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               />
             </div>
           ))}
+        </div>
+      )}
+
+      {pendingDeleteId && (
+        <div className="admin-modal-backdrop" onClick={() => setPendingDeleteId(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <p className="admin-modal-title">Delete poem</p>
+            <p className="admin-modal-body">Are you sure you want to delete this poem?</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
