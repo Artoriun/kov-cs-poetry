@@ -320,6 +320,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (!poem) return;
     const featured = !poem.featured;
     setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, featured } : p));
+    if (draftIds.has(id)) return;
     try {
       await apiUpdatePoem(id, { featured });
     } catch {
