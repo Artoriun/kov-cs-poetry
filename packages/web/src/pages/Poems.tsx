@@ -80,6 +80,7 @@ export default function Poems() {
     }
     setDetailPages(pages);
     if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
+    else { setDownBtnVisible(true); }
   }, [id, detailPages]);
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
