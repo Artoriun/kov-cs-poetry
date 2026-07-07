@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { POEMS, type Poem } from '@gedichtenv2/shared';
+import { type Poem } from '@gedichtenv2/shared';
 import { apiGetPoems } from '../lib/api';
 
 interface PoemsContextValue {
@@ -9,13 +9,13 @@ interface PoemsContextValue {
 }
 
 const PoemsContext = createContext<PoemsContextValue>({
-  poems: POEMS,
+  poems: [],
   loading: false,
   refreshPoems: async () => {},
 });
 
 export function PoemsProvider({ children }: { children: ReactNode }) {
-  const [poems, setPoems] = useState<Poem[]>(POEMS);
+  const [poems, setPoems] = useState<Poem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshPoems = useCallback(async () => {
