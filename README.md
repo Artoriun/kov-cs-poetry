@@ -47,7 +47,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Sticky on desktop; scrolls away in landscape mobile
 - Hamburger menu on mobile with smooth open/close animation
 - Tapping outside the menu closes it
-- **Log In** link navigates to the admin portal
+- **Admin** link navigates to the admin portal
 
 ### Admin Portal (`/admin`)
 - Password-protected login page (JWT-based auth, 7-day token)
@@ -141,9 +141,25 @@ The web dev server runs on `http://localhost:3000` and the API on `http://localh
 
 ---
 
+## Deployment
+
+The static frontend is deployed to **GitHub Pages** via the included Actions workflow (`.github/workflows/deploy.yml`), which triggers on every push to `main`.
+
+The Express API is deployed to **Render** (free tier). Set the following in Render's environment dashboard, then add the deployed API URL as a GitHub Actions secret so the Pages build can reach it:
+
+| Where | Variable | Value |
+|-------|----------|-------|
+| Render | `CORS_ORIGIN` | `https://<your-github-username>.github.io` |
+| GitHub Actions secret | `VITE_API_URL` | `https://<your-render-service>.onrender.com` |
+
+Render build command: `npm install && cd packages/api && npm run build`  
+Render start command: `node packages/api/dist/index.js`
+
+---
+
 ## Environment Variables
 
-Create `packages/api/.env`:
+Create `packages/api/.env` for local development:
 
 ```env
 ADMIN_PASSWORD="your-password"
@@ -155,6 +171,8 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 
 CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
 ```
+
+For the GitHub Pages build, set `VITE_API_URL` as a repository secret pointing to your deployed API. Without it, the frontend falls back to relative `/api` paths (suitable for local dev behind the Vite proxy).
 
 ---
 
