@@ -1341,7 +1341,6 @@ h1, h2, h3 {
   font-size: 20px;
   cursor: pointer;
   padding: 4px 8px;
-  margin-left: auto;
   transition: transform 0.2s ease;
   display: flex;
   align-items: center;
