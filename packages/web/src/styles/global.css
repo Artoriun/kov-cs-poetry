@@ -405,6 +405,19 @@ h1, h2, h3 {
   overflow: visible !important;
 }
 
+.carousel-nav-btn,
+.carousel-read-more-btn,
+.carousel-section-label {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.carousel-loaded .carousel-nav-btn,
+.carousel-loaded .carousel-read-more-btn,
+.carousel-loaded .carousel-section-label {
+  opacity: 1;
+}
+
 .carousel-nav-btn {
   position: absolute;
   top: 50%;
@@ -422,7 +435,7 @@ h1, h2, h3 {
   justify-content: center;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.6s ease;
 }
 
 .carousel-nav-btn:hover {
@@ -464,7 +477,7 @@ h1, h2, h3 {
   text-decoration: none;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.6s ease;
   white-space: nowrap;
 }
 
