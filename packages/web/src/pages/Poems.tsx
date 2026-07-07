@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { usePoems } from '../context/PoemsContext';
+import { usePoemsContext } from '../context/PoemsContext';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
@@ -15,7 +15,7 @@ const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
 
 export default function Poems() {
-  const poems = usePoems();
+  const { poems, loading } = usePoemsContext();
   const { id } = useParams<{ id: string }>();
   const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
   const savedParsed = savedState ? JSON.parse(savedState) : null;
@@ -81,7 +81,7 @@ export default function Poems() {
     setDetailPages(pages);
     if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
     else { setDownBtnVisible(true); }
-  }, [id, detailPages]);
+  }, [id, detailPages, detailPoem?.overlay]);
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
 
@@ -182,7 +182,7 @@ export default function Poems() {
   }, [id]);
 
   if (id) {
-    if (!detailPoem) return <div className="page"><p>Poem not found.</p></div>;
+    if (!detailPoem) return loading ? null : <div className="page"><p>Poem not found.</p></div>;
     const renderPages = detailPages ?? [detailLines];
     const isFirst = currentSlide === 0;
     const isLast = currentSlide === renderPages.length - 1;
