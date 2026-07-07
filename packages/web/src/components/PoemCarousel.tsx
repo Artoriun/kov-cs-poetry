@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
-import { usePoems } from '../context/PoemsContext';
+import { usePoemsContext } from '../context/PoemsContext';
 import '../styles/global.css';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -23,7 +23,7 @@ const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
 );
 
 export default function PoemCarousel() {
-  const allPoems = usePoems();
+  const { poems: allPoems, loading } = usePoemsContext();
   const withOverlay = allPoems.filter(p => p.overlay);
   const featured = withOverlay.filter(p => p.featured);
   const CAROUSEL_POEMS = featured.length > 0 ? featured : withOverlay.slice(0, 5);
@@ -93,7 +93,7 @@ export default function PoemCarousel() {
 
   return (
     <div
-      className="poem-carousel-wrapper"
+      className={`poem-carousel-wrapper${!loading && CAROUSEL_POEMS.length > 0 ? ' carousel-loaded' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
