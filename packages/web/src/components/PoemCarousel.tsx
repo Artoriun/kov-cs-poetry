@@ -37,26 +37,18 @@ export default function PoemCarousel() {
 
   // Custom Autoplay Logic
   useEffect(() => {
-    // 1. If the user is hovering over the carousel, pause the timer
-    if (isHovered) return;
+    if (isHovered || CAROUSEL_POEMS.length === 0) return;
 
-    // 2. Count the lines of the current poem string
     const currentPoem = CAROUSEL_POEMS[currentSlide];
     const lineCount = currentPoem?.overlay ? currentPoem.overlay.split('\n').length : 3;
-    
-    // 3. Calculate delay: 1 second per line (with a 3-second minimum baseline so short ones don't vanish instantly)
     const delay = Math.max(3000, lineCount * 1000);
 
-    // 4. Set the timer to trigger the next slide
     const timer = setTimeout(() => {
-      if (sliderRef.current) {
-        sliderRef.current.slickNext();
-      }
+      if (sliderRef.current) sliderRef.current.slickNext();
     }, delay);
 
-    // Cleanup the timer if the slide changes or component unmounts
     return () => clearTimeout(timer);
-  }, [currentSlide, isHovered]);
+  }, [currentSlide, isHovered, CAROUSEL_POEMS.length]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     startXRef.current = e.clientX;
