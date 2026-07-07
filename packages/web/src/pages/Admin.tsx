@@ -1,8 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
-import { POEMS, type Poem } from '@gedichtenv2/shared';
+import { type Poem } from '@gedichtenv2/shared';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
-import { apiLogin, apiUpdatePoem, apiUploadImage, apiResetPoem, apiUpdateOrder, apiAddPoem } from '../lib/api';
+import { apiLogin, apiUpdatePoem, apiUploadImage, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
 const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
@@ -84,7 +84,6 @@ function PoemCard({
   edit,
   onChange,
   onSave,
-  onReset,
   onToggleFeature,
   onDelete,
   status,
@@ -96,7 +95,6 @@ function PoemCard({
   edit: EditState;
   onChange: (patch: Partial<EditState>) => void;
   onSave: () => void;
-  onReset: () => void;
   onToggleFeature: () => void;
   onDelete: () => void;
   status: SaveStatus;
@@ -191,16 +189,6 @@ function PoemCard({
           >
             {poem.featured ? 'Unfeature' : 'Feature'}
           </button>
-          {!poem.id.startsWith('poem-custom-') && !poem.id.startsWith('poem-draft-') && (
-            <button
-              type="button"
-              className="admin-btn"
-              onClick={onReset}
-              disabled={status === 'saving'}
-            >
-              Reset to original
-            </button>
-          )}
           {status === 'saved' && <span className="admin-save-status">Saved</span>}
           {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>Error saving</span>}
         </div>
@@ -304,20 +292,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleReset = async (id: string) => {
-    setStatus(id, 'saving');
-    try {
-      await apiResetPoem(id);
-      await refreshPoems();
-      const original = POEMS.find(p => p.id === id);
-      if (original) patchEdit(id, { title: original.title, overlay: original.overlay ?? '', imageFile: null, imagePreview: null });
-      setStatus(id, 'saved');
-      setTimeout(() => setStatus(id, 'idle'), 3000);
-    } catch {
-      setStatus(id, 'error');
-      setTimeout(() => setStatus(id, 'idle'), 4000);
-    }
-  };
 
   const handleAddPoem = () => {
     const tempId = `poem-draft-${Date.now()}`;
@@ -400,7 +374,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
                 onChange={patch => patchEdit(poem.id, patch)}
                 onSave={() => handleSave(poem.id)}
-                onReset={() => handleReset(poem.id)}
                 onToggleFeature={() => handleToggleFeature(poem.id)}
                 onDelete={() => handleDelete(poem.id)}
                 status={statuses[poem.id] ?? 'idle'}
