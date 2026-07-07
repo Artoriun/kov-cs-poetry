@@ -475,3 +475,66 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 .admin-input:focus {
   border-color: var(--text-secondary);
 }
+
+/* ── Delete confirmation modal ── */
+
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: admin-fade-in 0.15s ease both;
+}
+
+@keyframes admin-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.admin-modal {
+  background: var(--card-bg, var(--bg-secondary));
+  border: 1px solid var(--border-color);
+  padding: 36px 40px;
+  max-width: 360px;
+  width: 90%;
+  animation: admin-modal-up 0.18s ease both;
+}
+
+@keyframes admin-modal-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.admin-modal-title {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.admin-modal-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+
+.admin-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.admin-btn-danger {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.admin-btn-danger:hover {
+  background: rgba(192, 57, 43, 0.08);
+  border-color: #c0392b;
+}
