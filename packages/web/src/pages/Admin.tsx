@@ -114,11 +114,11 @@ function PoemCard({
     <div
       className={`admin-poem-card${isDragging ? ' dragging' : ''}${poem.featured ? ' poem-highlight-static' : ''}`}
       draggable
+      onMouseDown={e => {
+        const card = e.currentTarget as HTMLElement;
+        card.draggable = !(e.target as Element).closest('input, textarea');
+      }}
       onDragStart={e => {
-        if ((e.target as Element).closest('input, textarea, button, img, label')) {
-          e.preventDefault();
-          return;
-        }
         const el = e.currentTarget as HTMLElement;
         const ghost = el.cloneNode(true) as HTMLElement;
         ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
@@ -127,7 +127,7 @@ function PoemCard({
         requestAnimationFrame(() => document.body.removeChild(ghost));
         onDragStart();
       }}
-      onDragEnd={onDragEnd}
+      onDragEnd={e => { (e.currentTarget as HTMLElement).draggable = true; onDragEnd(); }}
     >
       {poem.featured && <span className="admin-featured-label">Featured</span>}
       <button type="button" className="admin-delete-btn" onClick={onDelete} title="Delete poem">×</button>
