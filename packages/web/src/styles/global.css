@@ -1310,6 +1310,10 @@ h1, h2, h3 {
 }
 
 /* ===== FOOTER ===== */
+.site:has(.poem-detail) .site-footer {
+  display: none;
+}
+
 .site-footer {
   background: var(--footer-bg);
   border-top: 1px solid var(--border-color);
@@ -1577,6 +1581,10 @@ html.dark-mode .header-login-btn:hover {
   .poem-detail .detail-image-container:has(.detail-overlay) {
     padding-top: 72px;
     padding-bottom: 100px;
+  }
+
+  .poem-detail .detail-image-container.has-title:has(.detail-overlay) {
+    padding-top: 72px;
   }
 
   .detail-overlay {
