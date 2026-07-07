@@ -1,1 +1,1 @@
-{"tasks":{"dev":{"cache":false,"persistent":true},"build":{"dependsOn":["^build"],"outputs":["dist/**"]},"lint":{}}}
+{"tasks":{"dev":{"cache":false,"persistent":true},"build":{"dependsOn":["^build"],"outputs":["dist/**"],"env":["VITE_API_URL"]},"lint":{}}}
