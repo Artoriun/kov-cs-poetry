@@ -277,7 +277,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         setEdits(prev => { const next = { ...prev, [realId]: prev[id] }; delete next[id]; return next; });
         setStatuses(prev => { const next = { ...prev, [realId]: 'saving' as SaveStatus }; delete next[id]; return next; });
         setDraftIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-        await apiUpdateOrder([realId, ...orderedPoems.filter(p => p.id !== id).map(p => p.id)]);
+        await apiUpdateOrder(orderedPoems.map(p => p.id === id ? realId : p.id));
       }
       let imageUrl: string | undefined;
       if (edit.imageFile) imageUrl = await apiUploadImage(realId, edit.imageFile);
