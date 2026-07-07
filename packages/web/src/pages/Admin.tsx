@@ -322,7 +322,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, featured } : p));
     try {
       await apiUpdatePoem(id, { featured });
-      await refreshPoems();
     } catch {
       setOrderedPoems(prev => prev.map(p => p.id === id ? { ...p, featured: !featured } : p));
     }
