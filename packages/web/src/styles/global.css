@@ -1358,6 +1358,20 @@ html.dark-mode .theme-toggle {
   filter: brightness(0) invert(1);
 }
 
+html.dark-mode .header-login-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html.dark-mode .header-login-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
 .theme-toggle:hover {
   transform: scale(1.1);
 }
