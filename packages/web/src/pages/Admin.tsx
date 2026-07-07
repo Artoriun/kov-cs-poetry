@@ -191,14 +191,16 @@ function PoemCard({
           >
             {poem.featured ? 'Unfeature' : 'Feature'}
           </button>
-          <button
-            type="button"
-            className="admin-btn"
-            onClick={onReset}
-            disabled={status === 'saving'}
-          >
-            Reset to original
-          </button>
+          {!poem.id.startsWith('poem-custom-') && !poem.id.startsWith('poem-draft-') && (
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={onReset}
+              disabled={status === 'saving'}
+            >
+              Reset to original
+            </button>
+          )}
           {status === 'saved' && <span className="admin-save-status">Saved</span>}
           {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>Error saving</span>}
         </div>
