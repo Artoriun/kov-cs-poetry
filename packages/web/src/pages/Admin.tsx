@@ -191,8 +191,9 @@ function PoemCard({
               if (!s.pending) return;
               s.pending = false;
               e.preventDefault();
-              const ta = e.currentTarget as HTMLTextAreaElement;
-              ta.setSelectionRange(0, ta.value.length);
+              (e.currentTarget as HTMLTextAreaElement).focus();
+              // ponytail: deprecated but only API that updates Android's visual selection layer
+              document.execCommand('selectAll');
             }}
             onClick={e => {
               if ((e.nativeEvent as PointerEvent).pointerType === 'touch') return;
