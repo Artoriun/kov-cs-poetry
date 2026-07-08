@@ -173,7 +173,7 @@ function PoemCard({
             className="admin-overlay-textarea"
             value={edit.overlay}
             onChange={e => onChange({ overlay: e.target.value })}
-            onClick={e => { if (e.detail === 3) e.currentTarget.select(); }}
+            onClick={e => { if (e.detail === 3) { const ta = e.currentTarget; setTimeout(() => ta.select(), 0); } }}
           />
         </div>
 
