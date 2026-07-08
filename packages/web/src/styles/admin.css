@@ -238,6 +238,8 @@ html.dark-mode .admin-delete-btn:hover {
 .admin-poem-card input,
 .admin-poem-card textarea {
   cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .admin-poem-card button,
