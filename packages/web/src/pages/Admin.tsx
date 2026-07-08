@@ -103,6 +103,7 @@ function PoemCard({
   isDragging: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tapRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null; pending: boolean }>({ count: 0, timer: null, pending: false });
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -173,7 +174,30 @@ function PoemCard({
             className="admin-overlay-textarea"
             value={edit.overlay}
             onChange={e => onChange({ overlay: e.target.value })}
-            onClick={e => { if (e.detail === 3) { const ta = e.currentTarget; setTimeout(() => ta.select(), 0); } }}
+            onTouchStart={e => {
+              const s = tapRef.current;
+              if (s.timer) clearTimeout(s.timer);
+              s.count++;
+              if (s.count >= 3) {
+                s.count = 0;
+                s.pending = true;
+              } else {
+                s.pending = false;
+                s.timer = setTimeout(() => { s.count = 0; }, 500);
+              }
+            }}
+            onTouchEnd={e => {
+              const s = tapRef.current;
+              if (!s.pending) return;
+              s.pending = false;
+              e.preventDefault();
+              const ta = e.currentTarget as HTMLTextAreaElement;
+              ta.setSelectionRange(0, ta.value.length);
+            }}
+            onClick={e => {
+              if ((e.nativeEvent as PointerEvent).pointerType === 'touch') return;
+              if (e.detail === 3) { e.preventDefault(); e.currentTarget.select(); }
+            }}
           />
         </div>
 
