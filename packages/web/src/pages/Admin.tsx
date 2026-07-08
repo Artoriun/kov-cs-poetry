@@ -118,6 +118,10 @@ function PoemCard({
         const card = e.currentTarget as HTMLElement;
         card.draggable = !(e.target as Element).closest('input, textarea');
       }}
+      onTouchStart={e => {
+        const card = e.currentTarget as HTMLElement;
+        card.draggable = !(e.target as Element).closest('input, textarea');
+      }}
       onDragStart={e => {
         const el = e.currentTarget as HTMLElement;
         const ghost = el.cloneNode(true) as HTMLElement;
