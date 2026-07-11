@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Slider from 'react-slick';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import '../styles/global.css';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
 
 const PrevArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
   <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label="Previous">
@@ -22,100 +20,92 @@ const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
   </button>
 );
 
+// Horizontal slide variants; dir 1 = next/right, -1 = prev/left
+const variants = {
+  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+};
+
 export default function PoemCarousel() {
   const { poems: allPoems, loading } = usePoemsContext();
   const withOverlay = allPoems.filter(p => p.overlay);
   const featured = withOverlay.filter(p => p.featured);
   const CAROUSEL_POEMS = featured.length > 0 ? featured : withOverlay.slice(0, 5);
-  const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
+  const count = CAROUSEL_POEMS.length;
+
+  // [current index, slide direction] packed together so one setState drives both
+  const [[current, direction], setSlide] = useState([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
+  // Prevents navigating on a drag release that also fires a click event
+  const isDraggingRef = useRef(false);
 
-  // Custom Autoplay Logic
+  const paginate = (dir: number) =>
+    setSlide(([c]) => [(c + dir + count) % count, dir]);
+
+  // Autoplay: delay proportional to line count so longer poems get more reading time
   useEffect(() => {
-    if (isHovered || CAROUSEL_POEMS.length === 0) return;
-
-    const currentPoem = CAROUSEL_POEMS[currentSlide];
-    const lineCount = currentPoem?.overlay ? currentPoem.overlay.split('\n').length : 3;
-    const delay = Math.max(3000, lineCount * 1000);
-
-    const timer = setTimeout(() => {
-      if (sliderRef.current) sliderRef.current.slickNext();
-    }, delay);
-
+    if (isHovered || count === 0) return;
+    const poem = CAROUSEL_POEMS[current];
+    const lineCount = poem?.overlay ? poem.overlay.split('\n').length : 3;
+    const timer = setTimeout(() => paginate(1), Math.max(3000, lineCount * 1000));
     return () => clearTimeout(timer);
-  }, [currentSlide, isHovered, CAROUSEL_POEMS.length]);
+  }, [current, isHovered, count]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    startXRef.current = e.clientX;
-    startYRef.current = e.clientY;
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    const endX = e.clientX;
-    const endY = e.clientY;
-    const deltaX = Math.abs(endX - startXRef.current);
-    const deltaY = Math.abs(endY - startYRef.current);
-    
-    // If moved more than 10px in any direction, consider it a drag
-    if (deltaX > 10 || deltaY > 10) {
-      setIsDragging(true);
-    }
-  };
-
-  const settings = {
-    dots: false,
-    infinite: true,
-    speed: 600,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: false,
-    arrows: true,
-    prevArrow: <PrevArrow />,
-    nextArrow: <NextArrow />,
-    beforeChange: (_current: number, next: number) => {
-      setCurrentSlide(next);
-      setAnimKey(k => k + 1);
-    },
-  };
+  const poem = CAROUSEL_POEMS[current];
 
   return (
     <div
-      className={`poem-carousel-wrapper${!loading && CAROUSEL_POEMS.length > 0 ? ' carousel-loaded' : ''}`}
+      className={`poem-carousel-wrapper${!loading && count > 0 ? ' carousel-loaded' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="carousel-section-label">Featured Poems</div>
-      <Slider ref={sliderRef} {...settings}>
-        {CAROUSEL_POEMS.map((poem) => {
-          const isActive = CAROUSEL_POEMS.indexOf(poem) === currentSlide;
-          const dragHandlers = {
-            onMouseDown: handleMouseDown,
-            onMouseUp: handleMouseUp,
-            onClick: (e: React.MouseEvent) => { if (isDragging) { e.preventDefault(); setIsDragging(false); } },
-          };
-          return (
-            <div key={poem.id} className="carousel-slide">
-              <Link to={`/poems/${poem.id}`} className="carousel-link" {...dragHandlers}>
-                <div className="carousel-image-container">
-                  <img
-                    src={poem.image}
-                    alt={poem.title}
-                    loading="lazy"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  {isActive
-                    ? <div key={animKey} className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
-                    : <div className="carousel-slide-title">{poem.title}</div>
-                  }
-                  {poem.overlay && (
-                    <span className="carousel-overlay">
-                      {isActive ? (
-                        <span key={animKey}>
+
+      {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={current}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.1}
+            onDragStart={() => { isDraggingRef.current = true; }}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -50) paginate(1);
+              else if (info.offset.x > 50) paginate(-1);
+              // Delay clearing so the click event that fires after drag-end is still blocked
+              setTimeout(() => { isDraggingRef.current = false; }, 100);
+            }}
+            className="carousel-slide"
+          >
+            {poem && (
+              <>
+                <Link
+                  to={`/poems/${poem.id}`}
+                  className="carousel-link"
+                  onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
+                >
+                  <div className="carousel-image-container">
+                    <img
+                      src={poem.image}
+                      alt={poem.title}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {/* key=current restarts the CSS reveal animation on every slide change */}
+                    <div key={current} className="carousel-slide-title carousel-overlay-line">
+                      {poem.title}
+                    </div>
+                    {poem.overlay && (
+                      <span className="carousel-overlay">
+                        <span key={current}>
                           {poem.overlay.split('\n').map((line, i) => (
                             <span
                               key={i}
@@ -126,18 +116,25 @@ export default function PoemCarousel() {
                             </span>
                           ))}
                         </span>
-                      ) : poem.overlay}
-                    </span>
-                  )}
-                </div>
-              </Link>
-              <Link to={`/poems/${poem.id}`} className="carousel-read-more-btn" {...dragHandlers}>
-                Read More
-              </Link>
-            </div>
-          );
-        })}
-      </Slider>
+                      </span>
+                    )}
+                  </div>
+                </Link>
+                <Link
+                  to={`/poems/${poem.id}`}
+                  className="carousel-read-more-btn"
+                  onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
+                >
+                  Read More
+                </Link>
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <PrevArrow onClick={() => paginate(-1)} />
+      <NextArrow onClick={() => paginate(1)} />
     </div>
   );
 }

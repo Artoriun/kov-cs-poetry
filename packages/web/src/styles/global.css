@@ -691,23 +691,9 @@ h1, h2, h3 {
   min-width: 0;
 }
 
-@keyframes poem-fade-out {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-10px); }
-}
-
 @keyframes poem-fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-.poems-fading-out .poem-card-wrapper {
-  animation: poem-fade-out 0.2s ease var(--stagger, 0ms) forwards;
-}
-
-.poems-fading-in .poem-card-wrapper {
-  opacity: 0;
-  animation: poem-fade-in 0.2s ease var(--stagger, 0ms) forwards;
 }
 
 @keyframes page-fade-to-detail {
@@ -726,11 +712,6 @@ h1, h2, h3 {
 
 .poems-toc-wrap {
   animation: poem-fade-in var(--page-fade-duration) ease var(--page-fade-stagger) both;
-}
-
-.poem-card-wrapper {
-  animation: poem-fade-in var(--page-fade-duration) ease both;
-  animation-delay: calc(var(--stagger, 0ms) + var(--page-fade-stagger));
 }
 
 .poems-heading {
@@ -927,20 +908,6 @@ h1, h2, h3 {
 .btn-more:hover {
   background: var(--button-bg-hover);
   color: var(--button-text-hover);
-}
-
-@keyframes btn-fade-out {
-  to { opacity: 0; }
-}
-@keyframes btn-fade-in {
-  from { opacity: 0; }
-}
-
-.btn-more-out {
-  animation: btn-fade-out var(--btn-fade-duration, 200ms) ease var(--btn-fade-delay, 0ms) both;
-}
-.btn-more-in {
-  animation: btn-fade-in var(--btn-fade-duration, 200ms) ease both;
 }
 
 /* ===== POEM DETAIL ===== */
