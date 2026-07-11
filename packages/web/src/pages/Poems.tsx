@@ -1,8 +1,6 @@
 import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
+import { motion, AnimatePresence } from 'motion/react';
 import { usePoemsContext } from '../context/PoemsContext';
 
 const PER_PAGE = 9;
@@ -14,13 +12,26 @@ const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 const optimizeUrl = (url: string) =>
   url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
 
+// Card enter/exit variants for the poems grid; custom(i) provides per-card stagger index
+const cardVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.2 } }),
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
+};
+
+// Direction-aware variants for the poem detail carousel; dir 1=forward/down, -1=backward/up
+const slideVariants = {
+  enter: (dir: number) => ({ opacity: 0, y: dir > 0 ? 30 : -30 }),
+  center: { opacity: 1, y: 0 },
+  exit: (dir: number) => ({ opacity: 0, y: dir > 0 ? -30 : 30 }),
+};
+
 export default function Poems() {
   const { poems, loading } = usePoemsContext();
   const { id } = useParams<{ id: string }>();
   const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
   const savedParsed = savedState ? JSON.parse(savedState) : null;
   const [page, setPage] = useState<number>(savedParsed?.page ?? 0);
-  const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle');
   const navigate = useNavigate();
   const detailPoem = id ? (poems.find((p) => p.id === id) ?? null) : null;
   const detailLines = detailPoem?.overlay ? detailPoem.overlay.split('\n') : [];
@@ -28,31 +39,31 @@ export default function Poems() {
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? id ?? null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideDir, setSlideDir] = useState(1); // 1 = next/down, -1 = prev/up
   const [upBtnVisible, setUpBtnVisible] = useState(false);
   const [downBtnVisible, setDownBtnVisible] = useState(true);
   const [backBtnVisible, setBackBtnVisible] = useState(false);
-  const [animKey, setAnimKey] = useState(0);
   const [seenSlides, setSeenSlides] = useState<Set<number>>(new Set<number>());
-  const [incomingSlide, setIncomingSlide] = useState<number | null>(null);
-  const sliderRef = useRef<InstanceType<typeof Slider> | null>(null);
   const poemDetailRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startY: number; lastY: number; atTop: boolean; atBottom: boolean } | null>(null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
   const pulseNavRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Stores a highlight callback to fire after the incoming grid page finishes entering
+  const pendingHighlightRef = useRef<(() => void) | null>(null);
 
+  // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
     setDetailPages(null);
     setCurrentSlide(0);
-    setAnimKey(0);
     setSeenSlides(new Set<number>());
-    setIncomingSlide(null);
     setUpBtnVisible(false);
     setDownBtnVisible(true);
     setBackBtnVisible(false);
   }, [id]);
 
+  // Measure overlay lines and split into pages that fit the available viewport height
   useLayoutEffect(() => {
     if (!id || !detailPoem?.overlay || detailPages !== null) return;
     const overlay = document.querySelector<HTMLElement>('.detail-overlay');
@@ -85,6 +96,7 @@ export default function Poems() {
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
 
+  // Re-apply highlight-static on the active card when returning from detail view
   useEffect(() => {
     if (id || !activePoemId) return;
     const card = document.querySelector<HTMLElement>(`#${activePoemId} .poem-card`);
@@ -93,6 +105,7 @@ export default function Poems() {
     activeCardRef.current = card;
   }, [id, activePoemId]);
 
+  // Keep the TOC indicator line in sync with the current page range
   useEffect(() => {
     const ul = tocListRef.current;
     const line = tocLineRef.current;
@@ -108,7 +121,7 @@ export default function Poems() {
     const layoutTop = first.offsetTop;
     const height = last.offsetTop + last.offsetHeight - layoutTop;
 
-    // Auto-scroll nav so the current page range is visible
+    // Auto-scroll the nav so the current range is always in view
     nav.scrollTop = Math.max(0, layoutTop - 24);
 
     const setTop = () => { line.style.top = `${layoutTop - nav.scrollTop}px`; };
@@ -116,7 +129,7 @@ export default function Poems() {
     setTop();
     line.style.height = `${height}px`;
     line.style.animation = 'none';
-    void line.offsetHeight;
+    void line.offsetHeight; // force reflow so restarting the same animation actually re-runs
     line.style.animation = tocDirectionRef.current === 'down'
       ? 'toc-line-grow-down 0.65s ease forwards'
       : 'toc-line-grow-up 0.65s ease forwards';
@@ -135,28 +148,30 @@ export default function Poems() {
   }, [page, id]);
 
   useEffect(() => {
-    const line = tocLineRef.current;
-    if (!line || phase !== 'out') return;
-    const retractAnim = tocDirectionRef.current === 'down'
-      ? 'toc-line-retract-down 0.4s ease forwards'
-      : 'toc-line-retract-up 0.4s ease forwards';
-    line.style.animation = 'none';
-    void line.offsetHeight;
-    line.style.animation = retractAnim;
-  }, [phase]);
-
-  useEffect(() => {
     if (!id) return;
     window.scrollTo(0, 0);
     setCurrentSlide(0);
-    setAnimKey(0);
   }, [id]);
 
+  // React's synthetic onTouchMove is passive, so e.preventDefault() is ignored by the browser.
+  // A native listener with { passive: false } is required to actually suppress pull-to-refresh
+  // and prevent the address bar from showing/hiding (which causes the background image to resize).
+  // detailPoem is included in deps so this re-runs after poems load on a hard refresh —
+  // without it, poemDetailRef.current is null on the first run (div not yet in the DOM).
+  useEffect(() => {
+    const el = poemDetailRef.current;
+    if (!el) return;
+    const preventScroll = (e: TouchEvent) => { e.preventDefault(); };
+    el.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => el.removeEventListener('touchmove', preventScroll);
+  }, [id, detailPoem]);
+
+  // Auto-advance to the next poem page after enough reading time
   useEffect(() => {
     if (!id || !detailPages) return;
     if (currentSlide === detailPages.length - 1) return;
     const lines = detailPages[currentSlide]?.length ?? 1;
-    const timer = setTimeout(() => sliderRef.current?.slickNext(), Math.max(lines, 1) * 2500);
+    const timer = setTimeout(() => goToSlide(currentSlide + 1, 1), Math.max(lines, 1) * 2500);
     return () => clearTimeout(timer);
   }, [id, currentSlide, detailPages]);
 
@@ -181,18 +196,44 @@ export default function Poems() {
     return () => document.removeEventListener('click', onClick);
   }, [id]);
 
+  // Navigate to a detail carousel page; dir 1 = forward/down, -1 = backward/up
+  const goToSlide = (next: number, dir: number) => {
+    const pages = detailPages ?? [detailLines];
+    if (next < 0 || next >= pages.length) return;
+    setSlideDir(dir);
+    setUpBtnVisible(next !== 0);
+    setDownBtnVisible(next !== pages.length - 1);
+    setBackBtnVisible(next === pages.length - 1);
+    // Mark the current slide as seen before leaving it
+    setSeenSlides(prev => { const s = new Set(prev); s.add(currentSlide); return s; });
+    setCurrentSlide(next);
+    if (window.innerHeight <= 500 && poemDetailRef.current) {
+      window.scrollTo({ top: poemDetailRef.current.offsetTop, behavior: 'smooth' });
+    }
+  };
+
+  // Play the TOC line retract animation; called just before a page change
+  const retractTocLine = () => {
+    const line = tocLineRef.current;
+    if (!line) return;
+    line.style.animation = 'none';
+    void line.offsetHeight;
+    line.style.animation = tocDirectionRef.current === 'down'
+      ? 'toc-line-retract-down 0.4s ease forwards'
+      : 'toc-line-retract-up 0.4s ease forwards';
+  };
+
+  // ── Detail page ───────────────────────────────────────────────────────────────
+
   if (id) {
     if (!detailPoem) return loading ? null : <div className="page"><p>Poem not found.</p></div>;
     const renderPages = detailPages ?? [detailLines];
-    const isFirst = currentSlide === 0;
     const isLast = currentSlide === renderPages.length - 1;
     const currentPageLines = renderPages[currentSlide] ?? [];
     const textDelay = currentPageLines.length > 0
       ? (currentPageLines.length - 1) * DETAIL_LINE_STAGGER + DETAIL_BTN_OFFSET
       : DETAIL_BTN_OFFSET;
-    const btnDelay = seenSlides.has(currentSlide) ? 0 : isFirst ? DETAIL_IMG_DURATION + textDelay : textDelay;
-
-    const getList = () => poemDetailRef.current?.querySelector<HTMLElement>('.slick-list') ?? null;
+    const btnDelay = seenSlides.has(currentSlide) ? 0 : currentSlide === 0 ? DETAIL_IMG_DURATION + textDelay : textDelay;
 
     const dragStart = (y: number) => {
       const landscape = window.innerHeight <= 500;
@@ -206,35 +247,28 @@ export default function Poems() {
     };
     const isNavGesture = (deltaY: number) => {
       if (!dragRef.current) return false;
-      return (deltaY < 0 && dragRef.current.atBottom) || (deltaY > 0 && dragRef.current.atTop);
+      const canGoNext = currentSlide < renderPages.length - 1;
+      const canGoPrev = currentSlide > 0;
+      return (deltaY < 0 && dragRef.current.atBottom && canGoNext)
+          || (deltaY > 0 && dragRef.current.atTop && canGoPrev);
     };
     const dragMove = (y: number) => {
       if (!dragRef.current) return;
       const totalDelta = y - dragRef.current.startY;
       const step = y - dragRef.current.lastY;
       dragRef.current.lastY = y;
-      if (isNavGesture(totalDelta)) {
-        const list = getList();
-        if (list) list.style.transform = `translateY(${totalDelta * 0.35}px)`;
-      } else {
-        window.scrollBy({ top: -step, behavior: 'instant' });
-      }
+      // Scroll the page if not a slide-navigation gesture
+      if (!isNavGesture(totalDelta)) window.scrollBy({ top: -step, behavior: 'instant' });
     };
     const dragEnd = (y: number) => {
       if (!dragRef.current) return;
       const delta = y - dragRef.current.startY;
-      const nav = isNavGesture(delta);
+      const nav = isNavGesture(delta); // must be read before clearing dragRef
       dragRef.current = null;
       poemDetailRef.current?.classList.remove('dragging');
-      const list = getList();
-      if (list) {
-        list.style.transition = 'transform 0.3s ease';
-        list.style.transform = '';
-        setTimeout(() => { if (list) list.style.transition = ''; }, 300);
-      }
       if (!nav || Math.abs(delta) < 50) return;
-      if (delta < 0) sliderRef.current?.slickNext();
-      else sliderRef.current?.slickPrev();
+      if (delta < 0) goToSlide(currentSlide + 1, 1);
+      else goToSlide(currentSlide - 1, -1);
     };
 
     return (
@@ -252,105 +286,73 @@ export default function Poems() {
         <img src={detailPoem.image} alt={detailPoem.title} className="detail-fixed-bg detail-img-anim" />
 
         <button
-            type="button"
-            className={`detail-scroll-up-btn${upBtnVisible ? '' : ' is-hidden'}`}
-            onClick={() => sliderRef.current?.slickPrev()}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-        <Slider
-          key={`${id}-${detailPages ? 'loaded' : 'loading'}`}
-          ref={sliderRef}
-          vertical
-          swipe={false}
-          draggable={false}
-          infinite={false}
-          arrows={false}
-          speed={500}
-          beforeChange={(_: number, next: number) => {
-            setIncomingSlide(next);
-            setUpBtnVisible(next !== 0);
-            setDownBtnVisible(next !== renderPages.length - 1);
-            setBackBtnVisible(next === renderPages.length - 1);
-          }}
-          afterChange={(index: number) => {
-            setIncomingSlide(null);
-            if (index !== currentSlide) {
-              setSeenSlides(prev => {
-                if (prev.has(currentSlide)) return prev;
-                const s = new Set(prev); s.add(currentSlide); return s;
-              });
-              if (!seenSlides.has(index)) setAnimKey(k => k + 1);
-              if (window.innerHeight <= 500 && poemDetailRef.current) {
-                window.scrollTo({ top: poemDetailRef.current.offsetTop, behavior: 'smooth' });
-              }
-            }
-            setCurrentSlide(index);
-          }}
+          type="button"
+          className={`detail-scroll-up-btn${upBtnVisible ? '' : ' is-hidden'}`}
+          onClick={() => goToSlide(currentSlide - 1, -1)}
         >
-          {renderPages.map((pageLines, pageIdx) => {
-            const isCurrentPage = pageIdx === currentSlide;
-            const isLastPage = pageIdx === renderPages.length - 1;
-            return (
-              <div key={pageIdx}>
-                <div className={`detail-image-container${pageIdx === 0 ? ' has-title' : ''}`}>
-                  {pageIdx === 0 && (
-                    <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
-                      {detailPoem.title}
-                    </h1>
-                  )}
-                  {pageLines.length > 0 && (
-                    <p key={animKey} className="detail-overlay">
-                      {pageLines.map((line, i) => (
-                        <span
-                          key={i}
-                          className={
-                            isCurrentPage || (pageIdx === incomingSlide && seenSlides.has(pageIdx))
-                              ? seenSlides.has(pageIdx)
-                                ? 'detail-overlay-line-revealed'
-                                : 'detail-overlay-line'
-                              : 'detail-overlay-line-shown'
-                          }
-                          style={isCurrentPage && !seenSlides.has(pageIdx) ? {
-                            animationDelay: pageIdx === 0
-                              ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
-                              : `${i * DETAIL_LINE_STAGGER}ms`,
-                          } : undefined}
-                        >
-                          {line || ' '}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                  {isLastPage && (
-                    <button
-                      key={`back-${animKey}`}
-                      type="button"
-                      className={`detail-back-btn${backBtnVisible ? '' : ' is-hidden'}`}
-                      style={{ animationDelay: `${btnDelay}ms` }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const targetPage = Math.floor(poems.findIndex(p => p.id === id) / PER_PAGE);
-                        sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
-                        navigate('/poems');
-                      }}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Vertical carousel: AnimatePresence swaps pages with a direction-aware fade+translate */}
+        <AnimatePresence initial={false} custom={slideDir} mode="wait">
+          <motion.div
+            key={currentSlide}
+            custom={slideDir}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.45, ease: 'easeInOut' }}
+          >
+            <div className={`detail-image-container${currentSlide === 0 ? ' has-title' : ''}`}>
+              {currentSlide === 0 && (
+                <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
+                  {detailPoem.title}
+                </h1>
+              )}
+              {currentPageLines.length > 0 && (
+                <p className="detail-overlay">
+                  {currentPageLines.map((line, i) => (
+                    <span
+                      key={i}
+                      // Seen slides show immediately; new slides play the mask-wipe reveal
+                      className={seenSlides.has(currentSlide) ? 'detail-overlay-line-revealed' : 'detail-overlay-line'}
+                      style={!seenSlides.has(currentSlide) ? {
+                        animationDelay: currentSlide === 0
+                          ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
+                          : `${i * DETAIL_LINE_STAGGER}ms`,
+                      } : undefined}
                     >
-                      ← Poems
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </Slider>
+                      {line || ' '}
+                    </span>
+                  ))}
+                </p>
+              )}
+              {isLast && (
+                <button
+                  type="button"
+                  className={`detail-back-btn${backBtnVisible ? '' : ' is-hidden'}`}
+                  style={{ animationDelay: `${btnDelay}ms` }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const targetPage = Math.floor(poems.findIndex(p => p.id === id) / PER_PAGE);
+                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+                    navigate('/poems');
+                  }}
+                >
+                  ← Poems
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
         <button
           type="button"
           className={`detail-scroll-down-btn${isLast || !downBtnVisible ? ' is-hidden' : ''}`}
-          onClick={() => sliderRef.current?.slickNext()}
+          onClick={() => goToSlide(currentSlide + 1, 1)}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -360,26 +362,21 @@ export default function Poems() {
     );
   }
 
+  // ── Grid page ─────────────────────────────────────────────────────────────────
+
   const displayed = poems.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
-  const STAGGER = 80; // ms between each card
-  const FADE_DURATION = 200; // ms per fade
 
   const handleNextPage = () => {
-    if (phase !== 'idle') return;
     const nextPage = (page + 1) * PER_PAGE >= poems.length ? 0 : page + 1;
     tocDirectionRef.current = nextPage > page ? 'down' : 'up';
+    retractTocLine(); // retract the indicator line before AnimatePresence starts the exit
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       activeCardRef.current = null;
     }
     setActivePoemId(null);
     sessionStorage.removeItem('poems-grid-state');
-    setPhase('out');
-    setTimeout(() => {
-      setPage(p => ((p + 1) * PER_PAGE >= poems.length ? 0 : p + 1));
-      setPhase('in');
-      setTimeout(() => setPhase('idle'), PER_PAGE * STAGGER + FADE_DURATION);
-    }, PER_PAGE * STAGGER + FADE_DURATION);
+    setPage(nextPage);
   };
 
   const handleTocClick = (poemId: string) => {
@@ -391,6 +388,7 @@ export default function Poems() {
     setActivePoemId(poemId);
     const targetPage = Math.floor(poems.findIndex(p => p.id === poemId) / PER_PAGE);
 
+    // Pulses the card and then navigates to its detail page
     const doHighlight = () => {
       if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       const card = document.querySelector<HTMLElement>(`#${poemId} .poem-card`);
@@ -431,21 +429,15 @@ export default function Poems() {
       return;
     }
 
-    if (phase !== 'idle') return;
     tocDirectionRef.current = targetPage > page ? 'down' : 'up';
+    retractTocLine();
     if (activeCardRef.current) {
       activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       activeCardRef.current = null;
     }
-    setPhase('out');
-    setTimeout(() => {
-      setPage(targetPage);
-      setPhase('in');
-      setTimeout(() => {
-        setPhase('idle');
-        doHighlight();
-      }, PER_PAGE * STAGGER + FADE_DURATION);
-    }, PER_PAGE * STAGGER + FADE_DURATION);
+    // Queue the highlight to fire after the incoming page finishes entering
+    pendingHighlightRef.current = doHighlight;
+    setPage(targetPage);
   };
 
   return (
@@ -466,42 +458,53 @@ export default function Poems() {
           <div ref={tocLineRef} className="toc-range-line" />
         </div>
         <div className="poems-content">
-          <div className={`poems-grid${phase === 'out' ? ' poems-fading-out' : phase === 'in' ? ' poems-fading-in' : ''}`}>
-            {displayed.map((poem, i) => (
-              <div
-                key={poem.id}
-                id={poem.id}
-                className="poem-card-wrapper"
-                style={{ '--stagger': `${i * STAGGER}ms` } as React.CSSProperties}
-              >
-                <div className="poem-card-title">{poem.title}</div>
-                <Link to={`/poems/${poem.id}`} className="poem-card" onClick={() => {
-                    pulseNavRef.current.forEach(clearTimeout);
-                    pulseNavRef.current = [];
-                    document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
-                      el.classList.remove('poem-highlight', 'poem-highlight-static');
-                    });
-                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page, activePoemId: poem.id }));
-                    setActivePoemId(poem.id);
-                  }}>
-                  <div className="poem-card-img-wrap">
-                    <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
-                  </div>
-                  {poem.overlay && (
-                    <span className="poem-overlay">{poem.overlay}</span>
-                  )}
-                </Link>
-              </div>
-            ))}
-          </div>
-          <button
-            className={`btn-more${phase === 'out' ? ' btn-more-out' : phase === 'in' ? ' btn-more-in' : ''}`}
-            style={{
-              '--btn-fade-delay': `${(PER_PAGE - 1) * STAGGER}ms`,
-              '--btn-fade-duration': `${FADE_DURATION}ms`,
-            } as React.CSSProperties}
-            onClick={handleNextPage}
-          >More Poems</button>
+          {/* mode="wait" sequences exit then enter so cards never overlap between pages */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              className="poems-grid"
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              onAnimationComplete={(definition) => {
+                // Only fire after the enter animation ("show"), not the exit
+                if (definition === 'show' && pendingHighlightRef.current) {
+                  pendingHighlightRef.current();
+                  pendingHighlightRef.current = null;
+                }
+              }}
+            >
+              {displayed.map((poem, i) => (
+                // Each card staggered via the custom prop passed to cardVariants
+                <motion.div
+                  key={poem.id}
+                  id={poem.id}
+                  className="poem-card-wrapper"
+                  variants={cardVariants}
+                  custom={i}
+                >
+                  <div className="poem-card-title">{poem.title}</div>
+                  <Link to={`/poems/${poem.id}`} className="poem-card" onClick={() => {
+                      pulseNavRef.current.forEach(clearTimeout);
+                      pulseNavRef.current = [];
+                      document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
+                        el.classList.remove('poem-highlight', 'poem-highlight-static');
+                      });
+                      sessionStorage.setItem('poems-grid-state', JSON.stringify({ page, activePoemId: poem.id }));
+                      setActivePoemId(poem.id);
+                    }}>
+                    <div className="poem-card-img-wrap">
+                      <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
+                    </div>
+                    {poem.overlay && (
+                      <span className="poem-overlay">{poem.overlay}</span>
+                    )}
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+          <button className="btn-more" onClick={handleNextPage}>More Poems</button>
         </div>
       </div>
     </div>
