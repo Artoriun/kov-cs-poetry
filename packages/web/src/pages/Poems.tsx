@@ -153,6 +153,19 @@ export default function Poems() {
     setCurrentSlide(0);
   }, [id]);
 
+  // React's synthetic onTouchMove is passive, so e.preventDefault() is ignored by the browser.
+  // A native listener with { passive: false } is required to actually suppress pull-to-refresh
+  // and prevent the address bar from showing/hiding (which causes the background image to resize).
+  // detailPoem is included in deps so this re-runs after poems load on a hard refresh —
+  // without it, poemDetailRef.current is null on the first run (div not yet in the DOM).
+  useEffect(() => {
+    const el = poemDetailRef.current;
+    if (!el) return;
+    const preventScroll = (e: TouchEvent) => { e.preventDefault(); };
+    el.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => el.removeEventListener('touchmove', preventScroll);
+  }, [id, detailPoem]);
+
   // Auto-advance to the next poem page after enough reading time
   useEffect(() => {
     if (!id || !detailPages) return;
@@ -247,9 +260,10 @@ export default function Poems() {
     const dragEnd = (y: number) => {
       if (!dragRef.current) return;
       const delta = y - dragRef.current.startY;
+      const nav = isNavGesture(delta); // must be read before clearing dragRef
       dragRef.current = null;
       poemDetailRef.current?.classList.remove('dragging');
-      if (!isNavGesture(delta) || Math.abs(delta) < 50) return;
+      if (!nav || Math.abs(delta) < 50) return;
       if (delta < 0) goToSlide(currentSlide + 1, 1);
       else goToSlide(currentSlide - 1, -1);
     };
@@ -449,9 +463,9 @@ export default function Poems() {
               initial="hidden"
               animate="show"
               exit="exit"
-              onAnimationComplete={() => {
-                // Fire any pending highlight after the new page has fully entered
-                if (pendingHighlightRef.current) {
+              onAnimationComplete={(definition) => {
+                // Only fire after the enter animation ("show"), not the exit
+                if (definition === 'show' && pendingHighlightRef.current) {
                   pendingHighlightRef.current();
                   pendingHighlightRef.current = null;
                 }
