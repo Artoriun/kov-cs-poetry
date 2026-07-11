@@ -8,13 +8,16 @@ import { apiLogin, apiUpdatePoem, apiUploadImage, apiUpdateOrder, apiAddPoem } f
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
 const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
 
-// Stagger delay only applies on mount; layout reorder uses the component-level transition
+// listVariants orchestrates stagger; cardVariants define each card's enter/exit.
+// delayChildren: 0.4 matches body page-load-fade so cards don't animate while body is invisible.
+// layout reorder uses transition.layout on each card, not these variants.
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
 const cardVariants = {
   hidden: { opacity: 0, y: 10 },
-  show: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: Math.min(i * 0.06, 0.4), duration: 0.35, ease: 'easeInOut' as const },
-  }),
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeInOut' as const } },
 };
 import '../styles/admin.css';
 
@@ -403,42 +406,39 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           Loading poems…
         </motion.p>
       ) : (
-        <motion.div key="list" className="admin-poem-list">
+        <motion.div key="list" className="admin-poem-list" variants={listVariants} initial="hidden" animate="show">
           <motion.div
             className="admin-add-row"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+            variants={cardVariants}
           >
             <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
             <span className="admin-add-label">Add Poem</span>
           </motion.div>
           {orderedPoems.map((poem, i) => (
-            // layout animates reorder (FLIP); variants handle the staggered entrance on mount
-            <motion.div
-              key={poem.id}
-              layout
-              custom={i}
-              variants={cardVariants}
-              initial="hidden"
-              animate="show"
-              transition={{ duration: 0.35, ease: 'easeInOut' }}
-              className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
-              onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
-              onDrop={() => handleDrop(i)}
-            >
-              <PoemCard
-                poem={poem}
-                edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
-                onChange={patch => patchEdit(poem.id, patch)}
-                onSave={() => handleSave(poem.id)}
-                onToggleFeature={() => handleToggleFeature(poem.id)}
-                onDelete={() => setPendingDeleteId(poem.id)}
-                status={statuses[poem.id] ?? 'idle'}
-                onDragStart={() => setDragIndex(i)}
-                onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
-                isDragging={dragIndex === i}
-              />
+            // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
+            // Combining layout and variants on the same element causes Motion to apply
+            // the y transform from hidden but skip opacity — split avoids the conflict.
+            <motion.div key={poem.id} variants={cardVariants}>
+              <motion.div
+                layout
+                transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
+                className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
+                onDrop={() => handleDrop(i)}
+              >
+                <PoemCard
+                  poem={poem}
+                  edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
+                  onChange={patch => patchEdit(poem.id, patch)}
+                  onSave={() => handleSave(poem.id)}
+                  onToggleFeature={() => handleToggleFeature(poem.id)}
+                  onDelete={() => setPendingDeleteId(poem.id)}
+                  status={statuses[poem.id] ?? 'idle'}
+                  onDragStart={() => setDragIndex(i)}
+                  onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
+                  isDragging={dragIndex === i}
+                />
+              </motion.div>
             </motion.div>
           ))}
         </motion.div>
