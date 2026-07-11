@@ -1,4 +1,5 @@
-import { useState, useEffect, useLayoutEffect, useRef, type ChangeEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { type Poem } from '@gedichtenv2/shared';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
@@ -239,8 +240,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const initialized = useRef(false);
-  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const prevPositions = useRef<Record<string, DOMRect> | null>(null);
 
   // Initialize once when live poem data loads
   useEffect(() => {
@@ -270,24 +269,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       return next;
     });
   }, [poems]);
-
-  // FLIP animation: after orderedPoems reorders, animate cards from old positions to new
-  useLayoutEffect(() => {
-    const snapshots = prevPositions.current;
-    if (!snapshots) return;
-    prevPositions.current = null;
-    for (const [id, el] of Object.entries(cardRefs.current)) {
-      if (!el || !snapshots[id]) continue;
-      const dy = snapshots[id].top - el.getBoundingClientRect().top;
-      if (dy === 0) continue;
-      el.style.transition = 'none';
-      el.style.transform = `translateY(${dy}px)`;
-      requestAnimationFrame(() => {
-        el.style.transition = 'transform 0.35s ease';
-        el.style.transform = '';
-      });
-    }
-  }, [orderedPoems]);
 
   const patchEdit = (id: string, patch: Partial<EditState>) =>
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -361,12 +342,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleDrop = async (toIndex: number) => {
     if (dragIndex === null || dragIndex === toIndex) return;
-    // Snapshot FIRST positions for FLIP animation
-    const snapshots: Record<string, DOMRect> = {};
-    for (const [id, el] of Object.entries(cardRefs.current)) {
-      if (el) snapshots[id] = el.getBoundingClientRect();
-    }
-    prevPositions.current = snapshots;
     const next = [...orderedPoems];
     const [moved] = next.splice(dragIndex, 1);
     next.splice(toIndex, 0, moved);
@@ -394,9 +369,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <span className="admin-add-label">Add Poem</span>
           </div>
           {orderedPoems.map((poem, i) => (
-            <div
+            // layout prop animates position changes automatically (FLIP) after a drop reorder
+            <motion.div
               key={poem.id}
-              ref={el => { cardRefs.current[poem.id] = el; }}
+              layout
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
               className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
               onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
               onDrop={() => handleDrop(i)}
@@ -413,23 +390,40 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
                 isDragging={dragIndex === i}
               />
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
 
-      {pendingDeleteId && (
-        <div className="admin-modal-backdrop" onClick={() => setPendingDeleteId(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <p className="admin-modal-title">Delete poem</p>
-            <p className="admin-modal-body">Are you sure you want to delete this poem?</p>
-            <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* AnimatePresence lets the modal animate out before unmounting */}
+      <AnimatePresence>
+        {pendingDeleteId && (
+          <motion.div
+            className="admin-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setPendingDeleteId(null)}
+          >
+            <motion.div
+              className="admin-modal"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.18 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="admin-modal-title">Delete poem</p>
+              <p className="admin-modal-body">Are you sure you want to delete this poem?</p>
+              <div className="admin-modal-actions">
+                <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Cancel</button>
+                <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Delete</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
