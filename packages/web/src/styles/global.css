@@ -406,16 +406,28 @@ h1, h2, h3 {
 }
 
 .carousel-nav-btn,
-.carousel-read-more-btn,
-.carousel-section-label {
+.carousel-read-more-btn {
   opacity: 0;
   transition: opacity 0.6s ease;
 }
 
 .carousel-loaded .carousel-nav-btn,
-.carousel-loaded .carousel-read-more-btn,
-.carousel-loaded .carousel-section-label {
+.carousel-loaded .carousel-read-more-btn {
   opacity: 1;
+}
+
+.carousel-section-label {
+  -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 0% 100%;
+  mask-size: 0% 100%;
+}
+
+/* Label animates once when the first image loads (.image-ready set once, never removed) */
+.image-ready .carousel-section-label {
+  animation: detail-line-reveal 1s ease 0s both;
 }
 
 .carousel-nav-btn {
@@ -491,6 +503,10 @@ h1, h2, h3 {
 
 .poem-carousel-wrapper {
   position: relative;
+  opacity: 0;
+}
+
+.poem-carousel-wrapper.carousel-loaded.image-ready {
   animation: poem-fade-in var(--carousel-fade-duration) ease both;
 }
 
@@ -598,7 +614,13 @@ h1, h2, h3 {
   mask-repeat: no-repeat;
   -webkit-mask-size: 0% 100%;
   mask-size: 0% 100%;
-  animation: detail-line-reveal 1s ease both;
+}
+
+/* Reveal animation only starts once the slide image has loaded (.image-ready on the slide).
+   Using .carousel-slide.image-ready so only the active slide animates, not the exiting one.
+   Title (0.5s delay) comes after the label (0.5s animation), overlay lines follow via inline delays. */
+.carousel-slide.image-ready .carousel-overlay-line {
+  animation: detail-line-reveal 1s ease 0.5s both;
 }
 
 /* ===== POEMS LAYOUT ===== */
@@ -1276,9 +1298,6 @@ h1, h2, h3 {
 }
 
 /* ===== FOOTER ===== */
-.site:has(.poem-detail) .site-footer {
-  display: none;
-}
 
 .site-footer {
   background: var(--footer-bg);

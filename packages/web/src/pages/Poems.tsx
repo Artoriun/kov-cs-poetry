@@ -247,7 +247,10 @@ export default function Poems() {
     };
     const isNavGesture = (deltaY: number) => {
       if (!dragRef.current) return false;
-      return (deltaY < 0 && dragRef.current.atBottom) || (deltaY > 0 && dragRef.current.atTop);
+      const canGoNext = currentSlide < renderPages.length - 1;
+      const canGoPrev = currentSlide > 0;
+      return (deltaY < 0 && dragRef.current.atBottom && canGoNext)
+          || (deltaY > 0 && dragRef.current.atTop && canGoPrev);
     };
     const dragMove = (y: number) => {
       if (!dragRef.current) return;

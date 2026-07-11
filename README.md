@@ -1,6 +1,6 @@
 # Kovács — Modern Poetry Portfolio
 
-A responsive poetry portfolio website built with **React**, **TypeScript**, **Vite**, and custom **CSS**. Designed to showcase poems with elegant typography, immersive image overlays, an auto-advancing carousel, and a full-screen swipeable poem reader — optimized for both desktop and mobile (portrait and landscape).
+A responsive poetry portfolio website built with **React**, **TypeScript**, **Vite**, **Motion**, and custom **CSS**. Designed to showcase poems with elegant typography, immersive image overlays, an auto-advancing carousel, and a full-screen swipeable poem reader — optimized for both desktop and mobile (portrait and landscape).
 
 ## Demo
 https://artoriun.github.io/kov-cs-poetry/
@@ -20,19 +20,22 @@ https://artoriun.github.io/kov-cs-poetry/
 ### Home Page Carousel
 - Displays poems marked as **Featured** in the admin portal (falls back to the first five poems if none are featured); poems without overlay text are excluded
 - Auto-advances based on poem line count (2.5 seconds per line)
-- Pauses on hover; drag-aware (dragging doesn't navigate to detail page)
+- Pauses on hover; drag/swipe to navigate; drag-aware click suppression so dragging never accidentally opens a poem
+- Adjacent slides are preloaded so every swipe transition is seamless regardless of connection speed
+- Text overlay and title reveal with a mask-wipe animation **only after the slide image has fully loaded**, sequenced: "FEATURED POEMS" label → poem title → overlay lines
 - Text overlay fades out at the bottom when content is long
 - **Read More** button on each slide links to the poem detail page
-- Standardised frosted-glass hover effect on all carousel buttons
+- Frosted-glass prev/next arrow buttons
 
 ### Poems Grid
-- Paginated responsive grid with animated page transitions
+- Paginated responsive grid; page changes animate out the old cards, then stagger in the new ones using **Motion `AnimatePresence mode="wait"`**
 - Table of contents sidebar with scroll tracking
-- Highlighted poem card on return from detail view, with animated flowing gradient border effect
+- Clicking a TOC entry navigates to the correct page and highlights the card with an animated flowing gradient border, sequenced correctly after the page-change animation completes
 
 ### Poem Detail (full-screen reader)
-- Vertical swipe carousel — one page of the poem per slide
-- Text lines reveal one by one with a staggered fade-in animation
+- Vertical swipe carousel powered by **Motion `AnimatePresence mode="wait"`** — one page of the poem per slide
+- Native touch handler with `{ passive: false }` prevents Android pull-to-refresh and URL-bar resize during swipe; allows natural page scroll at slide boundaries so the footer is reachable
+- Text lines reveal one by one with a staggered mask-wipe animation
 - **Per-slide animation memory**: the reveal animation plays only once per visit; navigating back to a seen slide shows text immediately
 - Autoplay advances to the next slide after all lines have animated in
 - Back button fades in after the last line is revealed on the final slide
@@ -50,14 +53,14 @@ https://artoriun.github.io/kov-cs-poetry/
 - **Admin** link navigates to the admin portal
 
 ### Admin Portal (`/admin`)
-- Password-protected login page (JWT-based auth, 7-day token)
+- Password-protected login page with Motion fade-in; error message animates in/out
 - **Add** new poems via the + button above the poem list
-- **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide)
+- **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide); deletion confirmed via an animated modal
 - Edit each poem's title, overlay text, and background image
 - Upload replacement images (stored on Cloudinary)
 - **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
 - Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
-- Smooth FLIP animation when cards are reordered
+- Poem cards animate in with a stagger on both login and browser refresh; reordering uses Motion's **`layout` prop** (FLIP) for smooth positional animation
 - Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
 - New poem cards are drafts until **Save** is pressed — unsaved cards disappear on page refresh
 
@@ -72,7 +75,7 @@ https://artoriun.github.io/kov-cs-poetry/
 | **Vite** | Build tool & dev server |
 | **TurboRepo** | Monorepo build orchestration |
 | **React Router** | Client-side routing |
-| **React Slick** | Carousel component |
+| **Motion** (`motion/react`) | Declarative animations — `AnimatePresence`, `motion.div`, `layout` prop, variants |
 | **Express** | Admin API backend (`packages/api`) |
 | **Firebase Firestore** | Poem overrides and display order persistence |
 | **Cloudinary** | Image upload and hosting |
