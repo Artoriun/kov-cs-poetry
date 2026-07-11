@@ -63,7 +63,8 @@ export default function PoemCarousel() {
       <div className="carousel-section-label">Featured Poems</div>
 
       {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
-      <div style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
+      <div style={{ position: 'relative', overflow: 'hidden' }} onDragStart={e => e.preventDefault()}>
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={current}
@@ -97,6 +98,7 @@ export default function PoemCarousel() {
                       src={poem.image}
                       alt={poem.title}
                       loading="lazy"
+                      draggable={false}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     {/* key=current restarts the CSS reveal animation on every slide change */}
