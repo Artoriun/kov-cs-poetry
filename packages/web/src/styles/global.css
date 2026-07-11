@@ -582,21 +582,21 @@ h1, h2, h3 {
   transition: transform 0.4s ease, filter 0.4s ease;
 }
 
-/* Overlay spans a fixed box below the title.
-   ::before and ::after are equal flex spacers: when content fits they share the remaining
-   space equally (centering the text); when content overflows they collapse to zero so the
-   first line always starts at the top of the box — consistent across all slide lengths. */
+/* Short poems: justify-content center keeps text vertically centered between title and
+   Read More button. Overflow poems: React measures scrollHeight and adds --overflow which
+   switches to flex-start so the first line is always at the same offset from the title. */
 .carousel-overlay {
   pointer-events: none;
   position: absolute;
-  top: 90px;
-  bottom: 40px;
+  top: 120px;
+  bottom: 76px;
   left: 0;
   right: 0;
   z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: center;
   overflow: hidden;
   padding: 0 60px;
   color: #fff;
@@ -611,10 +611,8 @@ h1, h2, h3 {
   mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
 }
 
-.carousel-overlay::before,
-.carousel-overlay::after {
-  content: '';
-  flex: 1 1 0;
+.carousel-overlay--overflow {
+  justify-content: flex-start;
 }
 
 .carousel-overlay > span {
@@ -1542,7 +1540,7 @@ html.dark-mode .header-login-btn:hover {
 
   .carousel-overlay {
     top: 56px;
-    bottom: 12px;
+    bottom: 40px;
     -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
     mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
   }

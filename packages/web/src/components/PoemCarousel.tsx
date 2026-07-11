@@ -38,12 +38,22 @@ export default function PoemCarousel() {
   const [[current, direction], setSlide] = useState([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  // Tracks whether the very first image has loaded; used to delay the wrapper fade-in
   const [firstImageLoaded, setFirstImageLoaded] = useState(false);
-  // Prevents navigating on a drag release that also fires a click event
+  const [overlayOverflows, setOverlayOverflows] = useState(false);
+  const overlayRef = useRef<HTMLSpanElement>(null);
+  const overlayContentRef = useRef<HTMLSpanElement>(null);
   const isDraggingRef = useRef(false);
-  // Blocks paginate during an active animation so rapid swipes don't queue up
   const animatingRef = useRef(false);
+
+  // Measure after image loads so layout is stable; sets overflow class which switches
+  // justify-content: center (short poems) ↔ flex-start (overflow poems).
+  useEffect(() => {
+    if (!imageLoaded) return;
+    const overlay = overlayRef.current;
+    const content = overlayContentRef.current;
+    if (!overlay || !content) return;
+    setOverlayOverflows(content.scrollHeight > overlay.clientHeight);
+  }, [current, imageLoaded]);
 
   const paginate = (dir: number) => {
     if (animatingRef.current) return;
@@ -125,8 +135,11 @@ export default function PoemCarousel() {
                       {poem.title}
                     </div>
                     {poem.overlay && (
-                      <span className="carousel-overlay">
-                        <span>
+                      <span
+                        ref={overlayRef}
+                        className={`carousel-overlay${overlayOverflows ? ' carousel-overlay--overflow' : ''}`}
+                      >
+                        <span ref={overlayContentRef}>
                           {poem.overlay.split('\n').map((line, i) => (
                             <span
                               key={i}
