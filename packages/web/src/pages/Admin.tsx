@@ -7,6 +7,15 @@ import { apiLogin, apiUpdatePoem, apiUploadImage, apiUpdateOrder, apiAddPoem } f
 
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
 const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
+
+// Stagger delay only applies on mount; layout reorder uses the component-level transition
+const cardVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: Math.min(i * 0.06, 0.4), duration: 0.35, ease: 'easeInOut' as const },
+  }),
+};
 import '../styles/admin.css';
 
 type EditState = {
@@ -44,35 +53,54 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     <div className="admin-page">
       <Header />
       <div className="admin-login-wrap">
-      <form className="admin-login" onSubmit={handleSubmit}>
-        <h1>Admin</h1>
-        <div>
-          <label className="admin-field-label" htmlFor="admin-password">Password</label>
-          <div className="admin-password-wrap">
-            <input
-              id="admin-password"
-              type={showPassword ? 'text' : 'password'}
-              className="admin-input"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoFocus
-              required
-            />
-            <button
-              type="button"
-              className="admin-password-toggle"
-              onClick={() => setShowPassword(v => !v)}
-              tabIndex={-1}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
+        <motion.form
+          className="admin-login"
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        >
+          <h1>Admin</h1>
+          <div>
+            <label className="admin-field-label" htmlFor="admin-password">Password</label>
+            <div className="admin-password-wrap">
+              <input
+                id="admin-password"
+                type={showPassword ? 'text' : 'password'}
+                className="admin-input"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoFocus
+                required
+              />
+              <button
+                type="button"
+                className="admin-password-toggle"
+                onClick={() => setShowPassword(v => !v)}
+                tabIndex={-1}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
-        </div>
-        {error && <p className="admin-login-error">{error}</p>}
-        <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
-          {loading ? 'Logging in…' : 'Log in'}
-        </button>
-      </form>
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                key="error"
+                className="admin-login-error"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+          <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
+            {loading ? 'Logging in…' : 'Log in'}
+          </button>
+        </motion.form>
       </div>
     </div>
   );
@@ -239,21 +267,23 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const initialized = useRef(false);
+  // State (not ref) so setInitialized + setOrderedPoems batch into one commit,
+  // guaranteeing cards mount fresh with initial="hidden" on both login and refresh
+  const [initialized, setInitialized] = useState(false);
 
   // Initialize once when live poem data loads
   useEffect(() => {
-    if (initialized.current || loading) return;
-    initialized.current = true;
+    if (initialized || loading) return;
+    setInitialized(true);
     setOrderedPoems(poems);
     setEdits(
       Object.fromEntries(poems.map(p => [p.id, { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null }]))
     );
-  }, [poems, loading]);
+  }, [poems, loading, initialized]);
 
   // After refreshPoems: update existing poems and append any newly added ones
   useEffect(() => {
-    if (!initialized.current) return;
+    if (!initialized) return;
     const map = new Map(poems.map(p => [p.id, p]));
     setOrderedPoems(prev => {
       const updated = prev.map(p => map.get(p.id) ?? p);
@@ -268,7 +298,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       }
       return next;
     });
-  }, [poems]);
+  }, [poems, initialized]);
 
   const patchEdit = (id: string, patch: Partial<EditState>) =>
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -360,19 +390,38 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="admin-page">
       <Header onLogout={onLogout} />
 
-      {loading ? (
-        <p style={{ textAlign: 'center', padding: '64px 0', opacity: 0.5 }}>Loading poems…</p>
+      <AnimatePresence mode="wait">
+      {!initialized ? (
+        <motion.p
+          key="loading"
+          style={{ textAlign: 'center', padding: '64px 0' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          Loading poems…
+        </motion.p>
       ) : (
-        <div className="admin-poem-list">
-          <div className="admin-add-row">
+        <motion.div key="list" className="admin-poem-list">
+          <motion.div
+            className="admin-add-row"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
             <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
             <span className="admin-add-label">Add Poem</span>
-          </div>
+          </motion.div>
           {orderedPoems.map((poem, i) => (
-            // layout prop animates position changes automatically (FLIP) after a drop reorder
+            // layout animates reorder (FLIP); variants handle the staggered entrance on mount
             <motion.div
               key={poem.id}
               layout
+              custom={i}
+              variants={cardVariants}
+              initial="hidden"
+              animate="show"
               transition={{ duration: 0.35, ease: 'easeInOut' }}
               className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
               onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
@@ -392,8 +441,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               />
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* AnimatePresence lets the modal animate out before unmounting */}
       <AnimatePresence>

@@ -37,11 +37,29 @@ export default function PoemCarousel() {
   // [current index, slide direction] packed together so one setState drives both
   const [[current, direction], setSlide] = useState([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  // Tracks whether the very first image has loaded; used to delay the wrapper fade-in
+  const [firstImageLoaded, setFirstImageLoaded] = useState(false);
   // Prevents navigating on a drag release that also fires a click event
   const isDraggingRef = useRef(false);
+  // Blocks paginate during an active animation so rapid swipes don't queue up
+  const animatingRef = useRef(false);
 
-  const paginate = (dir: number) =>
+  const paginate = (dir: number) => {
+    if (animatingRef.current) return;
+    animatingRef.current = true;
+    setImageLoaded(false);
     setSlide(([c]) => [(c + dir + count) % count, dir]);
+  };
+
+  // Preload adjacent slides so the image is cached before the user swipes to it
+  useEffect(() => {
+    if (count === 0) return;
+    [(current + 1) % count, (current - 1 + count) % count].forEach(i => {
+      const img = new Image();
+      img.src = CAROUSEL_POEMS[i]?.image ?? '';
+    });
+  }, [current, count]);
 
   // Autoplay: delay proportional to line count so longer poems get more reading time
   useEffect(() => {
@@ -56,7 +74,7 @@ export default function PoemCarousel() {
 
   return (
     <div
-      className={`poem-carousel-wrapper${!loading && count > 0 ? ' carousel-loaded' : ''}`}
+      className={`poem-carousel-wrapper${!loading && count > 0 ? ' carousel-loaded' : ''}${firstImageLoaded ? ' image-ready' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -74,6 +92,7 @@ export default function PoemCarousel() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.6, ease: 'easeInOut' }}
+            onAnimationComplete={() => { animatingRef.current = false; }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.1}
@@ -84,7 +103,7 @@ export default function PoemCarousel() {
               // Delay clearing so the click event that fires after drag-end is still blocked
               setTimeout(() => { isDraggingRef.current = false; }, 100);
             }}
-            className="carousel-slide"
+            className={`carousel-slide${imageLoaded ? ' image-ready' : ''}`}
           >
             {poem && (
               <>
@@ -97,22 +116,22 @@ export default function PoemCarousel() {
                     <img
                       src={poem.image}
                       alt={poem.title}
-                      loading="lazy"
                       draggable={false}
+                      onLoad={() => { setImageLoaded(true); setFirstImageLoaded(true); }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                    {/* key=current restarts the CSS reveal animation on every slide change */}
-                    <div key={current} className="carousel-slide-title carousel-overlay-line">
+                    {/* Text reveal animations are gated on .image-ready (set by onLoad) */}
+                    <div className="carousel-slide-title carousel-overlay-line">
                       {poem.title}
                     </div>
                     {poem.overlay && (
                       <span className="carousel-overlay">
-                        <span key={current}>
+                        <span>
                           {poem.overlay.split('\n').map((line, i) => (
                             <span
                               key={i}
                               className="carousel-overlay-line"
-                              style={{ animationDelay: `${(i + 1) * 100}ms` }}
+                              style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
                             >
                               {line || ' '}
                             </span>
