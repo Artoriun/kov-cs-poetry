@@ -950,30 +950,18 @@ h1, h2, h3 {
 }
 
 /* Slick overrides for vertical carousel */
-.poem-detail .slick-slider,
-.poem-detail .slick-list {
-  height: 100%;
-  overflow: hidden;
-}
-
-.poem-detail .slick-list {
-  touch-action: pan-x;
+.poem-detail .detail-image-container {
   cursor: grab;
 }
 
-.poem-detail.dragging .slick-list {
+.poem-detail.dragging .detail-image-container {
   cursor: grabbing;
 }
 
-/* Must beat .slick-vertical .slick-slide { height: auto } from slick.css */
-.poem-detail .slick-vertical .slick-slide {
-  height: calc(100vh - var(--header-height, 72px));
-  height: calc(100dvh - var(--header-height, 72px));
-  border: none;
-}
-
-.poem-detail .slick-vertical .slick-slide > div {
-  height: 100%;
+.poem-detail .detail-overlay-line,
+.poem-detail .detail-overlay-line-revealed,
+.poem-detail .detail-title {
+  cursor: default;
 }
 
 .detail-image-container {
@@ -1069,6 +1057,8 @@ h1, h2, h3 {
 
 .detail-overlay-line {
   display: block;
+  width: fit-content;
+  margin: 0 auto;
   opacity: 0;
   -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
   mask-image: linear-gradient(to right, black 75%, transparent 100%);
@@ -1094,6 +1084,8 @@ h1, h2, h3 {
 
 .detail-overlay-line-shown {
   display: block;
+  width: fit-content;
+  margin: 0 auto;
   opacity: 0;
   -webkit-mask-size: 0% 100%;
   mask-size: 0% 100%;
@@ -1103,6 +1095,8 @@ h1, h2, h3 {
 
 .detail-overlay-line-revealed {
   display: block;
+  width: fit-content;
+  margin: 0 auto;
   opacity: 1;
   -webkit-mask-size: 130% 100%;
   mask-size: 130% 100%;
