@@ -458,6 +458,9 @@ h1, h2, h3 {
 .carousel-slide {
   outline: none;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 .carousel-read-more-btn {
@@ -507,6 +510,7 @@ h1, h2, h3 {
 }
 
 .carousel-slide-title {
+  pointer-events: none;
   position: absolute;
   top: 56px;
   left: 0;
@@ -567,6 +571,7 @@ h1, h2, h3 {
 }
 
 .carousel-overlay {
+  pointer-events: none;
   position: relative;
   z-index: 10;
   color: #fff;
