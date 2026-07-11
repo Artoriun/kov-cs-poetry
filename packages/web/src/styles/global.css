@@ -567,12 +567,8 @@ h1, h2, h3 {
 /* ===== CAROUSEL SLIDE WITH OVERLAY ===== */
 .carousel-image-container:has(.carousel-overlay) {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   height: calc(100vh - var(--header-height, 72px));
   height: calc(100svh - var(--header-height, 72px));
-  padding-top: 80px;
 }
 
 .carousel-image-container:has(.carousel-overlay) img {
@@ -586,24 +582,43 @@ h1, h2, h3 {
   transition: transform 0.4s ease, filter 0.4s ease;
 }
 
+/* Overlay spans a fixed box below the title.
+   ::before and ::after are equal flex spacers: when content fits they share the remaining
+   space equally (centering the text); when content overflows they collapse to zero so the
+   first line always starts at the top of the box — consistent across all slide lengths. */
 .carousel-overlay {
   pointer-events: none;
-  position: relative;
+  position: absolute;
+  top: 90px;
+  bottom: 40px;
+  left: 0;
+  right: 0;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0 60px;
   color: #fff;
   text-align: center;
-  padding: 50px 60px;
   text-shadow: 0 0 10px rgba(0,0,0,0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
-  max-width: 90%;
-  max-height: calc(100svh - var(--header-height, 72px) - 120px);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'Esteban', serif;
-  overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
   mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
+}
+
+.carousel-overlay::before,
+.carousel-overlay::after {
+  content: '';
+  flex: 1 1 0;
+}
+
+.carousel-overlay > span {
+  flex-shrink: 0;
 }
 
 .carousel-overlay-line {
@@ -1506,7 +1521,7 @@ html.dark-mode .header-login-btn:hover {
   }
 
   .carousel-overlay {
-    padding: 30px 20px;
+    padding: 0 20px;
   }
 
   .detail-overlay {
@@ -1525,15 +1540,9 @@ html.dark-mode .header-login-btn:hover {
     font-size: 16px;
   }
 
-  .carousel-image-container:has(.carousel-overlay) {
-    align-items: flex-start;
-    padding-top: 0;
-  }
-
   .carousel-overlay {
-    padding-top: 56px;
-    padding-bottom: 12px;
-    max-height: calc(100svh - var(--header-height, 72px) - 16px);
+    top: 56px;
+    bottom: 12px;
     -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
     mask-image: linear-gradient(to bottom, black 50%, transparent 78%);
   }
