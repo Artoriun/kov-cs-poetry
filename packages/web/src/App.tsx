@@ -22,6 +22,7 @@ export default function App() {
 
   return (
     <PoemsProvider>
+      <div className="page-load-scrim" aria-hidden="true" />
       <Routes>
         <Route path="/admin" element={<Admin />} />
         <Route element={<Layout />}>
