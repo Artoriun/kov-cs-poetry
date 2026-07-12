@@ -13,6 +13,7 @@ https://artoriun.github.io/kov-cs-poetry/
 
 ### General
 - Light and dark mode with persistent localStorage preference
+- Page-load fade-in sequence: background reveals first, then header, then footer
 - Smooth page transitions and element fade-in animations
 - Fully responsive across desktop, tablet, mobile portrait, and mobile landscape
 - Auto-reload on device orientation change to ensure correct layout
@@ -60,7 +61,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Upload replacement images (stored on Cloudinary)
 - **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
 - Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
-- Poem cards animate in with a stagger on both login and browser refresh; reordering uses Motion's **`layout` prop** (FLIP) for smooth positional animation
+- Poem cards fade and stagger in on both login and browser refresh (Motion `staggerChildren` orchestration); reordering uses Motion's **`layout` prop** (FLIP) for smooth positional animation
 - Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
 - New poem cards are drafts until **Save** is pressed — unsaved cards disappear on page refresh
 
