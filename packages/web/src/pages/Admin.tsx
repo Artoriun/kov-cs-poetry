@@ -21,6 +21,55 @@ const cardVariants = {
 };
 import '../styles/admin.css';
 
+function computeAutoSplit(overlay: string): string[] {
+  const lines = overlay.split('\n');
+  const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+  const landscape = window.innerHeight <= 500;
+  const slideH = landscape ? 2 * (window.innerHeight - headerH) : window.innerHeight - headerH;
+
+  // visibility:hidden keeps layout computed; animation:none prevents detail-line-reveal from zeroing opacity
+  const overlayEl = document.createElement('div');
+  overlayEl.className = 'detail-overlay';
+  overlayEl.style.cssText = 'position:fixed;top:0;left:0;right:0;visibility:hidden;pointer-events:none;';
+  lines.forEach(line => {
+    const span = document.createElement('span');
+    span.className = 'detail-overlay-line';
+    span.textContent = line || '\u00a0';
+    span.style.animation = 'none';
+    overlayEl.appendChild(span);
+  });
+  document.body.appendChild(overlayEl);
+
+  const os = getComputedStyle(overlayEl);
+  const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
+  // Slide 0 always has .has-title: portrait → 140+80=220, landscape → 72+100=172
+  const containerPadV = landscape ? 172 : 220;
+  const available = slideH - containerPadV - overlayPadV;
+
+  const blankLineH = parseFloat(getComputedStyle(overlayEl).lineHeight);
+  const spans = Array.from(overlayEl.querySelectorAll<HTMLElement>('.detail-overlay-line'));
+  const pages: string[][] = [[]];
+  let accH = 0;
+  for (let i = 0; i < spans.length; i++) {
+    const isBlank = !lines[i].trim();
+    // Use computed lineHeight for blank lines — getBoundingClientRect can return 0 for fit-content empty spans
+    const h = isBlank ? blankLineH : spans[i].getBoundingClientRect().height;
+    // Only break before non-empty lines — empty lines always belong to the preceding stanza
+    if (!isBlank && accH + h > available && pages[pages.length - 1].length > 0) {
+      pages.push([]);
+      accH = 0;
+    }
+    pages[pages.length - 1].push(lines[i]);
+    accH += h;
+  }
+
+  document.body.removeChild(overlayEl);
+  return pages
+    .map(p => { let e = p.length; while (e > 0 && !p[e - 1].trim()) e--; return p.slice(0, e); })
+    .filter(p => p.length > 0)
+    .map(p => p.join('\n'));
+}
+
 type EditState = {
   title: string;
   overlay: string;
@@ -304,11 +353,7 @@ function PoemCard({
               if (edit.customSlidesOpen) {
                 onCancelCustomSlides();
               } else {
-                const existing = (edit.customSlides ?? []).filter(s => s.trim());
-                const slides = existing.length > 0 ? existing : (() => {
-                  const initial = (edit.overlay || '').split('\n\n').filter(s => s.trim());
-                  return initial.length > 0 ? initial : [''];
-                })();
+                const slides = computeAutoSplit(edit.overlay || '');
                 onChange({ customSlidesOpen: true, customSlidesEnabled: true, customSlides: slides });
               }
             }}
