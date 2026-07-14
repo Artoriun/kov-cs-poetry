@@ -191,6 +191,8 @@ function PoemCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tapRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null; pending: boolean }>({ count: 0, timer: null, pending: false });
   const [pendingRemoveIdx, setPendingRemoveIdx] = useState<number | null>(null);
+  const [pendingRestoreOriginal, setPendingRestoreOriginal] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   const confirmRemoveSlide = (idx: number) => {
     const next = (edit.customSlides ?? []).filter((_, i) => i !== idx);
@@ -326,13 +328,6 @@ function PoemCard({
               >
                 + Add Slide
               </button>
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={() => onChange({ customSlides: [], customSlidesOpen: false })}
-              >
-                Restore original poem
-              </button>
             </div>
           </div>
         )}
@@ -341,7 +336,7 @@ function PoemCard({
           <button
             type="button"
             className="admin-btn admin-btn-primary"
-            onClick={onSave}
+            onClick={() => setPendingSave(true)}
             disabled={status === 'saving'}
           >
             {status === 'saving' ? 'Saving…' : 'Save'}
@@ -351,7 +346,7 @@ function PoemCard({
             className="admin-btn admin-btn-custom-slides-active"
             onClick={() => {
               if (edit.customSlidesOpen) {
-                onCancelCustomSlides();
+                setPendingRestoreOriginal(true);
               } else {
                 const slides = computeAutoSplit(edit.overlay || '');
                 onChange({ customSlidesOpen: true, customSlidesEnabled: true, customSlides: slides });
@@ -374,6 +369,48 @@ function PoemCard({
       </div>
     </div>
 
+    <AnimatePresence>
+      {pendingSave && (
+        <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setPendingSave(false)}>
+          <motion.div className="admin-modal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.18 }} onClick={e => e.stopPropagation()}>
+            <p className="admin-modal-title">Save changes?</p>
+            <p className="admin-modal-body">This will persist all changes to this poem.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>Save</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {pendingRestoreOriginal && (
+        <motion.div
+          className="admin-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => setPendingRestoreOriginal(false)}
+        >
+          <motion.div
+            className="admin-modal"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.18 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="admin-modal-title">Restore original?</p>
+            <p className="admin-modal-body">The poem will revert to its auto-split layout. Your custom slides will be discarded.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>Restore</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     <AnimatePresence>
       {pendingRemoveIdx !== null && (
         <motion.div
