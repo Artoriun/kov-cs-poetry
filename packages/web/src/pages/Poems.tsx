@@ -65,7 +65,15 @@ export default function Poems() {
 
   // Measure overlay lines and split into pages that fit the available viewport height
   useLayoutEffect(() => {
-    if (!id || !detailPoem?.overlay || detailPages !== null) return;
+    if (!id || !detailPoem || detailPages !== null) return;
+    if (detailPoem.customSlidesEnabled && detailPoem.customSlides && detailPoem.customSlides.length > 0) {
+      const pages = detailPoem.customSlides.map(s => s.split('\n'));
+      setDetailPages(pages);
+      if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
+      else { setDownBtnVisible(true); }
+      return;
+    }
+    if (!detailPoem.overlay) return;
     const overlay = document.querySelector<HTMLElement>('.detail-overlay');
     if (!overlay) { setDetailPages([detailLines]); setBackBtnVisible(true); setDownBtnVisible(false); return; }
     const container = overlay.closest<HTMLElement>('.detail-image-container');
@@ -92,7 +100,7 @@ export default function Poems() {
     setDetailPages(pages);
     if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
     else { setDownBtnVisible(true); }
-  }, [id, detailPages, detailPoem?.overlay]);
+  }, [id, detailPages, detailPoem?.overlay, detailPoem?.customSlides]);
 
   useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
 
