@@ -676,7 +676,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 // ── Admin entry point ─────────────────────────────────────────────────────────
 
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('admin_token'));
+  const [token, setToken] = useState<string | null>(() => {
+    const t = localStorage.getItem('admin_token');
+    if (!t) return null;
+    try {
+      const { exp } = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp: number };
+      if (Date.now() / 1000 > exp) { localStorage.removeItem('admin_token'); return null; }
+    } catch { localStorage.removeItem('admin_token'); return null; }
+    return t;
+  });
   const { refreshPoems } = usePoemsContext();
 
   useEffect(() => {
