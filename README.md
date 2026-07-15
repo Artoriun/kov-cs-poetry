@@ -63,7 +63,12 @@ https://artoriun.github.io/kov-cs-poetry/
 - Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
 - Poem cards fade and stagger in on both login and browser refresh (Motion `staggerChildren` orchestration); reordering uses Motion's **`layout` prop** (FLIP) for smooth positional animation
 - Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
-- New poem cards are drafts until **Save** is pressed — unsaved cards disappear on page refresh
+- New poem cards are drafts until **Save** is pressed — save is confirmed via an animated modal before writing to Firestore
+- **Custom Slides** button on each poem card (between Save and Feature) — opens an editable slide panel pre-split from the poem's overlay text
+  - Initial split is computed via DOM measurement using the same CSS classes and available-height calculation as the poem-detail page, so the generated slide boundaries match what the current device's viewport would show
+  - Each slide is an editable textarea; slides can be added or deleted (deletion confirmed via an animated modal)
+  - Pressing **Custom Slides** again (labelled "Original" when active) prompts a confirmation modal before reverting to auto-split mode; slide content is preserved so it reappears on next open
+  - Pressing **Save** with the panel open persists both the slide content and the enabled flag; pressing Save with it closed disables custom slides while keeping content stored
 
 ---
 
@@ -198,6 +203,15 @@ To add a hardcoded poem (as a fallback), add an entry to `POEMS` in `packages/sh
 ```
 
 `overlay` is newline-separated text displayed over the image in the carousel and detail reader.
+
+Two optional Firestore-only fields control the custom slides feature:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `customSlides` | `string[]` | Per-slide overlay text (each element is one slide's newline-separated lines) |
+| `customSlidesEnabled` | `boolean` | When `true`, the detail reader uses `customSlides` instead of auto-splitting `overlay` |
+
+Both fields are written by the admin portal and are never stored in the hardcoded fallback data.
 
 ---
 

@@ -30,7 +30,7 @@ export async function apiAddPoem(): Promise<Poem> {
   return res.json() as Promise<Poem>;
 }
 
-export async function apiUpdatePoem(id: string, data: { title?: string; overlay?: string; image?: string; featured?: boolean; deleted?: boolean }): Promise<void> {
+export async function apiUpdatePoem(id: string, data: { title?: string; overlay?: string; image?: string; featured?: boolean; deleted?: boolean; customSlides?: string[]; customSlidesEnabled?: boolean }): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },

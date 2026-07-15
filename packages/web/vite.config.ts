@@ -10,7 +10,7 @@ export default defineConfig({
     open: true,
     allowedHosts: true,
     proxy: {
-      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/api': { target: `http://localhost:${process.env.API_PORT ?? 4000}`, changeOrigin: true },
     },
   },
   base: process.env.NODE_ENV === 'production' ? '/kov-cs-poetry/' : '/',

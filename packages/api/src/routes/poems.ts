@@ -16,14 +16,14 @@ poemsRouter.get('/', async (_req, res) => {
       db.collection('poems').get(),
       db.collection('config').doc('poemOrder').get(),
     ]);
-    const overrides: Record<string, { title?: string; image?: string; overlay?: string; featured?: boolean; deleted?: boolean }> = {};
+    const overrides: Record<string, { title?: string; image?: string; overlay?: string; featured?: boolean; deleted?: boolean; customSlides?: string[]; customSlidesEnabled?: boolean }> = {};
     poemsSnap.forEach(doc => { overrides[doc.id] = doc.data() as typeof overrides[string]; });
 
     const hardcodedIds = new Set(POEMS.map(p => p.id));
     const merged = POEMS.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p).filter(p => !p.deleted);
     const custom = Object.entries(overrides)
       .filter(([id, d]) => !hardcodedIds.has(id) && !d.deleted)
-      .map(([id, d]) => ({ id, title: d.title ?? 'New Poem', image: d.image || 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png', overlay: d.overlay, featured: d.featured }));
+      .map(([id, d]) => ({ id, title: d.title ?? 'New Poem', image: d.image || 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png', overlay: d.overlay, featured: d.featured, customSlides: d.customSlides, customSlidesEnabled: d.customSlidesEnabled }));
     const all = [...merged, ...custom];
 
     if (orderDoc.exists) {
@@ -56,13 +56,15 @@ poemsRouter.put('/order', requireAuth, async (req, res) => {
 
 poemsRouter.put('/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
-  const { title, overlay, image, featured, deleted } = req.body as { title?: string; overlay?: string; image?: string; featured?: boolean; deleted?: boolean };
-  const data: Record<string, string | boolean> = {};
+  const { title, overlay, image, featured, deleted, customSlides, customSlidesEnabled } = req.body as { title?: string; overlay?: string; image?: string; featured?: boolean; deleted?: boolean; customSlides?: string[]; customSlidesEnabled?: boolean };
+  const data: Record<string, string | boolean | string[]> = {};
   if (title !== undefined) data.title = title;
   if (overlay !== undefined) data.overlay = overlay;
   if (image !== undefined) data.image = image;
   if (featured !== undefined) data.featured = featured;
   if (deleted !== undefined) data.deleted = deleted;
+  if (customSlides !== undefined) data.customSlides = customSlides;
+  if (customSlidesEnabled !== undefined) data.customSlidesEnabled = customSlidesEnabled;
   await db.collection('poems').doc(id).set(data, { merge: true });
   res.json({ ok: true });
 });
