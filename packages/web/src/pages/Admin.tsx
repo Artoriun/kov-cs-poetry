@@ -21,11 +21,63 @@ const cardVariants = {
 };
 import '../styles/admin.css';
 
+function computeAutoSplit(overlay: string): string[] {
+  const lines = overlay.split('\n');
+  const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+  const landscape = window.innerHeight <= 500;
+  const slideH = landscape ? 2 * (window.innerHeight - headerH) : window.innerHeight - headerH;
+
+  // visibility:hidden keeps layout computed; animation:none prevents detail-line-reveal from zeroing opacity
+  const overlayEl = document.createElement('div');
+  overlayEl.className = 'detail-overlay';
+  overlayEl.style.cssText = 'position:fixed;top:0;left:0;right:0;visibility:hidden;pointer-events:none;';
+  lines.forEach(line => {
+    const span = document.createElement('span');
+    span.className = 'detail-overlay-line';
+    span.textContent = line || '\u00a0';
+    span.style.animation = 'none';
+    overlayEl.appendChild(span);
+  });
+  document.body.appendChild(overlayEl);
+
+  const os = getComputedStyle(overlayEl);
+  const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
+  // Slide 0 always has .has-title: portrait → 140+80=220, landscape → 72+100=172
+  const containerPadV = landscape ? 172 : 220;
+  const available = slideH - containerPadV - overlayPadV;
+
+  const blankLineH = parseFloat(getComputedStyle(overlayEl).lineHeight);
+  const spans = Array.from(overlayEl.querySelectorAll<HTMLElement>('.detail-overlay-line'));
+  const pages: string[][] = [[]];
+  let accH = 0;
+  for (let i = 0; i < spans.length; i++) {
+    const isBlank = !lines[i].trim();
+    // Use computed lineHeight for blank lines — getBoundingClientRect can return 0 for fit-content empty spans
+    const h = isBlank ? blankLineH : spans[i].getBoundingClientRect().height;
+    // Only break before non-empty lines — empty lines always belong to the preceding stanza
+    if (!isBlank && accH + h > available && pages[pages.length - 1].length > 0) {
+      pages.push([]);
+      accH = 0;
+    }
+    pages[pages.length - 1].push(lines[i]);
+    accH += h;
+  }
+
+  document.body.removeChild(overlayEl);
+  return pages
+    .map(p => { let e = p.length; while (e > 0 && !p[e - 1].trim()) e--; return p.slice(0, e); })
+    .filter(p => p.length > 0)
+    .map(p => p.join('\n'));
+}
+
 type EditState = {
   title: string;
   overlay: string;
   imageFile: File | null;
   imagePreview: string | null;
+  customSlides: string[] | null;
+  customSlidesOpen: boolean;
+  customSlidesEnabled: boolean;
 };
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -118,6 +170,7 @@ function PoemCard({
   onSave,
   onToggleFeature,
   onDelete,
+  onCancelCustomSlides,
   status,
   onDragStart,
   onDragEnd,
@@ -129,6 +182,7 @@ function PoemCard({
   onSave: () => void;
   onToggleFeature: () => void;
   onDelete: () => void;
+  onCancelCustomSlides: () => void;
   status: SaveStatus;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -136,6 +190,15 @@ function PoemCard({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tapRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null; pending: boolean }>({ count: 0, timer: null, pending: false });
+  const [pendingRemoveIdx, setPendingRemoveIdx] = useState<number | null>(null);
+  const [pendingRestoreOriginal, setPendingRestoreOriginal] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
+
+  const confirmRemoveSlide = (idx: number) => {
+    const next = (edit.customSlides ?? []).filter((_, i) => i !== idx);
+    if (next.length === 0) { onCancelCustomSlides(); } else { onChange({ customSlides: next }); }
+    setPendingRemoveIdx(null);
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -144,6 +207,7 @@ function PoemCard({
   };
 
   return (
+    <>
     <div
       className={`admin-poem-card${isDragging ? ' dragging' : ''}${poem.featured ? ' poem-highlight-static' : ''}`}
       draggable
@@ -201,7 +265,7 @@ function PoemCard({
           />
         </div>
         <div>
-          <label className="admin-field-label">Overlay text</label>
+          <label className="admin-field-label">Poem text</label>
           <textarea
             className="admin-overlay-textarea"
             value={edit.overlay}
@@ -234,14 +298,62 @@ function PoemCard({
           />
         </div>
 
+        {edit.customSlidesOpen && (
+          <div className="admin-custom-slides">
+            <span className="admin-field-label">Custom Slides</span>
+            {(edit.customSlides ?? []).map((slide, idx) => (
+              <div key={idx} className="admin-slide-row">
+                <span className="admin-slide-num">{idx + 1}</span>
+                <textarea
+                  className="admin-overlay-textarea admin-slide-textarea"
+                  value={slide}
+                  onChange={e => {
+                    const next = [...(edit.customSlides ?? [])];
+                    next[idx] = e.target.value;
+                    onChange({ customSlides: next });
+                  }}
+                />
+                <button
+                  type="button"
+                  className="admin-slide-remove-btn"
+                  onClick={() => setPendingRemoveIdx(idx)}
+                >×</button>
+              </div>
+            ))}
+            <div className="admin-slide-actions">
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={() => onChange({ customSlides: [...(edit.customSlides ?? []), ''] })}
+              >
+                + Add Slide
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="admin-actions">
           <button
             type="button"
             className="admin-btn admin-btn-primary"
-            onClick={onSave}
+            onClick={() => setPendingSave(true)}
             disabled={status === 'saving'}
           >
             {status === 'saving' ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-custom-slides-active"
+            onClick={() => {
+              if (edit.customSlidesOpen) {
+                setPendingRestoreOriginal(true);
+              } else {
+                const slides = computeAutoSplit(edit.overlay || '');
+                onChange({ customSlidesOpen: true, customSlidesEnabled: true, customSlides: slides });
+              }
+            }}
+          >
+            {edit.customSlidesOpen ? 'Original' : 'Custom Slides'}
           </button>
           <button
             type="button"
@@ -256,6 +368,78 @@ function PoemCard({
         </div>
       </div>
     </div>
+
+    <AnimatePresence>
+      {pendingSave && (
+        <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setPendingSave(false)}>
+          <motion.div className="admin-modal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.18 }} onClick={e => e.stopPropagation()}>
+            <p className="admin-modal-title">Save changes?</p>
+            <p className="admin-modal-body">This will persist all changes to this poem.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>Save</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {pendingRestoreOriginal && (
+        <motion.div
+          className="admin-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => setPendingRestoreOriginal(false)}
+        >
+          <motion.div
+            className="admin-modal"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.18 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="admin-modal-title">Restore original?</p>
+            <p className="admin-modal-body">The poem will revert to its auto-split layout. Your custom slides will be discarded.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>Restore</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {pendingRemoveIdx !== null && (
+        <motion.div
+          className="admin-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => setPendingRemoveIdx(null)}
+        >
+          <motion.div
+            className="admin-modal"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.18 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="admin-modal-title">Delete slide</p>
+            <p className="admin-modal-body">Are you sure you want to delete this slide?</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn" onClick={() => setPendingRemoveIdx(null)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => confirmRemoveSlide(pendingRemoveIdx)}>Delete</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
@@ -280,7 +464,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setInitialized(true);
     setOrderedPoems(poems);
     setEdits(
-      Object.fromEntries(poems.map(p => [p.id, { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null }]))
+      Object.fromEntries(poems.map(p => [p.id, { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null, customSlides: p.customSlides ?? null, customSlidesOpen: !!p.customSlidesEnabled, customSlidesEnabled: !!p.customSlidesEnabled }]))
     );
   }, [poems, loading, initialized]);
 
@@ -297,7 +481,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setEdits(prev => {
       const next = { ...prev };
       for (const p of poems) {
-        if (!next[p.id]) next[p.id] = { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null };
+        if (!next[p.id]) next[p.id] = { title: p.title, overlay: p.overlay ?? '', imageFile: null, imagePreview: null, customSlides: p.customSlides ?? null, customSlidesOpen: !!p.customSlidesEnabled, customSlidesEnabled: !!p.customSlidesEnabled };
       }
       return next;
     });
@@ -326,7 +510,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       }
       let imageUrl: string | undefined;
       if (edit.imageFile) imageUrl = await apiUploadImage(realId, edit.imageFile);
-      await apiUpdatePoem(realId, { title: edit.title, overlay: edit.overlay, ...(imageUrl ? { image: imageUrl } : {}) });
+      await apiUpdatePoem(realId, { title: edit.title, overlay: edit.overlay, customSlides: edit.customSlides ?? [], customSlidesEnabled: edit.customSlidesOpen, ...(imageUrl ? { image: imageUrl } : {}) });
       patchEdit(realId, { imageFile: null, imagePreview: imageUrl ?? edit.imagePreview });
       await refreshPoems();
       setStatus(realId, 'saved');
@@ -338,11 +522,21 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
 
+  const handleCancelCustomSlides = async (id: string) => {
+    patchEdit(id, { customSlidesOpen: false, customSlidesEnabled: false });
+    if (!draftIds.has(id)) {
+      try {
+        await apiUpdatePoem(id, { customSlidesEnabled: false });
+        await refreshPoems();
+      } catch { /* silent */ }
+    }
+  };
+
   const handleAddPoem = () => {
     const tempId = `poem-draft-${Date.now()}`;
     const newPoem: Poem = { id: tempId, title: 'New Poem', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
     setOrderedPoems(prev => [newPoem, ...prev]);
-    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null } }));
+    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null, customSlides: null, customSlidesOpen: false, customSlidesEnabled: false } }));
     setDraftIds(prev => new Set([...prev, tempId]));
   };
 
@@ -428,11 +622,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               >
                 <PoemCard
                   poem={poem}
-                  edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null }}
+                  edit={edits[poem.id] ?? { title: poem.title, overlay: poem.overlay ?? '', imageFile: null, imagePreview: null, customSlides: poem.customSlides ?? null, customSlidesOpen: !!poem.customSlidesEnabled, customSlidesEnabled: !!poem.customSlidesEnabled }}
                   onChange={patch => patchEdit(poem.id, patch)}
                   onSave={() => handleSave(poem.id)}
                   onToggleFeature={() => handleToggleFeature(poem.id)}
                   onDelete={() => setPendingDeleteId(poem.id)}
+                  onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
                   status={statuses[poem.id] ?? 'idle'}
                   onDragStart={() => setDragIndex(i)}
                   onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}

@@ -5,6 +5,8 @@ export interface Poem {
   overlay?: string;
   featured?: boolean;
   deleted?: boolean;
+  customSlides?: string[];
+  customSlidesEnabled?: boolean;
 }
 
 export const POEMS: Poem[] = [
