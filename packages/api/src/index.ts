@@ -12,7 +12,7 @@ const allowedOrigins = [
   ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
 ];
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: allowedOrigins, allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
