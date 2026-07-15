@@ -1,6 +1,7 @@
 import type { Poem } from '@gedichtenv2/shared';
 
-const BASE = import.meta.env.VITE_API_URL ?? '';
+// ponytail: coerce http→https so auth header isn't stripped on Render's 301 redirect
+const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https://');
 
 const getToken = () => localStorage.getItem('admin_token');
 
