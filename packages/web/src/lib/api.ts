@@ -5,6 +5,11 @@ const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https:/
 
 const getToken = () => localStorage.getItem('admin_token');
 
+function handleUnauthorized() {
+  localStorage.removeItem('admin_token');
+  window.location.reload();
+}
+
 export async function apiLogin(password: string): Promise<string> {
   const res = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
@@ -27,6 +32,7 @@ export async function apiAddPoem(): Promise<Poem> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error('Failed to add poem');
   return res.json() as Promise<Poem>;
 }
@@ -37,6 +43,7 @@ export async function apiUpdatePoem(id: string, data: { title?: string; overlay?
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
     body: JSON.stringify(data),
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error('Failed to update poem');
 }
 
@@ -48,6 +55,7 @@ export async function apiUploadImage(id: string, file: File): Promise<string> {
     headers: { Authorization: `Bearer ${getToken()}` },
     body: form,
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error('Failed to upload image');
   const { url } = await res.json() as { url: string };
   return url;
@@ -59,6 +67,7 @@ export async function apiUpdateOrder(ids: string[]): Promise<void> {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
     body: JSON.stringify({ ids }),
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error('Failed to update order');
 }
 
@@ -67,5 +76,6 @@ export async function apiResetPoem(id: string): Promise<void> {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${getToken()}` },
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error('Failed to reset poem');
 }
