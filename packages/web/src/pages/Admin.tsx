@@ -683,7 +683,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           <motion.div className="admin-top-row" variants={cardVariants}>
             <div className="admin-mode-toggle">
               <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>List</button>
-              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Grid</button>
+              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Order</button>
             </div>
             {mode === 'list' && (
               <div className="admin-add-row">
