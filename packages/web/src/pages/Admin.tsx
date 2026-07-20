@@ -457,6 +457,70 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // State (not ref) so setInitialized + setOrderedPoems batch into one commit,
   // guaranteeing cards mount fresh with initial="hidden" on both login and refresh
   const [initialized, setInitialized] = useState(false);
+  const [mode, setMode] = useState<'list' | 'grid'>('list');
+
+  // Touch drag state for grid mode (refs avoid stale-closure issues in native listeners)
+  const gridRef = useRef<HTMLDivElement>(null);
+  const touchSrc = useRef<number | null>(null);
+  const touchDst = useRef<number | null>(null);
+  const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchActive = useRef(false);
+  const touchGhost = useRef<HTMLElement | null>(null);
+  const touchOffset = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (mode !== 'grid') return;
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const onMove = (e: TouchEvent) => {
+      if (!touchActive.current) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      if (touchGhost.current) {
+        // Hide ghost so elementFromPoint can see the cards beneath it
+        touchGhost.current.style.visibility = 'hidden';
+        const el = document.elementFromPoint(t.clientX, t.clientY)?.closest<HTMLElement>('[data-gi]');
+        touchGhost.current.style.visibility = '';
+        touchGhost.current.style.left = `${t.clientX - touchOffset.current.x}px`;
+        touchGhost.current.style.top = `${t.clientY - touchOffset.current.y}px`;
+        if (el) {
+          const idx = parseInt(el.dataset.gi ?? '', 10);
+          if (!isNaN(idx)) { touchDst.current = idx; setDropIndex(idx); }
+        }
+      }
+    };
+
+    const onEnd = () => {
+      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
+      const src = touchSrc.current;
+      const dst = touchDst.current;
+      touchSrc.current = null;
+      touchDst.current = null;
+      touchActive.current = false;
+      setDragIndex(null);
+      setDropIndex(null);
+      if (src !== null && dst !== null && src !== dst) {
+        setOrderedPoems(prev => {
+          const next = [...prev];
+          const [moved] = next.splice(src, 1);
+          next.splice(dst, 0, moved);
+          apiUpdateOrder(next.map(p => p.id)).then(() => refreshPoems()).catch(() => {});
+          return next;
+        });
+      }
+    };
+
+    grid.addEventListener('touchmove', onMove, { passive: false });
+    grid.addEventListener('touchend', onEnd);
+    grid.addEventListener('touchcancel', onEnd);
+    return () => {
+      grid.removeEventListener('touchmove', onMove);
+      grid.removeEventListener('touchend', onEnd);
+      grid.removeEventListener('touchcancel', onEnd);
+    };
+  }, [mode, initialized, refreshPoems]);
 
   // Initialize once when live poem data loads
   useEffect(() => {
@@ -601,14 +665,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </motion.p>
       ) : (
         <motion.div key="list" className="admin-poem-list" variants={listVariants} initial="hidden" animate="show">
-          <motion.div
-            className="admin-add-row"
-            variants={cardVariants}
-          >
-            <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
-            <span className="admin-add-label">Add Poem</span>
+          <motion.div className="admin-top-row" variants={cardVariants}>
+            <div className="admin-mode-toggle">
+              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => setMode('list')}>List</button>
+              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => setMode('grid')}>Grid</button>
+            </div>
+            {mode === 'list' && (
+              <div className="admin-add-row">
+                <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
+                <span className="admin-add-label">Add Poem</span>
+              </div>
+            )}
           </motion.div>
-          {orderedPoems.map((poem, i) => (
+          {mode === 'list' ? orderedPoems.map((poem, i) => (
             // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
             // Combining layout and variants on the same element causes Motion to apply
             // the y transform from hidden but skip opacity — split avoids the conflict.
@@ -635,7 +704,61 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 />
               </motion.div>
             </motion.div>
-          ))}
+          )) : (
+            <motion.div ref={gridRef} className="admin-grid-view" variants={cardVariants}>
+              {orderedPoems.map((poem, i) => (
+                <div
+                  key={poem.id}
+                  data-gi={i}
+                  className={`admin-grid-item${dragIndex === i ? ' is-dragging' : ''}${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                  draggable
+                  onContextMenu={e => e.preventDefault()}
+                  onTouchStart={e => {
+                    if (touchTimer.current) clearTimeout(touchTimer.current);
+                    touchSrc.current = i;
+                    touchDst.current = i;
+                    touchActive.current = false;
+                    const el = e.currentTarget as HTMLElement;
+                    const t = e.touches[0];
+                    const rect = el.getBoundingClientRect();
+                    touchOffset.current = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+                    touchTimer.current = setTimeout(() => {
+                      touchActive.current = true;
+                      setDragIndex(i);
+                      const r = el.getBoundingClientRect();
+                      const ghost = el.cloneNode(true) as HTMLElement;
+                      ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;width:${r.width}px;left:${r.left}px;top:${r.top}px;opacity:0.9;transform:scale(1.05);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,0.35);`;
+                      document.body.appendChild(ghost);
+                      touchGhost.current = ghost;
+                    }, 200);
+                  }}
+                  onDragStart={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    const ghost = el.cloneNode(true) as HTMLElement;
+                    ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
+                    document.body.appendChild(ghost);
+                    e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                    requestAnimationFrame(() => document.body.removeChild(ghost));
+                    e.dataTransfer.effectAllowed = 'move';
+                    setDragIndex(i);
+                  }}
+                  onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
+                  onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
+                  onDrop={() => handleDrop(i)}
+                >
+                  <div className="admin-grid-card">
+                    <div className="admin-grid-card-img-wrap">
+                      <img src={edits[poem.id]?.imagePreview ?? poem.image ?? PLACEHOLDER_IMAGE} alt={poem.title} loading="lazy" />
+                    </div>
+                    {poem.overlay && (
+                      <div className="admin-grid-card-overlay">{poem.overlay}</div>
+                    )}
+                  </div>
+                  <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
+                </div>
+              ))}
+            </motion.div>
+          )}
         </motion.div>
       )}
       </AnimatePresence>
