@@ -457,7 +457,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // State (not ref) so setInitialized + setOrderedPoems batch into one commit,
   // guaranteeing cards mount fresh with initial="hidden" on both login and refresh
   const [initialized, setInitialized] = useState(false);
-  const [mode, setMode] = useState<'list' | 'grid'>('list');
+  const [mode, setMode] = useState<'list' | 'grid'>(() => localStorage.getItem('admin_mode') === 'grid' ? 'grid' : 'list');
+
+  const handleSetMode = (m: 'list' | 'grid') => { localStorage.setItem('admin_mode', m); setMode(m); };
 
   // Touch drag state for grid mode (refs avoid stale-closure issues in native listeners)
   const gridRef = useRef<HTMLDivElement>(null);
@@ -479,7 +481,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         const t = e.touches[0];
         const dx = t.clientX - touchStart.current.x;
         const dy = t.clientY - touchStart.current.y;
-        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
           if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
         }
         return;
@@ -528,6 +530,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       grid.removeEventListener('touchmove', onMove);
       grid.removeEventListener('touchend', onEnd);
       grid.removeEventListener('touchcancel', onEnd);
+      // Clean up any ghost left behind if the effect tears down mid-drag
+      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
+      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+      touchActive.current = false;
     };
   }, [mode, initialized, refreshPoems]);
 
@@ -676,8 +682,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <motion.div key="list" className="admin-poem-list" variants={listVariants} initial="hidden" animate="show">
           <motion.div className="admin-top-row" variants={cardVariants}>
             <div className="admin-mode-toggle">
-              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => setMode('list')}>List</button>
-              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => setMode('grid')}>Grid</button>
+              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>List</button>
+              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Grid</button>
             </div>
             {mode === 'list' && (
               <div className="admin-add-row">
@@ -714,15 +720,18 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               </motion.div>
             </motion.div>
           )) : (
-            <motion.div ref={gridRef} className="admin-grid-view" variants={cardVariants}>
+            <div ref={gridRef} className="admin-grid-view">
               {orderedPoems.map((poem, i) => (
                 <div
                   key={poem.id}
                   data-gi={i}
+                  style={{ '--gi': i } as React.CSSProperties}
                   className={`admin-grid-item${dragIndex === i ? ' is-dragging' : ''}${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
                   draggable
                   onContextMenu={e => e.preventDefault()}
                   onTouchStart={e => {
+                    // Clean up any ghost from a previous drag that wasn't properly ended
+                    if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
                     if (touchTimer.current) clearTimeout(touchTimer.current);
                     touchSrc.current = i;
                     touchDst.current = i;
@@ -740,7 +749,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;width:${r.width}px;left:${r.left}px;top:${r.top}px;opacity:0.9;transform:scale(1.05);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,0.35);`;
                       document.body.appendChild(ghost);
                       touchGhost.current = ghost;
-                    }, 200);
+                    }, 300);
                   }}
                   onDragStart={e => {
                     const el = e.currentTarget as HTMLElement;
@@ -767,7 +776,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                 </div>
               ))}
-            </motion.div>
+            </div>
           )}
         </motion.div>
       )}
