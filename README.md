@@ -55,13 +55,16 @@ https://artoriun.github.io/kov-cs-poetry/
 
 ### Admin Portal (`/admin`)
 - Password-protected login page with Motion fade-in; error message animates in/out
-- **Add** new poems via the + button above the poem list
+- JWT token expiry is validated on page load — expired sessions are cleared and the login page is shown automatically; any 401 response from the API also triggers an immediate logout
+- **List / Order toggle** at the top of the dashboard; the selected mode persists across browser refreshes via localStorage
+  - **List mode** — full edit cards with all controls (title, overlay, image, custom slides, feature toggle, save, delete); drag-to-reorder cards with Motion `layout` prop (FLIP) for smooth positional animation
+  - **Order mode** — compact grid of poem preview cards showing the background image and a fading text overlay, identical in style to the poems page; drag-to-reorder by dragging any card; the new order persists to Firestore and is immediately reflected on the home page carousel and poems grid; cards stagger fade-in on mode switch
+- **Add** new poems via the + button (List mode only)
 - **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide); deletion confirmed via an animated modal
 - Edit each poem's title, overlay text, and background image
 - Upload replacement images (stored on Cloudinary)
 - **Feature** toggle on each card — featured poems appear in the home page carousel; featured cards display a gradient border and a "Featured" label
-- Drag-to-reorder poems; order persists and controls display order site-wide (carousel and poems grid)
-- Poem cards fade and stagger in on both login and browser refresh (Motion `staggerChildren` orchestration); reordering uses Motion's **`layout` prop** (FLIP) for smooth positional animation
+- Poem cards fade and stagger in on both login and browser refresh (Motion `staggerChildren` orchestration)
 - Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
 - New poem cards are drafts until **Save** is pressed — save is confirmed via an animated modal before writing to Firestore
 - **Custom Slides** button on each poem card (between Save and Feature) — opens an editable slide panel pre-split from the poem's overlay text
