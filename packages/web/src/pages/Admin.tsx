@@ -467,6 +467,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const touchActive = useRef(false);
   const touchGhost = useRef<HTMLElement | null>(null);
   const touchOffset = useRef({ x: 0, y: 0 });
+  const touchStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (mode !== 'grid') return;
@@ -474,7 +475,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (!grid) return;
 
     const onMove = (e: TouchEvent) => {
-      if (!touchActive.current) return;
+      if (!touchActive.current) {
+        const t = e.touches[0];
+        const dx = t.clientX - touchStart.current.x;
+        const dy = t.clientY - touchStart.current.y;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+          if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+        }
+        return;
+      }
       e.preventDefault();
       const t = e.touches[0];
       if (touchGhost.current) {
@@ -722,6 +731,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     const t = e.touches[0];
                     const rect = el.getBoundingClientRect();
                     touchOffset.current = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+                    touchStart.current = { x: t.clientX, y: t.clientY };
                     touchTimer.current = setTimeout(() => {
                       touchActive.current = true;
                       setDragIndex(i);
