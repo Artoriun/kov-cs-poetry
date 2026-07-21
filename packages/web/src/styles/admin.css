@@ -709,7 +709,8 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   border-radius: 50%;
   background: transparent;
   border: 1px solid cornflowerblue;
-  color: var(--text-secondary);
+  /* Always white in both themes — the badge sits over the darkened poem image */
+  color: #fff;
   font-size: 12px;
   line-height: 1;
   letter-spacing: normal;
@@ -719,12 +720,6 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-
-html.dark-mode .admin-grid-unfeature-x {
-  background: transparent;
-  border: 1px solid cornflowerblue;
-  color: #fff;
-}
 
 
 .admin-grid-card-img-wrap {
