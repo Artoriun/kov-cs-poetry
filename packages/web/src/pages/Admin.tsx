@@ -766,7 +766,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                   <div className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
-                    {poem.featured && <span className="admin-grid-featured-label">Featured</span>}
+                    {poem.featured && (
+                      <button
+                        type="button"
+                        className="admin-grid-featured-label"
+                        draggable={false}
+                        onMouseDown={e => e.stopPropagation()}
+                        onTouchStart={e => e.stopPropagation()}
+                        onClick={e => { e.stopPropagation(); handleToggleFeature(poem.id); }}
+                        title="Unfeature poem"
+                      >
+                        <span className="admin-grid-unfeature-x">×</span> Featured
+                      </button>
+                    )}
                     <div className="admin-grid-card-img-wrap">
                       <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
                     </div>
