@@ -766,6 +766,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                   <div className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
+                    {/* Live feature toggle badge, absolutely positioned over the image so
+                        it never shifts the layout — images stay aligned whether featured or not.
+                        stopPropagation + draggable=false keep taps from starting a card drag. */}
                     <button
                       type="button"
                       className="admin-grid-featured-label"
