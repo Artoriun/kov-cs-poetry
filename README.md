@@ -63,6 +63,7 @@ https://artoriun.github.io/kov-cs-poetry/
     - Native touch drag with a long-press threshold and movement cancellation, so scrolling the grid on touch devices never accidentally starts a drag
     - Each card shows the poem title above the image and a feature-toggle badge over the image: **× FEATURED** on featured poems (click to unfeature) and **✓ FEATURE?** on the rest (click to feature); the badge is absolutely positioned so images stay vertically aligned regardless of featured state, with a subtle backing glow keeping it legible over any image
     - Featured cards additionally show the same animated gradient highlight border as the List view
+    - Clicking a card jumps to List mode and, after a short delay, smooth-scrolls to that poem's edit card (only if off-screen) and plays a one-shot pulse border to mark it; the browser back button returns to the grid and pulses the card that was selected
 - **Add** new poems via the + button (List mode only)
 - **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide); deletion confirmed via an animated modal
 - Edit each poem's title, overlay text, and background image

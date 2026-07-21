@@ -13,6 +13,17 @@ function gridThumb(url: string): string {
   if (!url.includes('/image/upload/')) return url;
   return url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400,dpr_auto/');
 }
+
+// Play the one-shot pulse border (border-flow + border-pulse) on a card, matching the
+// poems grid highlight. Reflow restarts the animation; class is removed after the pulse.
+function playPulse(card: HTMLElement): void {
+  card.classList.remove('poem-highlight');
+  void card.offsetWidth; // reflow so the animation restarts
+  card.classList.add('poem-highlight');
+  const rawPulse = getComputedStyle(document.documentElement).getPropertyValue('--pulse-duration').trim();
+  const pulseMs = rawPulse.endsWith('ms') ? parseFloat(rawPulse) : rawPulse.endsWith('s') ? parseFloat(rawPulse) * 1000 : 2400;
+  setTimeout(() => card.classList.remove('poem-highlight'), pulseMs);
+}
 const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
 
 // listVariants orchestrates stagger; cardVariants define each card's enter/exit.
@@ -472,6 +483,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const gridDidDrag = useRef(false);
   // Set true when a grid→list poem click pushed a history entry, so popstate returns to grid
   const pushedGridBack = useRef(false);
+  // Last poem selected from the grid, so the back button can pulse-highlight it
+  const selectedPoemId = useRef<string | null>(null);
+  // Poem id to pulse-highlight in the grid after returning via the back button
+  const [gridPulseId, setGridPulseId] = useState<string | null>(null);
 
   const handleSetMode = (m: 'list' | 'grid') => { localStorage.setItem('admin_mode', m); setMode(m); };
 
@@ -479,23 +494,38 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // A history entry is pushed so the browser back button returns to the grid.
   const handleGridPoemClick = (id: string) => {
     if (gridDidDrag.current) { gridDidDrag.current = false; return; }
+    selectedPoemId.current = id;
     window.history.pushState({ __adminGrid: true }, '');
     pushedGridBack.current = true;
     setScrollTargetId(id);
     handleSetMode('list');
   };
 
-  // Back button after a grid→list poem click returns to the grid instead of leaving /admin
+  // Back button after a grid→list poem click returns to the grid instead of leaving /admin,
+  // and pulse-highlights the poem that was selected
   useEffect(() => {
     const onPop = () => {
       if (!pushedGridBack.current) return;
       pushedGridBack.current = false;
       localStorage.setItem('admin_mode', 'grid');
       setMode('grid');
+      setGridPulseId(selectedPoemId.current);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+
+  // After the back button returns to the grid, pulse-highlight the previously selected card
+  useEffect(() => {
+    if (mode !== 'grid' || !gridPulseId) return;
+    const id = gridPulseId;
+    const timer = setTimeout(() => {
+      setGridPulseId(null);
+      const card = document.getElementById(`admin-grid-${id}`);
+      if (card) playPulse(card);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [mode, gridPulseId]);
 
   // Only three refs needed: timer + ghost + active flag, all for the unmount guard below
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -529,6 +559,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       } else if (rect.bottom > window.innerHeight) {
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+
+      // Play the same one-shot pulse border as the poems grid
+      const card = el.querySelector<HTMLElement>('.admin-poem-card');
+      if (card) playPulse(card);
     }, 500);
     return () => clearTimeout(timer);
   }, [mode, scrollTargetId]);
@@ -820,7 +854,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   onDrop={() => handleDrop(i)}
                 >
                   <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
-                  <div className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
+                  <div id={`admin-grid-${poem.id}`} className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
                     {/* Live feature toggle badge, absolutely positioned over the image so
                         it never shifts the layout — images stay aligned whether featured or not.
                         stopPropagation + draggable=false keep taps from starting a card drag. */}
