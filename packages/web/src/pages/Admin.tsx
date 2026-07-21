@@ -764,7 +764,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
                   onDrop={() => handleDrop(i)}
                 >
-                  <div className="admin-grid-card">
+                  <div className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
                     <div className="admin-grid-card-img-wrap">
                       <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
                     </div>

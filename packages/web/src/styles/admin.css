@@ -666,13 +666,14 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 .admin-grid-card {
   position: relative;
   aspect-ratio: 1;
-  overflow: hidden;
   border-radius: 4px;
 }
 
 .admin-grid-card-img-wrap {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
 .admin-grid-card-img-wrap img {
