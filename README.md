@@ -59,6 +59,10 @@ https://artoriun.github.io/kov-cs-poetry/
 - **List / Order toggle** at the top of the dashboard; the selected mode persists across browser refreshes via localStorage
   - **List mode** — full edit cards with all controls (title, overlay, image, custom slides, feature toggle, save, delete); drag-to-reorder cards with Motion `layout` prop (FLIP) for smooth positional animation
   - **Order mode** — compact grid of poem preview cards showing the background image and a fading text overlay, identical in style to the poems page; drag-to-reorder by dragging any card; the new order persists to Firestore and is immediately reflected on the home page carousel and poems grid; cards stagger fade-in on mode switch
+    - Preview images are served as resized Cloudinary thumbnails (`f_auto,q_auto,w_400,dpr_auto`) rather than the full-resolution originals, so the grid loads quickly even on mobile
+    - Native touch drag with a long-press threshold and movement cancellation, so scrolling the grid on touch devices never accidentally starts a drag
+    - Each card shows the poem title above the image and a feature-toggle badge over the image: **× FEATURED** on featured poems (click to unfeature) and **✓ FEATURE?** on the rest (click to feature); the badge is absolutely positioned so images stay vertically aligned regardless of featured state
+    - Featured cards additionally show the same animated gradient highlight border as the List view
 - **Add** new poems via the + button (List mode only)
 - **Delete** poems with the × button on each card (soft-deleted in Firestore, hidden site-wide); deletion confirmed via an animated modal
 - Edit each poem's title, overlay text, and background image
