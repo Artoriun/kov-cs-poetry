@@ -6,6 +6,13 @@ import { usePoemsContext } from '../context/PoemsContext';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
+
+// Inject Cloudinary resize/format transforms for grid thumbnails; leaves blob previews
+// and non-Cloudinary URLs untouched. Full-res originals are only served in the detail view.
+function gridThumb(url: string): string {
+  if (!url.includes('/image/upload/')) return url;
+  return url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400,dpr_auto/');
+}
 const DRAFT_OVERLAY = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.';
 
 // listVariants orchestrates stagger; cardVariants define each card's enter/exit.
@@ -461,81 +468,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleSetMode = (m: 'list' | 'grid') => { localStorage.setItem('admin_mode', m); setMode(m); };
 
-  // Touch drag state for grid mode (refs avoid stale-closure issues in native listeners)
-  const gridRef = useRef<HTMLDivElement>(null);
-  const touchSrc = useRef<number | null>(null);
-  const touchDst = useRef<number | null>(null);
+  // Only three refs needed: timer + ghost + active flag, all for the unmount guard below
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchActive = useRef(false);
   const touchGhost = useRef<HTMLElement | null>(null);
-  const touchOffset = useRef({ x: 0, y: 0 });
-  const touchStart = useRef({ x: 0, y: 0 });
+  const touchActive = useRef(false);
 
+  // Guard: if the component unmounts mid-drag, clean up whatever's in document.body
   useEffect(() => {
-    if (mode !== 'grid') return;
-    const grid = gridRef.current;
-    if (!grid) return;
-
-    const onMove = (e: TouchEvent) => {
-      if (!touchActive.current) {
-        const t = e.touches[0];
-        const dx = t.clientX - touchStart.current.x;
-        const dy = t.clientY - touchStart.current.y;
-        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-          if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
-        }
-        return;
-      }
-      e.preventDefault();
-      const t = e.touches[0];
-      if (touchGhost.current) {
-        // Hide ghost so elementFromPoint can see the cards beneath it
-        touchGhost.current.style.visibility = 'hidden';
-        const el = document.elementFromPoint(t.clientX, t.clientY)?.closest<HTMLElement>('[data-gi]');
-        touchGhost.current.style.visibility = '';
-        touchGhost.current.style.left = `${t.clientX - touchOffset.current.x}px`;
-        touchGhost.current.style.top = `${t.clientY - touchOffset.current.y}px`;
-        if (el) {
-          const idx = parseInt(el.dataset.gi ?? '', 10);
-          if (!isNaN(idx)) { touchDst.current = idx; setDropIndex(idx); }
-        }
-      }
-    };
-
-    const onEnd = () => {
-      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
-      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
-      const src = touchSrc.current;
-      const dst = touchDst.current;
-      touchSrc.current = null;
-      touchDst.current = null;
-      touchActive.current = false;
-      setDragIndex(null);
-      setDropIndex(null);
-      if (src !== null && dst !== null && src !== dst) {
-        setOrderedPoems(prev => {
-          const next = [...prev];
-          const [moved] = next.splice(src, 1);
-          next.splice(dst, 0, moved);
-          apiUpdateOrder(next.map(p => p.id)).then(() => refreshPoems()).catch(() => {});
-          return next;
-        });
-      }
-    };
-
-    grid.addEventListener('touchmove', onMove, { passive: false });
-    grid.addEventListener('touchend', onEnd);
-    grid.addEventListener('touchcancel', onEnd);
     return () => {
-      grid.removeEventListener('touchmove', onMove);
-      grid.removeEventListener('touchend', onEnd);
-      grid.removeEventListener('touchcancel', onEnd);
-      // Clean up any ghost left behind if the effect tears down mid-drag
-      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
       if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
       touchActive.current = false;
     };
-  }, [mode, initialized, refreshPoems]);
+  }, []);
 
   // Initialize once when live poem data loads
   useEffect(() => {
@@ -673,7 +618,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           style={{ textAlign: 'center', padding: '64px 0' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.5 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, transition: { duration: 0.1 } }}
           transition={{ duration: 0.3 }}
         >
           Loading poems…
@@ -720,7 +665,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               </motion.div>
             </motion.div>
           )) : (
-            <div ref={gridRef} className="admin-grid-view">
+            <div className="admin-grid-view">
               {orderedPoems.map((poem, i) => (
                 <div
                   key={poem.id}
@@ -730,18 +675,71 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   draggable
                   onContextMenu={e => e.preventDefault()}
                   onTouchStart={e => {
-                    // Clean up any ghost from a previous drag that wasn't properly ended
                     if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
-                    if (touchTimer.current) clearTimeout(touchTimer.current);
-                    touchSrc.current = i;
-                    touchDst.current = i;
+                    if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
                     touchActive.current = false;
+
                     const el = e.currentTarget as HTMLElement;
                     const t = e.touches[0];
+                    const startX = t.clientX;
+                    const startY = t.clientY;
                     const rect = el.getBoundingClientRect();
-                    touchOffset.current = { x: t.clientX - rect.left, y: t.clientY - rect.top };
-                    touchStart.current = { x: t.clientX, y: t.clientY };
+                    const offsetX = t.clientX - rect.left;
+                    const offsetY = t.clientY - rect.top;
+                    let dst = i;
+
+                    const handleMove = (me: TouchEvent) => {
+                      const mt = me.touches[0];
+                      if (!touchActive.current) {
+                        if (Math.abs(mt.clientX - startX) > 10 || Math.abs(mt.clientY - startY) > 10) {
+                          clearTimeout(touchTimer.current!);
+                          touchTimer.current = null;
+                          el.removeEventListener('touchmove', handleMove);
+                          el.removeEventListener('touchend', handleEnd);
+                          el.removeEventListener('touchcancel', handleEnd);
+                        }
+                        return;
+                      }
+                      me.preventDefault();
+                      if (touchGhost.current) {
+                        touchGhost.current.style.visibility = 'hidden';
+                        const under = document.elementFromPoint(mt.clientX, mt.clientY)?.closest<HTMLElement>('[data-gi]');
+                        touchGhost.current.style.visibility = '';
+                        touchGhost.current.style.left = `${mt.clientX - offsetX}px`;
+                        touchGhost.current.style.top = `${mt.clientY - offsetY}px`;
+                        if (under) {
+                          const idx = parseInt(under.dataset.gi ?? '', 10);
+                          if (!isNaN(idx)) { dst = idx; setDropIndex(idx); }
+                        }
+                      }
+                    };
+
+                    const handleEnd = () => {
+                      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+                      if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
+                      el.removeEventListener('touchmove', handleMove);
+                      el.removeEventListener('touchend', handleEnd);
+                      el.removeEventListener('touchcancel', handleEnd);
+                      touchActive.current = false;
+                      setDragIndex(null);
+                      setDropIndex(null);
+                      if (i !== dst) {
+                        setOrderedPoems(prev => {
+                          const next = [...prev];
+                          const [moved] = next.splice(i, 1);
+                          next.splice(dst, 0, moved);
+                          apiUpdateOrder(next.map(p => p.id)).then(() => refreshPoems()).catch(() => {});
+                          return next;
+                        });
+                      }
+                    };
+
+                    el.addEventListener('touchmove', handleMove, { passive: false });
+                    el.addEventListener('touchend', handleEnd);
+                    el.addEventListener('touchcancel', handleEnd);
+
                     touchTimer.current = setTimeout(() => {
+                      if (!el.isConnected) return;
                       touchActive.current = true;
                       setDragIndex(i);
                       const r = el.getBoundingClientRect();
@@ -767,7 +765,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <div className="admin-grid-card">
                     <div className="admin-grid-card-img-wrap">
-                      <img src={edits[poem.id]?.imagePreview ?? poem.image ?? PLACEHOLDER_IMAGE} alt={poem.title} loading="lazy" />
+                      <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
                     </div>
                     {poem.overlay && (
                       <div className="admin-grid-card-overlay">{poem.overlay}</div>
