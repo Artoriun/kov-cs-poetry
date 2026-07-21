@@ -466,8 +466,36 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // guaranteeing cards mount fresh with initial="hidden" on both login and refresh
   const [initialized, setInitialized] = useState(false);
   const [mode, setMode] = useState<'list' | 'grid'>(() => localStorage.getItem('admin_mode') === 'grid' ? 'grid' : 'list');
+  // Poem id to scroll to in the list after switching from grid via a card click
+  const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
+  // Set true while a grid card is being dragged so the trailing click doesn't navigate
+  const gridDidDrag = useRef(false);
+  // Set true when a grid→list poem click pushed a history entry, so popstate returns to grid
+  const pushedGridBack = useRef(false);
 
   const handleSetMode = (m: 'list' | 'grid') => { localStorage.setItem('admin_mode', m); setMode(m); };
+
+  // Clicking a grid card jumps to the List view and scrolls to that poem's edit card.
+  // A history entry is pushed so the browser back button returns to the grid.
+  const handleGridPoemClick = (id: string) => {
+    if (gridDidDrag.current) { gridDidDrag.current = false; return; }
+    window.history.pushState({ __adminGrid: true }, '');
+    pushedGridBack.current = true;
+    setScrollTargetId(id);
+    handleSetMode('list');
+  };
+
+  // Back button after a grid→list poem click returns to the grid instead of leaving /admin
+  useEffect(() => {
+    const onPop = () => {
+      if (!pushedGridBack.current) return;
+      pushedGridBack.current = false;
+      localStorage.setItem('admin_mode', 'grid');
+      setMode('grid');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // Only three refs needed: timer + ghost + active flag, all for the unmount guard below
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -482,6 +510,28 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       touchActive.current = false;
     };
   }, []);
+
+  // After a grid card click switches to List, wait 0.5s for the view to settle,
+  // then smooth-scroll to the target card if it's off-screen
+  useEffect(() => {
+    if (mode !== 'list' || !scrollTargetId) return;
+    const id = scrollTargetId;
+    const timer = setTimeout(() => {
+      setScrollTargetId(null);
+      const el = document.getElementById(`admin-poem-${id}`);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const headerHeight = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--header-height')
+      ) || 72;
+      if (rect.top < headerHeight) {
+        window.scrollBy({ top: rect.top - headerHeight - 16, behavior: 'smooth' });
+      } else if (rect.bottom > window.innerHeight) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [mode, scrollTargetId]);
 
   // Initialize once when live poem data loads
   useEffect(() => {
@@ -642,7 +692,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
             // Combining layout and variants on the same element causes Motion to apply
             // the y transform from hidden but skip opacity — split avoids the conflict.
-            <motion.div key={poem.id} variants={cardVariants}>
+            <motion.div key={poem.id} id={`admin-poem-${poem.id}`} variants={cardVariants}>
               <motion.div
                 layout
                 transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
@@ -675,7 +725,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   className={`admin-grid-item${dragIndex === i ? ' is-dragging' : ''}${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
                   draggable
                   onContextMenu={e => e.preventDefault()}
+                  onClick={() => handleGridPoemClick(poem.id)}
+                  onMouseDown={() => { gridDidDrag.current = false; }}
                   onTouchStart={e => {
+                    gridDidDrag.current = false;
                     if (touchGhost.current) { touchGhost.current.remove(); touchGhost.current = null; }
                     if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
                     touchActive.current = false;
@@ -742,6 +795,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     touchTimer.current = setTimeout(() => {
                       if (!el.isConnected) return;
                       touchActive.current = true;
+                      gridDidDrag.current = true;
                       setDragIndex(i);
                       const r = el.getBoundingClientRect();
                       const ghost = el.cloneNode(true) as HTMLElement;
@@ -751,6 +805,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     }, 300);
                   }}
                   onDragStart={e => {
+                    gridDidDrag.current = true;
                     const el = e.currentTarget as HTMLElement;
                     const ghost = el.cloneNode(true) as HTMLElement;
                     ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
