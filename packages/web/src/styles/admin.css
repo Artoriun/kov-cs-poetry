@@ -689,6 +689,17 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   cursor: pointer;
 }
 
+.admin-grid-featured-label::before {
+  content: '';
+  position: absolute;
+  inset: -3px -7px;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.22);
+  filter: blur(7px);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 .admin-grid-unfeature-x {
   display: inline-flex;
   align-items: center;
@@ -696,7 +707,7 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: var(--bg-secondary);
+  background: transparent;
   border: 1px solid cornflowerblue;
   color: var(--text-secondary);
   font-size: 12px;
@@ -708,24 +719,13 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.admin-grid-featured-label:hover .admin-grid-unfeature-x {
-  background: #c0392b;
-  border-color: #c0392b;
-  color: #fff;
-}
 
 html.dark-mode .admin-grid-unfeature-x {
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   border: 1px solid cornflowerblue;
   color: #fff;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
-html.dark-mode .admin-grid-featured-label:hover .admin-grid-unfeature-x {
-  background: rgba(192, 57, 43, 0.7);
-  border-color: rgba(192, 57, 43, 0.9);
-}
 
 .admin-grid-card-img-wrap {
   position: absolute;
