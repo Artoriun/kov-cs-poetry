@@ -764,7 +764,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
                   onDrop={() => handleDrop(i)}
                 >
+                  <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                   <div className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}>
+                    {poem.featured && <span className="admin-grid-featured-label">Featured</span>}
                     <div className="admin-grid-card-img-wrap">
                       <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
                     </div>
@@ -772,7 +774,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <div className="admin-grid-card-overlay">{poem.overlay}</div>
                     )}
                   </div>
-                  <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                 </div>
               ))}
             </div>
