@@ -764,6 +764,8 @@ html.dark-mode .admin-grid-unfeature-x {
   word-break: break-word;
   font-family: 'Esteban', serif;
   overflow: hidden;
+  /* Extra top padding clears the absolutely-positioned FEATURED/FEATURE? badge */
+  padding-top: 30px;
   -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 90%);
   mask-image: linear-gradient(to bottom, black 55%, transparent 90%);
   pointer-events: none;
