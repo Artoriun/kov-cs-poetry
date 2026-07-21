@@ -242,9 +242,10 @@ function PoemCard({
       <div className="admin-poem-image-col">
         <span className="admin-field-label">Background image</span>
         <img
-          src={edit.imagePreview ?? (poem.image || PLACEHOLDER_IMAGE)}
+          src={edit.imagePreview ?? gridThumb(poem.image || PLACEHOLDER_IMAGE)}
           alt={poem.title}
           className="admin-poem-thumb"
+          loading="eager"
         />
         <label className="admin-file-label">
           Choose file
