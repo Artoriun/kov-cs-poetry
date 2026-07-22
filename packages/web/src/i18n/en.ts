@@ -80,7 +80,8 @@ export const en = {
     saveChangesBody: 'This will persist all changes to this poem.',
     cancel: 'Cancel',
     restoreOriginal: 'Restore original?',
-    restoreOriginalBody: 'The poem will revert to its auto-split layout. Your custom slides will be discarded.',
+    restoreOriginalBody:
+      'The poem will revert to its auto-split layout. Your custom slides will be discarded.',
     restore: 'Restore',
     deleteSlide: 'Delete slide',
     deleteSlideBody: 'Are you sure you want to delete this slide?',

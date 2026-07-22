@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import { en } from './en';
 import { hu } from './hu';
 
@@ -22,7 +22,11 @@ function resolveInitialLang(): Lang {
 }
 
 type LangContextValue = { lang: Lang; t: Dict; setLang: (l: Lang) => void };
-const LangContext = createContext<LangContextValue>({ lang: DEFAULT_LANG, t: dicts[DEFAULT_LANG], setLang: () => {} });
+const LangContext = createContext<LangContextValue>({
+  lang: DEFAULT_LANG,
+  t: dicts[DEFAULT_LANG],
+  setLang: () => {},
+});
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(resolveInitialLang);
@@ -37,7 +41,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLangState(l);
   };
 
-  return <LangContext.Provider value={{ lang, t: dicts[lang], setLang }}>{children}</LangContext.Provider>;
+  return (
+    <LangContext.Provider value={{ lang, t: dicts[lang], setLang }}>
+      {children}
+    </LangContext.Provider>
+  );
 }
 
 // Returns the active language's dictionary, e.g. const t = useT(); t.nav.home

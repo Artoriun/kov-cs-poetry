@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import { authRouter } from './routes/auth';
 import { poemsRouter } from './routes/poems';
 
