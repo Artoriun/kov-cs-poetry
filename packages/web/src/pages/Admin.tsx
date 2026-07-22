@@ -278,7 +278,7 @@ function PoemCard({
           <label className="admin-field-label">Title</label>
           <input
             type="text"
-            className="admin-input"
+            className="admin-title-input"
             value={edit.title}
             onChange={e => onChange({ title: e.target.value })}
           />
