@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { type Poem } from '@gedichtenv2/shared';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
+import { useT } from '../i18n';
 import { apiLogin, apiUpdatePoem, apiUploadImage, apiUpdateOrder, apiAddPoem } from '../lib/api';
 
 const PLACEHOLDER_IMAGE = "https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png";
@@ -103,6 +104,7 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 // ── Login ────────────────────────────────────────────────────────────────────
 
 function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
+  const t = useT();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -116,7 +118,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
       const token = await apiLogin(password);
       onLogin(token);
     } catch {
-      setError('Incorrect password.');
+      setError(t.admin.incorrectPassword);
     } finally {
       setLoading(false);
     }
@@ -135,7 +137,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
         >
           <h1>Admin</h1>
           <div>
-            <label className="admin-field-label" htmlFor="admin-password">Password</label>
+            <label className="admin-field-label" htmlFor="admin-password">{t.admin.password}</label>
             <div className="admin-password-wrap">
               <input
                 id="admin-password"
@@ -152,7 +154,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
                 onClick={() => setShowPassword(v => !v)}
                 tabIndex={-1}
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? t.admin.hide : t.admin.show}
               </button>
             </div>
           </div>
@@ -171,7 +173,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             )}
           </AnimatePresence>
           <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
-            {loading ? 'Logging in…' : 'Log in'}
+            {loading ? t.admin.loggingIn : t.admin.logIn}
           </button>
         </motion.form>
       </div>
@@ -206,6 +208,7 @@ function PoemCard({
   onDragEnd: () => void;
   isDragging: boolean;
 }) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tapRef = useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null; pending: boolean }>({ count: 0, timer: null, pending: false });
   const [pendingRemoveIdx, setPendingRemoveIdx] = useState<number | null>(null);
@@ -248,10 +251,10 @@ function PoemCard({
       }}
       onDragEnd={e => { (e.currentTarget as HTMLElement).draggable = true; onDragEnd(); }}
     >
-      {poem.featured && <span className="admin-featured-label">Featured</span>}
-      <button type="button" className="admin-delete-btn" onClick={onDelete} title="Delete poem">×</button>
+      {poem.featured && <span className="admin-featured-label">{t.admin.featured}</span>}
+      <button type="button" className="admin-delete-btn" onClick={onDelete} title={t.admin.deletePoem}>×</button>
       <div className="admin-poem-image-col">
-        <span className="admin-field-label">Background image</span>
+        <span className="admin-field-label">{t.admin.backgroundImage}</span>
         <img
           src={edit.imagePreview ?? gridThumb(poem.image || PLACEHOLDER_IMAGE)}
           alt={poem.title}
@@ -259,7 +262,7 @@ function PoemCard({
           loading="eager"
         />
         <label className="admin-file-label">
-          Choose file
+          {t.admin.chooseFile}
           <input
             ref={fileInputRef}
             type="file"
@@ -275,7 +278,7 @@ function PoemCard({
 
       <div className="admin-poem-fields">
         <div>
-          <label className="admin-field-label">Title</label>
+          <label className="admin-field-label">{t.admin.titleLabel}</label>
           <input
             type="text"
             className="admin-title-input"
@@ -284,7 +287,7 @@ function PoemCard({
           />
         </div>
         <div>
-          <label className="admin-field-label">Poem text</label>
+          <label className="admin-field-label">{t.admin.poemText}</label>
           <textarea
             className="admin-overlay-textarea"
             value={edit.overlay}
@@ -319,7 +322,7 @@ function PoemCard({
 
         {edit.customSlidesOpen && (
           <div className="admin-custom-slides">
-            <span className="admin-field-label">Custom Slides</span>
+            <span className="admin-field-label">{t.admin.customSlides}</span>
             {(edit.customSlides ?? []).map((slide, idx) => (
               <div key={idx} className="admin-slide-row">
                 <span className="admin-slide-num">{idx + 1}</span>
@@ -345,7 +348,7 @@ function PoemCard({
                 className="admin-btn"
                 onClick={() => onChange({ customSlides: [...(edit.customSlides ?? []), ''] })}
               >
-                + Add Slide
+                {t.admin.addSlide}
               </button>
             </div>
           </div>
@@ -358,7 +361,7 @@ function PoemCard({
             onClick={() => setPendingSave(true)}
             disabled={status === 'saving'}
           >
-            {status === 'saving' ? 'Saving…' : 'Save'}
+            {status === 'saving' ? t.admin.saving : t.admin.save}
           </button>
           <button
             type="button"
@@ -372,7 +375,7 @@ function PoemCard({
               }
             }}
           >
-            {edit.customSlidesOpen ? 'Original' : 'Custom Slides'}
+            {edit.customSlidesOpen ? t.admin.original : t.admin.customSlides}
           </button>
           <button
             type="button"
@@ -380,10 +383,10 @@ function PoemCard({
             onClick={onToggleFeature}
             disabled={status === 'saving'}
           >
-            {poem.featured ? 'Unfeature' : 'Feature'}
+            {poem.featured ? t.admin.unfeature : t.admin.feature}
           </button>
-          {status === 'saved' && <span className="admin-save-status">Saved</span>}
-          {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>Error saving</span>}
+          {status === 'saved' && <span className="admin-save-status">{t.admin.saved}</span>}
+          {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>{t.admin.errorSaving}</span>}
         </div>
       </div>
     </div>
@@ -392,11 +395,11 @@ function PoemCard({
       {pendingSave && (
         <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setPendingSave(false)}>
           <motion.div className="admin-modal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.18 }} onClick={e => e.stopPropagation()}>
-            <p className="admin-modal-title">Save changes?</p>
-            <p className="admin-modal-body">This will persist all changes to this poem.</p>
+            <p className="admin-modal-title">{t.admin.saveChanges}</p>
+            <p className="admin-modal-body">{t.admin.saveChangesBody}</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>Save</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>{t.admin.cancel}</button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>{t.admin.save}</button>
             </div>
           </motion.div>
         </motion.div>
@@ -420,11 +423,11 @@ function PoemCard({
             transition={{ duration: 0.18 }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="admin-modal-title">Restore original?</p>
-            <p className="admin-modal-body">The poem will revert to its auto-split layout. Your custom slides will be discarded.</p>
+            <p className="admin-modal-title">{t.admin.restoreOriginal}</p>
+            <p className="admin-modal-body">{t.admin.restoreOriginalBody}</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>Restore</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>{t.admin.cancel}</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>{t.admin.restore}</button>
             </div>
           </motion.div>
         </motion.div>
@@ -448,11 +451,11 @@ function PoemCard({
             transition={{ duration: 0.18 }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="admin-modal-title">Delete slide</p>
-            <p className="admin-modal-body">Are you sure you want to delete this slide?</p>
+            <p className="admin-modal-title">{t.admin.deleteSlide}</p>
+            <p className="admin-modal-body">{t.admin.deleteSlideBody}</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingRemoveIdx(null)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => confirmRemoveSlide(pendingRemoveIdx)}>Delete</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingRemoveIdx(null)}>{t.admin.cancel}</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => confirmRemoveSlide(pendingRemoveIdx)}>{t.admin.delete}</button>
             </div>
           </motion.div>
         </motion.div>
@@ -465,6 +468,7 @@ function PoemCard({
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const t = useT();
   const { poems, loading, refreshPoems } = usePoemsContext();
   const [orderedPoems, setOrderedPoems] = useState<Poem[]>([]);
   const [edits, setEdits] = useState<Record<string, EditState>>({});
@@ -643,9 +647,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleAddPoem = () => {
     const tempId = `poem-draft-${Date.now()}`;
-    const newPoem: Poem = { id: tempId, title: 'New Poem', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
+    const newPoem: Poem = { id: tempId, title: t.admin.newPoemTitle, overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
     setOrderedPoems(prev => [newPoem, ...prev]);
-    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null, customSlides: null, customSlidesOpen: false, customSlidesEnabled: false } }));
+    setEdits(prev => ({ ...prev, [tempId]: { title: t.admin.newPoemTitle, overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null, customSlides: null, customSlidesOpen: false, customSlidesEnabled: false } }));
     setDraftIds(prev => new Set([...prev, tempId]));
   };
 
@@ -706,19 +710,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           exit={{ opacity: 0, transition: { duration: 0.1 } }}
           transition={{ duration: 0.3 }}
         >
-          Loading poems…
+          {t.admin.loadingPoems}
         </motion.p>
       ) : (
         <motion.div key="list" className="admin-poem-list" variants={listVariants} initial="hidden" animate="show">
           <motion.div className="admin-top-row" variants={cardVariants}>
             <div className="admin-mode-toggle">
-              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>List</button>
-              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Order</button>
+              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>{t.admin.list}</button>
+              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>{t.admin.order}</button>
             </div>
             {mode === 'list' && (
               <div className="admin-add-row">
                 <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
-                <span className="admin-add-label">Add Poem</span>
+                <span className="admin-add-label">{t.admin.addPoem}</span>
               </div>
             )}
           </motion.div>
@@ -865,10 +869,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       onMouseDown={e => e.stopPropagation()}
                       onTouchStart={e => e.stopPropagation()}
                       onClick={e => { e.stopPropagation(); handleToggleFeature(poem.id); }}
-                      title={poem.featured ? 'Unfeature poem' : 'Feature poem'}
+                      title={poem.featured ? t.admin.unfeaturePoem : t.admin.featurePoem}
                     >
                       <span className="admin-grid-unfeature-x">{poem.featured ? '×' : '✓'}</span>
-                      <span>{poem.featured ? 'Featured' : 'Feature?'}</span>
+                      <span>{poem.featured ? t.admin.featured : t.admin.featurePrompt}</span>
                     </button>
                     <div className="admin-grid-card-img-wrap">
                       <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
@@ -904,11 +908,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               transition={{ duration: 0.18 }}
               onClick={e => e.stopPropagation()}
             >
-              <p className="admin-modal-title">Delete poem</p>
-              <p className="admin-modal-body">Are you sure you want to delete this poem?</p>
+              <p className="admin-modal-title">{t.admin.deletePoem}</p>
+              <p className="admin-modal-body">{t.admin.deletePoemBody}</p>
               <div className="admin-modal-actions">
-                <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Cancel</button>
-                <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Delete</button>
+                <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>{t.admin.cancel}</button>
+                <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>{t.admin.delete}</button>
               </div>
             </motion.div>
           </motion.div>
