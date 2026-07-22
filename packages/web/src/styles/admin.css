@@ -297,9 +297,9 @@ html.dark-mode .admin-delete-btn:hover {
   display: block;
 }
 
-.admin-overlay-textarea {
+.admin-overlay-textarea,
+.admin-title-input {
   width: 100%;
-  min-height: 120px;
   padding: 10px 12px;
   background: var(--bg-primary, #fff);
   border: 1px solid var(--border-color);
@@ -307,13 +307,18 @@ html.dark-mode .admin-delete-btn:hover {
   font-family: inherit;
   font-size: 13px;
   line-height: 1.6;
-  resize: vertical;
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s ease;
 }
 
-.admin-overlay-textarea:focus {
+.admin-overlay-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-overlay-textarea:focus,
+.admin-title-input:focus {
   border-color: var(--text-secondary);
 }
 
@@ -337,8 +342,10 @@ html.dark-mode .admin-delete-btn:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
+  padding: 9px 20px;
+  border: 1px solid var(--text-secondary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -470,8 +477,8 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 .admin-input {
   width: 100%;
   padding: 10px 12px;
-  background: var(--bg-primary, #fff);
-  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   color: var(--text-primary);
   font-family: inherit;
   font-size: 14px;
@@ -481,7 +488,7 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 }
 
 .admin-input:focus {
-  border-color: var(--text-secondary);
+  border-color: var(--input-border-focus);
 }
 
 /* ── Custom slides ── */
