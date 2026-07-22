@@ -1,5 +1,5 @@
-@import './themes.css';
-@import url('https://fonts.googleapis.com/css2?family=Esteban&display=swap');
+@import "./themes.css";
+@import url("https://fonts.googleapis.com/css2?family=Esteban&display=swap");
 
 /* ===== ANIMATION TIMING ===== */
 :root {
@@ -27,16 +27,24 @@ html {
 }
 
 @keyframes page-load-fade {
-  from { opacity: 0 }
-  to { opacity: 1 }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Scrim covers the background on load and fades out, revealing the background image.
    Using a separate element avoids animating body opacity, which interferes with
    Motion's RAF timing on mobile and collapses stagger animations. */
 @keyframes page-load-scrim {
-  from { opacity: 1 }
-  to { opacity: 0 }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .page-load-scrim {
@@ -59,7 +67,9 @@ body {
   background-position: center;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 a {
@@ -82,7 +92,9 @@ ul {
   list-style: none;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 400;
   color: var(--text-primary);
 }
@@ -218,7 +230,9 @@ h1, h2, h3 {
   border: 1px solid var(--border-color);
   padding: 6px 14px;
   white-space: nowrap;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
   margin-left: auto;
 }
 
@@ -330,7 +344,7 @@ h1, h2, h3 {
 }
 
 .hero-description {
-  font-family: 'Esteban', serif;
+  font-family: "Esteban", serif;
   font-size: clamp(15px, 2vw, 20px);
   color: var(--text-secondary);
   max-width: 480px;
@@ -349,7 +363,7 @@ h1, h2, h3 {
 }
 
 .hero-scroll-arrow::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: -24px;
 }
@@ -369,8 +383,15 @@ h1, h2, h3 {
 }
 
 @keyframes hero-bounce {
-  0%, 100% { transform: translateY(0);    opacity: 1; }
-  50%       { transform: translateY(-8px); opacity: 0.5; }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-8px);
+    opacity: 0.5;
+  }
 }
 
 @media (max-height: 500px) {
@@ -473,7 +494,10 @@ h1, h2, h3 {
   justify-content: center;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.6s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.6s ease;
 }
 
 .carousel-nav-btn:hover {
@@ -518,7 +542,10 @@ h1, h2, h3 {
   text-decoration: none;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.6s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.6s ease;
   white-space: nowrap;
 }
 
@@ -547,7 +574,7 @@ h1, h2, h3 {
   text-transform: uppercase;
   text-align: center;
   color: #fff;
-  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 
@@ -564,7 +591,7 @@ h1, h2, h3 {
   text-transform: uppercase;
   text-align: center;
   color: #fff;
-  text-shadow: 0 0 16px rgba(0,0,0,0.6);
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
 }
 
 .carousel-link {
@@ -583,7 +610,9 @@ h1, h2, h3 {
   height: calc(100svh - var(--header-height, 72px));
   object-fit: cover;
   filter: brightness(var(--img-brightness));
-  transition: transform 0.4s ease, filter 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    filter 0.4s ease;
 }
 
 .carousel-link:hover .carousel-image-container img {
@@ -609,7 +638,9 @@ h1, h2, h3 {
   height: 100%;
   object-fit: cover;
   filter: brightness(var(--img-brightness-overlay));
-  transition: transform 0.4s ease, filter 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    filter 0.4s ease;
 }
 
 .carousel-overlay {
@@ -619,14 +650,14 @@ h1, h2, h3 {
   color: #fff;
   text-align: center;
   padding: 50px 60px;
-  text-shadow: 0 0 10px rgba(0,0,0,0.7);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
   max-width: 90%;
   max-height: calc(100svh - var(--header-height, 72px) - 120px);
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Esteban', serif;
+  font-family: "Esteban", serif;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
   mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
@@ -680,20 +711,44 @@ h1, h2, h3 {
 }
 
 @keyframes toc-line-grow-down {
-  from { background-size: 1px 0%;   background-position: top center; }
-  to   { background-size: 1px 100%; background-position: top center; }
+  from {
+    background-size: 1px 0%;
+    background-position: top center;
+  }
+  to {
+    background-size: 1px 100%;
+    background-position: top center;
+  }
 }
 @keyframes toc-line-grow-up {
-  from { background-size: 1px 0%;   background-position: bottom center; }
-  to   { background-size: 1px 100%; background-position: bottom center; }
+  from {
+    background-size: 1px 0%;
+    background-position: bottom center;
+  }
+  to {
+    background-size: 1px 100%;
+    background-position: bottom center;
+  }
 }
 @keyframes toc-line-retract-down {
-  from { background-size: 1px 100%; background-position: bottom center; }
-  to   { background-size: 1px 0%;   background-position: bottom center; }
+  from {
+    background-size: 1px 100%;
+    background-position: bottom center;
+  }
+  to {
+    background-size: 1px 0%;
+    background-position: bottom center;
+  }
 }
 @keyframes toc-line-retract-up {
-  from { background-size: 1px 100%; background-position: top center; }
-  to   { background-size: 1px 0%;   background-position: top center; }
+  from {
+    background-size: 1px 100%;
+    background-position: top center;
+  }
+  to {
+    background-size: 1px 0%;
+    background-position: top center;
+  }
 }
 
 .poems-toc::-webkit-scrollbar {
@@ -736,7 +791,9 @@ h1, h2, h3 {
 }
 
 @keyframes toc-underline {
-  to { background-size: 100% 1px; }
+  to {
+    background-size: 100% 1px;
+  }
 }
 
 .poems-content {
@@ -745,12 +802,20 @@ h1, h2, h3 {
 }
 
 @keyframes poem-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes page-fade-to-detail {
-  to { opacity: 0; }
+  to {
+    opacity: 0;
+  }
 }
 
 .poems-grid-page.page-fade-out {
@@ -788,27 +853,63 @@ h1, h2, h3 {
 }
 
 @keyframes border-flow {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 @keyframes border-pulse {
-  0%        { opacity: 0; }
-  8%, 25%   { opacity: 1; }
-  33%       { opacity: 0; }
-  41%, 58%  { opacity: 1; }
-  66%       { opacity: 0; }
-  74%, 100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  8%,
+  25% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0;
+  }
+  41%,
+  58% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 0;
+  }
+  74%,
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes poem-highlight-scale {
-  0%        { transform: scale(1); }
-  8%, 25%   { transform: scale(1.04); }
-  33%       { transform: scale(1); }
-  41%, 58%  { transform: scale(1.04); }
-  66%       { transform: scale(1); }
-  74%, 92%  { transform: scale(1.04); }
-  100%      { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  8%,
+  25% {
+    transform: scale(1.04);
+  }
+  33% {
+    transform: scale(1);
+  }
+  41%,
+  58% {
+    transform: scale(1.04);
+  }
+  66% {
+    transform: scale(1);
+  }
+  74%,
+  92% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .poem-highlight,
@@ -818,7 +919,7 @@ h1, h2, h3 {
 
 .poem-highlight::before,
 .poem-highlight-static::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -3px;
   z-index: -1;
@@ -835,8 +936,9 @@ h1, h2, h3 {
 }
 
 .poem-highlight::before {
-  animation: border-flow 5s ease-in-out infinite alternate,
-             border-pulse var(--pulse-duration) ease forwards;
+  animation:
+    border-flow 5s ease-in-out infinite alternate,
+    border-pulse var(--pulse-duration) ease forwards;
 }
 
 .poem-highlight img,
@@ -855,7 +957,9 @@ h1, h2, h3 {
 
 .poem-card img {
   filter: brightness(var(--img-brightness));
-  transition: transform 0.4s ease, filter 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    filter 0.4s ease;
 }
 
 .poem-card:hover img {
@@ -883,7 +987,9 @@ h1, h2, h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease, opacity 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    opacity 0.4s ease;
 }
 
 .card-title {
@@ -914,7 +1020,9 @@ h1, h2, h3 {
   height: 100%;
   object-fit: cover;
   filter: brightness(var(--img-brightness-overlay));
-  transition: transform 0.4s ease, filter 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    filter 0.4s ease;
 }
 
 .poems-grid .poem-card:has(.poem-overlay) .poem-overlay {
@@ -928,12 +1036,12 @@ h1, h2, h3 {
   color: #fff;
   text-align: center;
   padding: 30px 20px;
-  text-shadow: 0 0 10px rgba(0,0,0,0.7);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: 14px;
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Esteban', serif;
+  font-family: "Esteban", serif;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
   mask-image: linear-gradient(to bottom, black 60%, transparent 95%);
@@ -954,7 +1062,9 @@ h1, h2, h3 {
   letter-spacing: 3px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   font-family: inherit;
 }
 
@@ -988,7 +1098,7 @@ h1, h2, h3 {
 }
 
 .poem-detail::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, calc(1 - var(--img-brightness-overlay)));
@@ -1038,7 +1148,10 @@ h1, h2, h3 {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   opacity: 1;
-  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.4s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.4s ease;
 }
 
 .detail-scroll-up-btn.is-hidden {
@@ -1062,7 +1175,7 @@ h1, h2, h3 {
   font-weight: 700;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 0 16px rgba(0,0,0,0.6);
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
 }
 
 .poem-detail .detail-image-container:has(.detail-overlay) {
@@ -1084,19 +1197,23 @@ h1, h2, h3 {
   color: #fff;
   text-align: center;
   padding: 50px 60px;
-  text-shadow: 0 0 10px rgba(0,0,0,0.7);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.6;
   width: 100%;
   max-width: 85%;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Esteban', serif;
+  font-family: "Esteban", serif;
 }
 
 @keyframes detail-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .detail-img-anim {
@@ -1176,7 +1293,10 @@ h1, h2, h3 {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   opacity: 1;
-  transition: background 0.25s ease, border-color 0.25s ease, opacity 0.4s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.4s ease;
 }
 
 .detail-scroll-down-btn.is-hidden {
@@ -1210,7 +1330,10 @@ h1, h2, h3 {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   opacity: 1;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
   animation: detail-fade-in 0.6s ease backwards;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
@@ -1230,19 +1353,40 @@ h1, h2, h3 {
 
 /* ===== CONTACT ===== */
 @keyframes contact-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .contact-page h1 {
   animation: contact-fade-up var(--page-fade-duration) ease both;
 }
 
-.contact-form > *:nth-child(1) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 1); }
-.contact-form > *:nth-child(2) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 2); }
-.contact-form > *:nth-child(3) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 3); }
-.contact-form > *:nth-child(4) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 4); }
-.contact-form > *:nth-child(5) { animation: contact-fade-up var(--page-fade-duration) ease both; animation-delay: calc(var(--page-fade-stagger) * 5); }
+.contact-form > *:nth-child(1) {
+  animation: contact-fade-up var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--page-fade-stagger) * 1);
+}
+.contact-form > *:nth-child(2) {
+  animation: contact-fade-up var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--page-fade-stagger) * 2);
+}
+.contact-form > *:nth-child(3) {
+  animation: contact-fade-up var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--page-fade-stagger) * 3);
+}
+.contact-form > *:nth-child(4) {
+  animation: contact-fade-up var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--page-fade-stagger) * 4);
+}
+.contact-form > *:nth-child(5) {
+  animation: contact-fade-up var(--page-fade-duration) ease both;
+  animation-delay: calc(var(--page-fade-stagger) * 5);
+}
 
 .contact-page h1 {
   text-align: center;
@@ -1305,7 +1449,9 @@ h1, h2, h3 {
   letter-spacing: 3px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   margin-top: 8px;
 }
 
@@ -1425,7 +1571,10 @@ html.dark-mode .header-login-btn:hover {
     overflow: hidden;
     opacity: 0;
     padding: 0;
-    transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+    transition:
+      max-height 0.35s ease,
+      opacity 0.25s ease,
+      padding 0.35s ease;
   }
 
   .main-nav.open {
@@ -1437,10 +1586,18 @@ html.dark-mode .header-login-btn:hover {
   .main-nav.open > ul > li {
     animation: poem-fade-in var(--nav-fade-duration) ease both;
   }
-  .main-nav.open > ul > li:nth-child(1) { animation-delay: 0ms; }
-  .main-nav.open > ul > li:nth-child(2) { animation-delay: var(--nav-fade-stagger); }
-  .main-nav.open > ul > li:nth-child(3) { animation-delay: calc(var(--nav-fade-stagger) * 2); }
-  .main-nav.open > ul > li:nth-child(4) { animation-delay: calc(var(--nav-fade-stagger) * 3); }
+  .main-nav.open > ul > li:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .main-nav.open > ul > li:nth-child(2) {
+    animation-delay: var(--nav-fade-stagger);
+  }
+  .main-nav.open > ul > li:nth-child(3) {
+    animation-delay: calc(var(--nav-fade-stagger) * 2);
+  }
+  .main-nav.open > ul > li:nth-child(4) {
+    animation-delay: calc(var(--nav-fade-stagger) * 3);
+  }
 
   .header-login-btn {
     display: none;
@@ -1541,7 +1698,6 @@ html.dark-mode .header-login-btn:hover {
     padding: 30px 20px;
   }
 }
-
 
 @media (max-height: 500px) {
   .carousel-section-label {

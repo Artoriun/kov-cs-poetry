@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
 import { useT } from '../i18n';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
   const t = useT();
@@ -12,7 +12,10 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
     const el = headerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
-      document.documentElement.style.setProperty('--header-height', `${el.getBoundingClientRect().height}px`);
+      document.documentElement.style.setProperty(
+        '--header-height',
+        `${el.getBoundingClientRect().height}px`,
+      );
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -32,7 +35,14 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
   return (
     <header ref={headerRef} className="site-header">
       <div className="header-inner">
-        <Link to="/" className="logo" onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+        <Link
+          to="/"
+          className="logo"
+          onClick={() => {
+            setMobileOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        >
           Kovács
         </Link>
         <p className="subtitle">{t.header.subtitle}</p>
@@ -40,7 +50,14 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
         <nav className={`main-nav ${mobileOpen ? 'open' : ''}`}>
           <ul>
             <li>
-              <NavLink to="/" end onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+              <NavLink
+                to="/"
+                end
+                onClick={() => {
+                  setMobileOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
                 {t.nav.home}
               </NavLink>
             </li>
@@ -55,18 +72,35 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
               </NavLink>
             </li>
             <li className="nav-login-mobile">
-              {onLogout
-                ? <button type="button" className="nav-logout-btn" onClick={() => { setMobileOpen(false); onLogout(); }}>{t.nav.logout}</button>
-                : <NavLink to="/admin" onClick={() => setMobileOpen(false)}>{t.nav.admin}</NavLink>
-              }
+              {onLogout ? (
+                <button
+                  type="button"
+                  className="nav-logout-btn"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    onLogout();
+                  }}
+                >
+                  {t.nav.logout}
+                </button>
+              ) : (
+                <NavLink to="/admin" onClick={() => setMobileOpen(false)}>
+                  {t.nav.admin}
+                </NavLink>
+              )}
             </li>
           </ul>
         </nav>
 
-        {onLogout
-          ? <button type="button" className="header-login-btn" onClick={onLogout}>{t.nav.logout}</button>
-          : <Link to="/admin" className="header-login-btn">{t.nav.admin}</Link>
-        }
+        {onLogout ? (
+          <button type="button" className="header-login-btn" onClick={onLogout}>
+            {t.nav.logout}
+          </button>
+        ) : (
+          <Link to="/admin" className="header-login-btn">
+            {t.nav.admin}
+          </Link>
+        )}
         <ThemeToggle />
 
         <button
@@ -75,7 +109,9 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={t.header.menu}
         >
-          <span /><span /><span />
+          <span />
+          <span />
+          <span />
         </button>
       </div>
     </header>

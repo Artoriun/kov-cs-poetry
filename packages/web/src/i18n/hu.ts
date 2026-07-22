@@ -81,7 +81,8 @@ export const hu: Dict = {
     saveChangesBody: 'Ez véglegesíti a vershez tartozó összes módosítást.',
     cancel: 'Mégse',
     restoreOriginal: 'Visszaállítja az eredetit?',
-    restoreOriginalBody: 'A vers visszaáll az automatikusan tördelt elrendezésre. Az egyéni diák elvesznek.',
+    restoreOriginalBody:
+      'A vers visszaáll az automatikusan tördelt elrendezésre. Az egyéni diák elvesznek.',
     restore: 'Visszaállítás',
     deleteSlide: 'Dia törlése',
     deleteSlideBody: 'Biztosan törli ezt a diát?',

@@ -91,7 +91,7 @@ html.dark-mode {
 }
 
 .admin-card-wrapper.drop-target::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -3px;
   left: 0;
@@ -156,11 +156,14 @@ html.dark-mode {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .admin-add-btn:hover {
-  background: var(--hover-bg, rgba(0,0,0,0.06));
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
   border-color: var(--text-secondary);
 }
 
@@ -198,7 +201,10 @@ html.dark-mode .admin-add-btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .admin-delete-btn:hover {
@@ -350,11 +356,13 @@ html.dark-mode .admin-delete-btn:hover {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .admin-file-label:hover {
-  background: var(--hover-bg, rgba(0,0,0,0.04));
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
   border-color: var(--text-secondary);
 }
 
@@ -384,13 +392,15 @@ html.dark-mode .admin-delete-btn:hover {
   text-transform: uppercase;
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
   background: transparent;
   color: var(--text-primary);
 }
 
 .admin-btn:hover:not(:disabled) {
-  background: var(--hover-bg, rgba(0,0,0,0.04));
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
   border-color: var(--text-secondary);
 }
 
@@ -415,7 +425,9 @@ html.dark-mode .admin-delete-btn:hover {
   border: 1px solid rgba(44, 44, 44, 0.5);
   color: #fafafa;
   letter-spacing: 0.15em;
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .admin-btn-primary:hover:not(:disabled) {
@@ -548,11 +560,14 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   justify-content: center;
   flex-shrink: 0;
   margin-top: 10px;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .admin-slide-remove-btn:hover {
-  background: var(--hover-bg, rgba(0,0,0,0.06));
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
   border-color: var(--text-secondary);
 }
 
@@ -637,7 +652,9 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .admin-mode-btn.active {
@@ -654,8 +671,14 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 }
 
 @keyframes admin-grid-item-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .admin-grid-item {
@@ -705,12 +728,14 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: cornflowerblue;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 1), 0 0 3px rgba(0, 0, 0, 1);
+  text-shadow:
+    0 1px 4px rgba(0, 0, 0, 1),
+    0 0 3px rgba(0, 0, 0, 1);
   cursor: pointer;
 }
 
 .admin-grid-featured-label::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -3px -7px;
   z-index: -1;
@@ -736,11 +761,14 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   letter-spacing: normal;
   text-indent: 0;
   text-shadow: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 1), 0 0 3px rgba(0, 0, 0, 1);
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 1),
+    0 0 3px rgba(0, 0, 0, 1);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
-
-
 
 .admin-grid-card-img-wrap {
   position: absolute;
@@ -777,7 +805,7 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Esteban', serif;
+  font-family: "Esteban", serif;
   overflow: hidden;
   /* Extra top padding clears the absolutely-positioned FEATURED/FEATURE? badge */
   padding-top: 30px;
