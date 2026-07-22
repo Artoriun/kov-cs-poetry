@@ -70,6 +70,7 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
         <ThemeToggle />
 
         <button
+          type="button"
           className={`hamburger ${mobileOpen ? 'open' : ''}`}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={t.header.menu}

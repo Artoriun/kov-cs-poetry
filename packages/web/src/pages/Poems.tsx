@@ -514,7 +514,7 @@ export default function Poems() {
               ))}
             </motion.div>
           </AnimatePresence>
-          <button className="btn-more" onClick={handleNextPage}>{t.poems.more}</button>
+          <button type="button" className="btn-more" onClick={handleNextPage}>{t.poems.more}</button>
         </div>
       </div>
     </div>

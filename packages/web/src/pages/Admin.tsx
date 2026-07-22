@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { type Poem } from '@gedichtenv2/shared';
+import type { Poem } from '@gedichtenv2/shared';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
@@ -243,7 +243,7 @@ function PoemCard({
       onDragStart={e => {
         const el = e.currentTarget as HTMLElement;
         const ghost = el.cloneNode(true) as HTMLElement;
-        ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
+        ghost.style.cssText += `;position:fixed;top:-9999px;left:-9999px;width:${el.offsetWidth}px;pointer-events:none;`;
         document.body.appendChild(ghost);
         e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
         requestAnimationFrame(() => document.body.removeChild(ghost));
@@ -278,7 +278,7 @@ function PoemCard({
 
       <div className="admin-poem-fields">
         <div>
-          <label className="admin-field-label">{t.admin.titleLabel}</label>
+          <span className="admin-field-label">{t.admin.titleLabel}</span>
           <input
             type="text"
             className="admin-title-input"
@@ -287,12 +287,12 @@ function PoemCard({
           />
         </div>
         <div>
-          <label className="admin-field-label">{t.admin.poemText}</label>
+          <span className="admin-field-label">{t.admin.poemText}</span>
           <textarea
             className="admin-overlay-textarea"
             value={edit.overlay}
             onChange={e => onChange({ overlay: e.target.value })}
-            onTouchStart={e => {
+            onTouchStart={() => {
               const s = tapRef.current;
               if (s.timer) clearTimeout(s.timer);
               s.count++;
@@ -801,7 +801,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                         touchGhost.current.style.top = `${mt.clientY - offsetY}px`;
                         if (under) {
                           const idx = parseInt(under.dataset.gi ?? '', 10);
-                          if (!isNaN(idx)) { dst = idx; setDropIndex(idx); }
+                          if (!Number.isNaN(idx)) { dst = idx; setDropIndex(idx); }
                         }
                       }
                     };
@@ -846,7 +846,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     gridDidDrag.current = true;
                     const el = e.currentTarget as HTMLElement;
                     const ghost = el.cloneNode(true) as HTMLElement;
-                    ghost.style.cssText += ';position:fixed;top:-9999px;left:-9999px;width:' + el.offsetWidth + 'px;pointer-events:none;';
+                    ghost.style.cssText += `;position:fixed;top:-9999px;left:-9999px;width:${el.offsetWidth}px;pointer-events:none;`;
                     document.body.appendChild(ghost);
                     e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
                     requestAnimationFrame(() => document.body.removeChild(ghost));
