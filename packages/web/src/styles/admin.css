@@ -491,6 +491,19 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   border-color: var(--input-border-focus);
 }
 
+/* Chrome/mobile autofill paints its own light background over password fields;
+   the inset box-shadow masks it and text-fill-color keeps the text readable */
+.admin-input:-webkit-autofill,
+.admin-input:-webkit-autofill:hover,
+.admin-input:-webkit-autofill:focus,
+.admin-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  caret-color: var(--text-primary);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* ── Custom slides ── */
 
 .admin-custom-slides {

@@ -2,18 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
+import { useT } from '../i18n';
 import '../styles/global.css';
 
-const PrevArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label="Előző">
+const PrevArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
+  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label={label}>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M11 7H3M7 11l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   </button>
 );
 
-const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label="Következő">
+const NextArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
+  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label={label}>
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -28,6 +29,7 @@ const variants = {
 };
 
 export default function PoemCarousel() {
+  const t = useT();
   const { poems: allPoems, loading } = usePoemsContext();
   const withOverlay = allPoems.filter(p => p.overlay);
   const featured = withOverlay.filter(p => p.featured);
@@ -78,7 +80,7 @@ export default function PoemCarousel() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="carousel-section-label">Kiemelt versek</div>
+      <div className="carousel-section-label">{t.carousel.featured}</div>
 
       {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
       {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
@@ -146,7 +148,7 @@ export default function PoemCarousel() {
                   className="carousel-read-more-btn"
                   onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
                 >
-                  Tovább
+                  {t.carousel.readMore}
                 </Link>
               </>
             )}
@@ -154,8 +156,8 @@ export default function PoemCarousel() {
         </AnimatePresence>
       </div>
 
-      <PrevArrow onClick={() => paginate(-1)} />
-      <NextArrow onClick={() => paginate(1)} />
+      <PrevArrow onClick={() => paginate(-1)} label={t.carousel.prev} />
+      <NextArrow onClick={() => paginate(1)} label={t.carousel.next} />
     </div>
   );
 }
