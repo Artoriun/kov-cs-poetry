@@ -2,6 +2,7 @@ import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePoemsContext } from '../context/PoemsContext';
+import { useT } from '../i18n';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
@@ -27,6 +28,7 @@ const slideVariants = {
 };
 
 export default function Poems() {
+  const t = useT();
   const { poems, loading } = usePoemsContext();
   const { id } = useParams<{ id: string }>();
   const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
@@ -350,7 +352,7 @@ export default function Poems() {
                     navigate('/poems');
                   }}
                 >
-                  ← Poems
+                  {t.poems.back}
                 </button>
               )}
             </div>
@@ -450,11 +452,11 @@ export default function Poems() {
 
   return (
     <div className="page poems-grid-page">
-      <h1 className="poems-heading">Poems</h1>
+      <h1 className="poems-heading">{t.poems.heading}</h1>
       <div className="poems-layout">
         <div className="poems-toc-wrap">
           <nav className="poems-toc">
-            <p className="poems-toc-title">Index</p>
+            <p className="poems-toc-title">{t.poems.index}</p>
             <ul ref={tocListRef}>
               {poems.map((poem) => (
                 <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
@@ -512,7 +514,7 @@ export default function Poems() {
               ))}
             </motion.div>
           </AnimatePresence>
-          <button className="btn-more" onClick={handleNextPage}>More Poems</button>
+          <button className="btn-more" onClick={handleNextPage}>{t.poems.more}</button>
         </div>
       </div>
     </div>
