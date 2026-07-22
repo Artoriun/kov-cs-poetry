@@ -2,16 +2,6 @@
 
 A responsive poetry portfolio website built with **React**, **TypeScript**, **Vite**, **Motion**, and custom **CSS**. Designed to showcase poems with elegant typography, immersive image overlays, an auto-advancing carousel, and a full-screen swipeable poem reader — optimized for both desktop and mobile (portrait and landscape).
 
-## Localization (Hungarian branch)
-
-This branch (`main-hungarian`) carries the fully **Hungarian-translated** interface. Every piece of user-facing text is in Hungarian:
-
-- **Public site** — header and navigation (Főoldal, Versek, Kapcsolat), home carousel ("Kiemelt versek", "Tovább"), poems grid and detail view, contact form, footer, and theme toggle.
-- **Admin portal** — login, dashboard (Lista / Sorrend), poem edit cards and their field labels, all confirmation modals, and the grid feature badges (Kiemelt / Kiemeli?).
-- The document language is set to `<html lang="hu">` and the page title reads *Kovács | KÖLTÉSZET*.
-
-Poem titles and poem texts are left untouched (they are already in Hungarian). The brand name **Kovács** and the **Admin** label are intentionally kept as-is. Everything else in this README stays in English for the development team.
-
 ## Demo
 https://artoriun.github.io/kov-cs-poetry/
 
