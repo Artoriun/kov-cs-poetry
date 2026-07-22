@@ -1,1 +1,7 @@
-{"tasks":{"dev":{"cache":false,"persistent":true},"build":{"dependsOn":["^build"],"outputs":["dist/**"],"env":["VITE_API_URL"]},"lint":{}}}
+{
+  "tasks": {
+    "dev": { "cache": false, "persistent": true },
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"], "env": ["VITE_API_URL"] },
+    "typecheck": {}
+  }
+}

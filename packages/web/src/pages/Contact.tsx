@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useT } from '../i18n';
 
 export default function Contact() {
@@ -14,9 +14,7 @@ export default function Contact() {
     return (
       <div className="page contact-page">
         <h1>{t.contact.title}</h1>
-        <p className="contact-success">
-          {t.contact.success}
-        </p>
+        <p className="contact-success">{t.contact.success}</p>
       </div>
     );
   }

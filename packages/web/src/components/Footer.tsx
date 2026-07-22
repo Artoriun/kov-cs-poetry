@@ -6,7 +6,9 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="footer-inner">
         <p>{t.footer.copyright}</p>
-        <a href="#top" className="back-to-top">{t.footer.backToTop}</a>
+        <a href="#top" className="back-to-top">
+          {t.footer.backToTop}
+        </a>
       </div>
     </footer>
   );

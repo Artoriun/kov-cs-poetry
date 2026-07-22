@@ -1,22 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import '../styles/global.css';
 
 const PrevArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label={label}>
+  <button
+    type="button"
+    className="carousel-nav-btn carousel-nav-prev"
+    onClick={onClick}
+    aria-label={label}
+  >
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <path d="M11 7H3M7 11l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M11 7H3M7 11l-4-4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   </button>
 );
 
 const NextArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label={label}>
+  <button
+    type="button"
+    className="carousel-nav-btn carousel-nav-next"
+    onClick={onClick}
+    aria-label={label}
+  >
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path
+        d="M3 7h8M7 3l4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   </button>
 );
@@ -31,8 +54,8 @@ const variants = {
 export default function PoemCarousel() {
   const t = useT();
   const { poems: allPoems, loading } = usePoemsContext();
-  const withOverlay = allPoems.filter(p => p.overlay);
-  const featured = withOverlay.filter(p => p.featured);
+  const withOverlay = allPoems.filter((p) => p.overlay);
+  const featured = withOverlay.filter((p) => p.featured);
   const CAROUSEL_POEMS = featured.length > 0 ? featured : withOverlay.slice(0, 5);
   const count = CAROUSEL_POEMS.length;
 
@@ -57,7 +80,7 @@ export default function PoemCarousel() {
   // Preload adjacent slides so the image is cached before the user swipes to it
   useEffect(() => {
     if (count === 0) return;
-    [(current + 1) % count, (current - 1 + count) % count].forEach(i => {
+    [(current + 1) % count, (current - 1 + count) % count].forEach((i) => {
       const img = new Image();
       img.src = CAROUSEL_POEMS[i]?.image ?? '';
     });
@@ -84,7 +107,10 @@ export default function PoemCarousel() {
 
       {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
       {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
-      <div style={{ position: 'relative', overflow: 'hidden' }} onDragStart={e => e.preventDefault()}>
+      <div
+        style={{ position: 'relative', overflow: 'hidden' }}
+        onDragStart={(e) => e.preventDefault()}
+      >
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={current}
@@ -94,16 +120,22 @@ export default function PoemCarousel() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.6, ease: 'easeInOut' }}
-            onAnimationComplete={() => { animatingRef.current = false; }}
+            onAnimationComplete={() => {
+              animatingRef.current = false;
+            }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.1}
-            onDragStart={() => { isDraggingRef.current = true; }}
+            onDragStart={() => {
+              isDraggingRef.current = true;
+            }}
             onDragEnd={(_, info) => {
               if (info.offset.x < -50) paginate(1);
               else if (info.offset.x > 50) paginate(-1);
               // Delay clearing so the click event that fires after drag-end is still blocked
-              setTimeout(() => { isDraggingRef.current = false; }, 100);
+              setTimeout(() => {
+                isDraggingRef.current = false;
+              }, 100);
             }}
             className={`carousel-slide${imageLoaded ? ' image-ready' : ''}`}
           >
@@ -112,20 +144,23 @@ export default function PoemCarousel() {
                 <Link
                   to={`/poems/${poem.id}`}
                   className="carousel-link"
-                  onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
+                  onClick={(e) => {
+                    if (isDraggingRef.current) e.preventDefault();
+                  }}
                 >
                   <div className="carousel-image-container">
                     <img
                       src={poem.image}
                       alt={poem.title}
                       draggable={false}
-                      onLoad={() => { setImageLoaded(true); setFirstImageLoaded(true); }}
+                      onLoad={() => {
+                        setImageLoaded(true);
+                        setFirstImageLoaded(true);
+                      }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     {/* Text reveal animations are gated on .image-ready (set by onLoad) */}
-                    <div className="carousel-slide-title carousel-overlay-line">
-                      {poem.title}
-                    </div>
+                    <div className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
                     {poem.overlay && (
                       <span className="carousel-overlay">
                         <span>
@@ -146,7 +181,9 @@ export default function PoemCarousel() {
                 <Link
                   to={`/poems/${poem.id}`}
                   className="carousel-read-more-btn"
-                  onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
+                  onClick={(e) => {
+                    if (isDraggingRef.current) e.preventDefault();
+                  }}
                 >
                   {t.carousel.readMore}
                 </Link>

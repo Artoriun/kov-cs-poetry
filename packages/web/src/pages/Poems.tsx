@@ -1,6 +1,6 @@
-import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 
@@ -39,7 +39,9 @@ export default function Poems() {
   const detailLines = detailPoem?.overlay ? detailPoem.overlay.split('\n') : [];
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
-  const [activePoemId, setActivePoemId] = useState<string | null>(savedParsed?.activePoemId ?? id ?? null);
+  const [activePoemId, setActivePoemId] = useState<string | null>(
+    savedParsed?.activePoemId ?? id ?? null,
+  );
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideDir, setSlideDir] = useState(1); // 1 = next/down, -1 = prev/up
   const [upBtnVisible, setUpBtnVisible] = useState(false);
@@ -47,7 +49,12 @@ export default function Poems() {
   const [backBtnVisible, setBackBtnVisible] = useState(false);
   const [seenSlides, setSeenSlides] = useState<Set<number>>(new Set<number>());
   const poemDetailRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startY: number; lastY: number; atTop: boolean; atBottom: boolean } | null>(null);
+  const dragRef = useRef<{
+    startY: number;
+    lastY: number;
+    atTop: boolean;
+    atBottom: boolean;
+  } | null>(null);
   const tocListRef = useRef<HTMLUListElement>(null);
   const tocLineRef = useRef<HTMLDivElement>(null);
   const tocDirectionRef = useRef<'down' | 'up'>('down');
@@ -68,19 +75,34 @@ export default function Poems() {
   // Measure overlay lines and split into pages that fit the available viewport height
   useLayoutEffect(() => {
     if (!id || !detailPoem || detailPages !== null) return;
-    if (detailPoem.customSlidesEnabled && detailPoem.customSlides && detailPoem.customSlides.length > 0) {
-      const pages = detailPoem.customSlides.map(s => s.split('\n'));
+    if (
+      detailPoem.customSlidesEnabled &&
+      detailPoem.customSlides &&
+      detailPoem.customSlides.length > 0
+    ) {
+      const pages = detailPoem.customSlides.map((s) => s.split('\n'));
       setDetailPages(pages);
-      if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
-      else { setDownBtnVisible(true); }
+      if (pages.length === 1) {
+        setBackBtnVisible(true);
+        setDownBtnVisible(false);
+      } else {
+        setDownBtnVisible(true);
+      }
       return;
     }
     if (!detailPoem.overlay) return;
     const overlay = document.querySelector<HTMLElement>('.detail-overlay');
-    if (!overlay) { setDetailPages([detailLines]); setBackBtnVisible(true); setDownBtnVisible(false); return; }
+    if (!overlay) {
+      setDetailPages([detailLines]);
+      setBackBtnVisible(true);
+      setDownBtnVisible(false);
+      return;
+    }
     const container = overlay.closest<HTMLElement>('.detail-image-container');
     const cs = container ? getComputedStyle(container) : null;
-    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 72;
+    const headerH =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) ||
+      72;
     const landscape = window.innerHeight <= 500;
     const slideH = landscape ? 2 * (window.innerHeight - headerH) : window.innerHeight - headerH;
     const os = getComputedStyle(overlay);
@@ -100,17 +122,31 @@ export default function Poems() {
       accH += h;
     }
     setDetailPages(pages);
-    if (pages.length === 1) { setBackBtnVisible(true); setDownBtnVisible(false); }
-    else { setDownBtnVisible(true); }
+    if (pages.length === 1) {
+      setBackBtnVisible(true);
+      setDownBtnVisible(false);
+    } else {
+      setDownBtnVisible(true);
+    }
   }, [id, detailPages, detailPoem?.overlay, detailPoem?.customSlides]);
 
-  useEffect(() => () => { pulseNavRef.current.forEach(clearTimeout); }, []);
+  useEffect(
+    () => () => {
+      pulseNavRef.current.forEach(clearTimeout);
+    },
+    [],
+  );
 
   // Re-apply highlight-static on the active card when returning from detail view
   useEffect(() => {
     if (id || !activePoemId) return;
     const card = document.querySelector<HTMLElement>(`#${activePoemId} .poem-card`);
-    if (!card || card.classList.contains('poem-highlight') || card.classList.contains('poem-highlight-static')) return;
+    if (
+      !card ||
+      card.classList.contains('poem-highlight') ||
+      card.classList.contains('poem-highlight-static')
+    )
+      return;
     card.classList.add('poem-highlight-static');
     activeCardRef.current = card;
   }, [id, activePoemId]);
@@ -134,15 +170,18 @@ export default function Poems() {
     // Auto-scroll the nav so the current range is always in view
     nav.scrollTop = Math.max(0, layoutTop - 24);
 
-    const setTop = () => { line.style.top = `${layoutTop - nav.scrollTop}px`; };
+    const setTop = () => {
+      line.style.top = `${layoutTop - nav.scrollTop}px`;
+    };
 
     setTop();
     line.style.height = `${height}px`;
     line.style.animation = 'none';
     void line.offsetHeight; // force reflow so restarting the same animation actually re-runs
-    line.style.animation = tocDirectionRef.current === 'down'
-      ? 'toc-line-grow-down 0.65s ease forwards'
-      : 'toc-line-grow-up 0.65s ease forwards';
+    line.style.animation =
+      tocDirectionRef.current === 'down'
+        ? 'toc-line-grow-down 0.65s ease forwards'
+        : 'toc-line-grow-up 0.65s ease forwards';
 
     nav.addEventListener('scroll', setTop);
 
@@ -154,7 +193,10 @@ export default function Poems() {
       line.style.height = `${l.offsetTop + l.offsetHeight - f.offsetTop}px`;
     });
     ro.observe(ul);
-    return () => { nav.removeEventListener('scroll', setTop); ro.disconnect(); };
+    return () => {
+      nav.removeEventListener('scroll', setTop);
+      ro.disconnect();
+    };
   }, [page, id]);
 
   useEffect(() => {
@@ -171,7 +213,9 @@ export default function Poems() {
   useEffect(() => {
     const el = poemDetailRef.current;
     if (!el) return;
-    const preventScroll = (e: TouchEvent) => { e.preventDefault(); };
+    const preventScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
     el.addEventListener('touchmove', preventScroll, { passive: false });
     return () => el.removeEventListener('touchmove', preventScroll);
   }, [id, detailPoem]);
@@ -187,7 +231,9 @@ export default function Poems() {
 
   useEffect(() => {
     if (!id) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') navigate('/poems'); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') navigate('/poems');
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [id, navigate]);
@@ -195,7 +241,10 @@ export default function Poems() {
   useEffect(() => {
     if (id) return;
     const onClick = (e: MouseEvent) => {
-      if (activeCardRef.current && !(e.target as Element).closest('.poem-card, .poems-toc, .site-header')) {
+      if (
+        activeCardRef.current &&
+        !(e.target as Element).closest('.poem-card, .poems-toc, .site-header')
+      ) {
         activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
         activeCardRef.current = null;
         setActivePoemId(null);
@@ -215,7 +264,11 @@ export default function Poems() {
     setDownBtnVisible(next !== pages.length - 1);
     setBackBtnVisible(next === pages.length - 1);
     // Mark the current slide as seen before leaving it
-    setSeenSlides(prev => { const s = new Set(prev); s.add(currentSlide); return s; });
+    setSeenSlides((prev) => {
+      const s = new Set(prev);
+      s.add(currentSlide);
+      return s;
+    });
     setCurrentSlide(next);
     if (window.innerHeight <= 500 && poemDetailRef.current) {
       window.scrollTo({ top: poemDetailRef.current.offsetTop, behavior: 'smooth' });
@@ -228,28 +281,40 @@ export default function Poems() {
     if (!line) return;
     line.style.animation = 'none';
     void line.offsetHeight;
-    line.style.animation = tocDirectionRef.current === 'down'
-      ? 'toc-line-retract-down 0.4s ease forwards'
-      : 'toc-line-retract-up 0.4s ease forwards';
+    line.style.animation =
+      tocDirectionRef.current === 'down'
+        ? 'toc-line-retract-down 0.4s ease forwards'
+        : 'toc-line-retract-up 0.4s ease forwards';
   };
 
   // ── Detail page ───────────────────────────────────────────────────────────────
 
   if (id) {
-    if (!detailPoem) return loading ? null : <div className="page"><p>Poem not found.</p></div>;
+    if (!detailPoem)
+      return loading ? null : (
+        <div className="page">
+          <p>Poem not found.</p>
+        </div>
+      );
     const renderPages = detailPages ?? [detailLines];
     const isLast = currentSlide === renderPages.length - 1;
     const currentPageLines = renderPages[currentSlide] ?? [];
-    const textDelay = currentPageLines.length > 0
-      ? (currentPageLines.length - 1) * DETAIL_LINE_STAGGER + DETAIL_BTN_OFFSET
-      : DETAIL_BTN_OFFSET;
-    const btnDelay = seenSlides.has(currentSlide) ? 0 : currentSlide === 0 ? DETAIL_IMG_DURATION + textDelay : textDelay;
+    const textDelay =
+      currentPageLines.length > 0
+        ? (currentPageLines.length - 1) * DETAIL_LINE_STAGGER + DETAIL_BTN_OFFSET
+        : DETAIL_BTN_OFFSET;
+    const btnDelay = seenSlides.has(currentSlide)
+      ? 0
+      : currentSlide === 0
+        ? DETAIL_IMG_DURATION + textDelay
+        : textDelay;
 
     const dragStart = (y: number) => {
       const landscape = window.innerHeight <= 500;
       const rect = landscape ? poemDetailRef.current?.getBoundingClientRect() : null;
       dragRef.current = {
-        startY: y, lastY: y,
+        startY: y,
+        lastY: y,
         atTop: !landscape || !rect || rect.top >= -1,
         atBottom: !landscape || !rect || rect.bottom <= window.innerHeight + 1,
       };
@@ -259,8 +324,10 @@ export default function Poems() {
       if (!dragRef.current) return false;
       const canGoNext = currentSlide < renderPages.length - 1;
       const canGoPrev = currentSlide > 0;
-      return (deltaY < 0 && dragRef.current.atBottom && canGoNext)
-          || (deltaY > 0 && dragRef.current.atTop && canGoPrev);
+      return (
+        (deltaY < 0 && dragRef.current.atBottom && canGoNext) ||
+        (deltaY > 0 && dragRef.current.atTop && canGoPrev)
+      );
     };
     const dragMove = (y: number) => {
       if (!dragRef.current) return;
@@ -290,10 +357,17 @@ export default function Poems() {
         onMouseUp={(e) => dragEnd(e.clientY)}
         onMouseLeave={(e) => dragEnd(e.clientY)}
         onTouchStart={(e) => dragStart(e.touches[0].clientY)}
-        onTouchMove={(e) => { e.preventDefault(); dragMove(e.touches[0].clientY); }}
+        onTouchMove={(e) => {
+          e.preventDefault();
+          dragMove(e.touches[0].clientY);
+        }}
         onTouchEnd={(e) => dragEnd(e.changedTouches[0].clientY)}
       >
-        <img src={detailPoem.image} alt={detailPoem.title} className="detail-fixed-bg detail-img-anim" />
+        <img
+          src={detailPoem.image}
+          alt={detailPoem.title}
+          className="detail-fixed-bg detail-img-anim"
+        />
 
         <button
           type="button"
@@ -301,7 +375,13 @@ export default function Poems() {
           onClick={() => goToSlide(currentSlide - 1, -1)}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M7 11V3M3 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M7 11V3M3 7l4-4 4 4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
 
@@ -318,7 +398,10 @@ export default function Poems() {
           >
             <div className={`detail-image-container${currentSlide === 0 ? ' has-title' : ''}`}>
               {currentSlide === 0 && (
-                <h1 className="detail-title detail-overlay-line" style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}>
+                <h1
+                  className="detail-title detail-overlay-line"
+                  style={{ animationDelay: `${DETAIL_IMG_DURATION / 2}ms` }}
+                >
                   {detailPoem.title}
                 </h1>
               )}
@@ -328,12 +411,21 @@ export default function Poems() {
                     <span
                       key={i}
                       // Seen slides show immediately; new slides play the mask-wipe reveal
-                      className={seenSlides.has(currentSlide) ? 'detail-overlay-line-revealed' : 'detail-overlay-line'}
-                      style={!seenSlides.has(currentSlide) ? {
-                        animationDelay: currentSlide === 0
-                          ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
-                          : `${i * DETAIL_LINE_STAGGER}ms`,
-                      } : undefined}
+                      className={
+                        seenSlides.has(currentSlide)
+                          ? 'detail-overlay-line-revealed'
+                          : 'detail-overlay-line'
+                      }
+                      style={
+                        !seenSlides.has(currentSlide)
+                          ? {
+                              animationDelay:
+                                currentSlide === 0
+                                  ? `${DETAIL_IMG_DURATION + i * DETAIL_LINE_STAGGER}ms`
+                                  : `${i * DETAIL_LINE_STAGGER}ms`,
+                            }
+                          : undefined
+                      }
                     >
                       {line || ' '}
                     </span>
@@ -347,8 +439,11 @@ export default function Poems() {
                   style={{ animationDelay: `${btnDelay}ms` }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const targetPage = Math.floor(poems.findIndex(p => p.id === id) / PER_PAGE);
-                    sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: id }));
+                    const targetPage = Math.floor(poems.findIndex((p) => p.id === id) / PER_PAGE);
+                    sessionStorage.setItem(
+                      'poems-grid-state',
+                      JSON.stringify({ page: targetPage, activePoemId: id }),
+                    );
                     navigate('/poems');
                   }}
                 >
@@ -365,7 +460,13 @@ export default function Poems() {
           onClick={() => goToSlide(currentSlide + 1, 1)}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M7 3v8M3 7l4 4 4-4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       </div>
@@ -392,15 +493,18 @@ export default function Poems() {
   const handleTocClick = (poemId: string) => {
     pulseNavRef.current.forEach(clearTimeout);
     pulseNavRef.current = [];
-    document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
-      el.classList.remove('poem-highlight', 'poem-highlight-static');
-    });
+    document
+      .querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static')
+      .forEach((el) => {
+        el.classList.remove('poem-highlight', 'poem-highlight-static');
+      });
     setActivePoemId(poemId);
-    const targetPage = Math.floor(poems.findIndex(p => p.id === poemId) / PER_PAGE);
+    const targetPage = Math.floor(poems.findIndex((p) => p.id === poemId) / PER_PAGE);
 
     // Pulses the card and then navigates to its detail page
     const doHighlight = () => {
-      if (activeCardRef.current) activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
+      if (activeCardRef.current)
+        activeCardRef.current.classList.remove('poem-highlight', 'poem-highlight-static');
       const card = document.querySelector<HTMLElement>(`#${poemId} .poem-card`);
       if (!card) return;
       card.classList.remove('poem-highlight', 'poem-highlight-static');
@@ -409,26 +513,32 @@ export default function Poems() {
       activeCardRef.current = card;
       const wrapper = card.closest<HTMLElement>('.poem-card-wrapper') ?? card;
       const rect = wrapper.getBoundingClientRect();
-      const headerHeight = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue('--header-height')
-      ) || 72;
+      const headerHeight =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--header-height'),
+        ) || 72;
       if (rect.top < headerHeight) {
         window.scrollBy({ top: rect.top - headerHeight - 16, behavior: 'smooth' });
       } else if (rect.bottom > window.innerHeight) {
         wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      const rawPulse = getComputedStyle(document.documentElement).getPropertyValue('--pulse-duration').trim();
+      const rawPulse = getComputedStyle(document.documentElement)
+        .getPropertyValue('--pulse-duration')
+        .trim();
       const pulseDuration = rawPulse.endsWith('ms')
         ? parseFloat(rawPulse)
         : rawPulse.endsWith('s')
-        ? parseFloat(rawPulse) * 1000
-        : 2400;
+          ? parseFloat(rawPulse) * 1000
+          : 2400;
       const t1 = setTimeout(() => {
         document.querySelector('.poems-grid-page')?.classList.add('page-fade-out');
       }, pulseDuration - PAGE_FADE_OUT);
       const t2 = setTimeout(() => {
-        sessionStorage.setItem('poems-grid-state', JSON.stringify({ page: targetPage, activePoemId: poemId }));
+        sessionStorage.setItem(
+          'poems-grid-state',
+          JSON.stringify({ page: targetPage, activePoemId: poemId }),
+        );
         navigate(`/poems/${poemId}`);
       }, pulseDuration);
       pulseNavRef.current = [t1, t2];
@@ -460,7 +570,15 @@ export default function Poems() {
             <ul ref={tocListRef}>
               {poems.map((poem) => (
                 <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
-                  <a href={`#${poem.id}`} onClick={(e) => { e.preventDefault(); handleTocClick(poem.id); }}>{poem.title}</a>
+                  <a
+                    href={`#${poem.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTocClick(poem.id);
+                    }}
+                  >
+                    {poem.title}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -494,27 +612,38 @@ export default function Poems() {
                   custom={i}
                 >
                   <div className="poem-card-title">{poem.title}</div>
-                  <Link to={`/poems/${poem.id}`} className="poem-card" onClick={() => {
+                  <Link
+                    to={`/poems/${poem.id}`}
+                    className="poem-card"
+                    onClick={() => {
                       pulseNavRef.current.forEach(clearTimeout);
                       pulseNavRef.current = [];
-                      document.querySelectorAll<HTMLElement>('.poem-card.poem-highlight, .poem-card.poem-highlight-static').forEach(el => {
-                        el.classList.remove('poem-highlight', 'poem-highlight-static');
-                      });
-                      sessionStorage.setItem('poems-grid-state', JSON.stringify({ page, activePoemId: poem.id }));
+                      document
+                        .querySelectorAll<HTMLElement>(
+                          '.poem-card.poem-highlight, .poem-card.poem-highlight-static',
+                        )
+                        .forEach((el) => {
+                          el.classList.remove('poem-highlight', 'poem-highlight-static');
+                        });
+                      sessionStorage.setItem(
+                        'poems-grid-state',
+                        JSON.stringify({ page, activePoemId: poem.id }),
+                      );
                       setActivePoemId(poem.id);
-                    }}>
+                    }}
+                  >
                     <div className="poem-card-img-wrap">
                       <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
                     </div>
-                    {poem.overlay && (
-                      <span className="poem-overlay">{poem.overlay}</span>
-                    )}
+                    {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
                   </Link>
                 </motion.div>
               ))}
             </motion.div>
           </AnimatePresence>
-          <button className="btn-more" onClick={handleNextPage}>{t.poems.more}</button>
+          <button type="button" className="btn-more" onClick={handleNextPage}>
+            {t.poems.more}
+          </button>
         </div>
       </div>
     </div>

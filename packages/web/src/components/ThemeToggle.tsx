@@ -8,6 +8,7 @@ export default function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
       className="theme-toggle"
       aria-label={label}
