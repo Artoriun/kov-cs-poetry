@@ -17,6 +17,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Smooth page transitions and element fade-in animations
 - Fully responsive across desktop, tablet, mobile portrait, and mobile landscape
 - Auto-reload on device orientation change to ensure correct layout
+- Footer shows the copyright line **© Peter de Keijzer 2026** with a "Back to top" link
 
 ### Home Page Carousel
 - Displays poems marked as **Featured** in the admin portal (falls back to the first five poems if none are featured); poems without overlay text are excluded
@@ -72,6 +73,7 @@ https://artoriun.github.io/kov-cs-poetry/
 - Poem cards fade and stagger in on both login and browser refresh (Motion `staggerChildren` orchestration)
 - Full site header (navigation links, hamburger dropdown on mobile, theme toggle) — **Log out** replaces the Admin button when logged in
 - New poem cards are drafts until **Save** is pressed — save is confirmed via an animated modal before writing to Firestore
+- Consistent form styling: the poem title input matches the poem-text field, the file-selection button matches the Custom Slides button, and the login input uses the shared theme variables so it renders correctly in dark mode
 - **Custom Slides** button on each poem card (between Save and Feature) — opens an editable slide panel pre-split from the poem's overlay text
   - Initial split is computed via DOM measurement using the same CSS classes and available-height calculation as the poem-detail page, so the generated slide boundaries match what the current device's viewport would show
   - Each slide is an editable textarea; slides can be added or deleted (deletion confirmed via an animated modal)
