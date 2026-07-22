@@ -15,8 +15,8 @@ All user-facing text lives in locale files, so the whole app (public site **and*
 
 - **Locale files:** `packages/web/src/i18n/en.ts` and `hu.ts`. Each is one typed object with the same shape; `hu.ts` is checked against the `en` shape at compile time, so a missing or renamed key is a build error.
 - **Provider + hook:** `src/i18n/index.tsx` exposes a lightweight `LanguageProvider` and a `useT()` hook (no external i18n dependency). Components read strings via `t.section.key` (e.g. `t.nav.poems`).
-- **Language selection:** resolved from the `?lang=` query parameter → `localStorage` → the build-time default `VITE_DEFAULT_LANG` (**defaults to `hu`**). The provider also keeps `<html lang>` and the document `<title>` in sync.
-- **Testing:** append `?lang=en` (or `?lang=hu`) to any URL to switch; the choice is remembered.
+- **Language selection:** resolved from the `?lang=` query parameter, falling back to the build-time default `VITE_DEFAULT_LANG` (**defaults to `hu`**). The choice is **not persisted**, so every page load/refresh returns to Hungarian unless `?lang=` is present. The provider also keeps `<html lang>` and the document `<title>` in sync.
+- **Testing:** append `?lang=en` (or `?lang=hu`) to any URL to switch for that page load; refreshing without the parameter reverts to Hungarian.
 - **Not translated:** poem titles/texts (already Hungarian) and the **Kovács** / **Admin** labels are intentionally left as-is.
 
 **Adding a new string:** add the same key to both `en.ts` and `hu.ts`, then use `t.<key>` in the component. TypeScript enforces that both locales stay in sync.

@@ -10,15 +10,12 @@ const dicts: Record<Lang, Dict> = { en, hu };
 // Deployed default is Hungarian; override at build time with VITE_DEFAULT_LANG if needed.
 const DEFAULT_LANG: Lang = import.meta.env.VITE_DEFAULT_LANG === 'en' ? 'en' : 'hu';
 
-// Language precedence: ?lang= query param (also persisted) → localStorage → default.
+// Language precedence: ?lang= query param (per-load override) → default (Hungarian).
+// The choice is intentionally NOT persisted, so a refresh always returns to the
+// default language unless ?lang= is present in the URL.
 function resolveInitialLang(): Lang {
   const q = new URLSearchParams(window.location.search).get('lang');
-  if (q === 'en' || q === 'hu') {
-    localStorage.setItem('lang', q);
-    return q;
-  }
-  const stored = localStorage.getItem('lang');
-  return stored === 'en' || stored === 'hu' ? stored : DEFAULT_LANG;
+  return q === 'en' || q === 'hu' ? q : DEFAULT_LANG;
 }
 
 type LangContextValue = { lang: Lang; t: Dict; setLang: (l: Lang) => void };
@@ -36,8 +33,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.title = dicts[lang].meta.title;
   }, [lang]);
 
+  // Session-only switch (not persisted); a refresh reverts to the default language.
   const setLang = (l: Lang) => {
-    localStorage.setItem('lang', l);
     setLangState(l);
   };
 
