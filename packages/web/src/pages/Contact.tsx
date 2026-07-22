@@ -11,9 +11,9 @@ export default function Contact() {
   if (submitted) {
     return (
       <div className="page contact-page">
-        <h1>Contact</h1>
+        <h1>Kapcsolat</h1>
         <p className="contact-success">
-          Thank you for your message! I&apos;ll get back to you as soon as possible.
+          Köszönöm az üzenetét! Amint lehet, válaszolok Önnek.
         </p>
       </div>
     );
@@ -21,30 +21,30 @@ export default function Contact() {
 
   return (
     <div className="page contact-page">
-      <h1>Contact</h1>
+      <h1>Kapcsolat</h1>
       <form className="contact-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="name">Név</label>
           <input type="text" id="name" name="name" required />
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">E-mail</label>
           <input type="email" id="email" name="email" required />
         </div>
 
         <div className="form-group">
-          <label htmlFor="subject">Subject</label>
+          <label htmlFor="subject">Tárgy</label>
           <input type="text" id="subject" name="subject" required />
         </div>
 
         <div className="form-group">
-          <label htmlFor="message">Message</label>
+          <label htmlFor="message">Üzenet</label>
           <textarea id="message" name="message" rows={6} required />
         </div>
 
         <button type="submit" className="btn-submit">
-          Send Message
+          Üzenet küldése
         </button>
       </form>
     </div>

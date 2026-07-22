@@ -7,8 +7,8 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className="theme-toggle"
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      aria-label={`Váltás ${theme === 'light' ? 'sötét' : 'világos'} módra`}
+      title={`Váltás ${theme === 'light' ? 'sötét' : 'világos'} módra`}
     >
       {theme === 'light' ? '🌙' : '☀️'}
     </button>

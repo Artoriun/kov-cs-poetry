@@ -33,28 +33,28 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
         <Link to="/" className="logo" onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           Kovács
         </Link>
-        <p className="subtitle">POETRY</p>
+        <p className="subtitle">KÖLTÉSZET</p>
 
         <nav className={`main-nav ${mobileOpen ? 'open' : ''}`}>
           <ul>
             <li>
               <NavLink to="/" end onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                Home
+                Főoldal
               </NavLink>
             </li>
             <li>
               <NavLink to="/poems" onClick={() => setMobileOpen(false)}>
-                Poems
+                Versek
               </NavLink>
             </li>
             <li>
               <NavLink to="/contact" onClick={() => setMobileOpen(false)}>
-                Contact
+                Kapcsolat
               </NavLink>
             </li>
             <li className="nav-login-mobile">
               {onLogout
-                ? <button type="button" className="nav-logout-btn" onClick={() => { setMobileOpen(false); onLogout(); }}>Log out</button>
+                ? <button type="button" className="nav-logout-btn" onClick={() => { setMobileOpen(false); onLogout(); }}>Kijelentkezés</button>
                 : <NavLink to="/admin" onClick={() => setMobileOpen(false)}>Admin</NavLink>
               }
             </li>
@@ -62,7 +62,7 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
         </nav>
 
         {onLogout
-          ? <button type="button" className="header-login-btn" onClick={onLogout}>Log out</button>
+          ? <button type="button" className="header-login-btn" onClick={onLogout}>Kijelentkezés</button>
           : <Link to="/admin" className="header-login-btn">Admin</Link>
         }
         <ThemeToggle />
@@ -70,7 +70,7 @@ export default function Header({ onLogout }: { onLogout?: () => void } = {}) {
         <button
           className={`hamburger ${mobileOpen ? 'open' : ''}`}
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
+          aria-label="Menü"
         >
           <span /><span /><span />
         </button>

@@ -5,7 +5,7 @@ import { usePoemsContext } from '../context/PoemsContext';
 import '../styles/global.css';
 
 const PrevArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label="Previous">
+  <button type="button" className="carousel-nav-btn carousel-nav-prev" onClick={onClick} aria-label="Előző">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M11 7H3M7 11l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -13,7 +13,7 @@ const PrevArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
 );
 
 const NextArrow = ({ onClick }: { onClick?: React.MouseEventHandler }) => (
-  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label="Next">
+  <button type="button" className="carousel-nav-btn carousel-nav-next" onClick={onClick} aria-label="Következő">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -78,7 +78,7 @@ export default function PoemCarousel() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="carousel-section-label">Featured Poems</div>
+      <div className="carousel-section-label">Kiemelt versek</div>
 
       {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
       {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
@@ -146,7 +146,7 @@ export default function PoemCarousel() {
                   className="carousel-read-more-btn"
                   onClick={e => { if (isDraggingRef.current) e.preventDefault(); }}
                 >
-                  Read More
+                  Tovább
                 </Link>
               </>
             )}

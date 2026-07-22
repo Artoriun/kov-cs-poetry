@@ -3,8 +3,8 @@ export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <p>&copy; All rights reserved</p>
-        <a href="#top" className="back-to-top">Back to top</a>
+        <p>&copy; Minden jog fenntartva</p>
+        <a href="#top" className="back-to-top">Vissza a tetejére</a>
       </div>
     </footer>
   );

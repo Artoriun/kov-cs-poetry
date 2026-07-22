@@ -23,7 +23,7 @@ poemsRouter.get('/', async (_req, res) => {
     const merged = POEMS.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p).filter(p => !p.deleted);
     const custom = Object.entries(overrides)
       .filter(([id, d]) => !hardcodedIds.has(id) && !d.deleted)
-      .map(([id, d]) => ({ id, title: d.title ?? 'New Poem', image: d.image || 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png', overlay: d.overlay, featured: d.featured, customSlides: d.customSlides, customSlidesEnabled: d.customSlidesEnabled }));
+      .map(([id, d]) => ({ id, title: d.title ?? 'Új vers', image: d.image || 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png', overlay: d.overlay, featured: d.featured, customSlides: d.customSlides, customSlidesEnabled: d.customSlidesEnabled }));
     const all = [...merged, ...custom];
 
     if (orderDoc.exists) {
@@ -42,7 +42,7 @@ poemsRouter.get('/', async (_req, res) => {
 
 poemsRouter.post('/', requireAuth, async (_req, res) => {
   const id = `poem-custom-${Date.now()}`;
-  const data = { title: 'New Poem', overlay: 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.', image: 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png' };
+  const data = { title: 'Új vers', overlay: 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor incididunt,\nut labore et dolore magna aliqua.', image: 'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png' };
   await db.collection('poems').doc(id).set(data);
   res.json({ id, ...data });
 });

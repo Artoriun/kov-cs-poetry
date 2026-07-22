@@ -350,7 +350,7 @@ export default function Poems() {
                     navigate('/poems');
                   }}
                 >
-                  ← Poems
+                  ← Versek
                 </button>
               )}
             </div>
@@ -450,11 +450,11 @@ export default function Poems() {
 
   return (
     <div className="page poems-grid-page">
-      <h1 className="poems-heading">Poems</h1>
+      <h1 className="poems-heading">Versek</h1>
       <div className="poems-layout">
         <div className="poems-toc-wrap">
           <nav className="poems-toc">
-            <p className="poems-toc-title">Index</p>
+            <p className="poems-toc-title">Tartalom</p>
             <ul ref={tocListRef}>
               {poems.map((poem) => (
                 <li key={poem.id} className={poem.id === activePoemId ? 'toc-active' : undefined}>
@@ -512,7 +512,7 @@ export default function Poems() {
               ))}
             </motion.div>
           </AnimatePresence>
-          <button className="btn-more" onClick={handleNextPage}>More Poems</button>
+          <button className="btn-more" onClick={handleNextPage}>Több vers</button>
         </div>
       </div>
     </div>

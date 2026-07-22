@@ -116,7 +116,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
       const token = await apiLogin(password);
       onLogin(token);
     } catch {
-      setError('Incorrect password.');
+      setError('Helytelen jelszó.');
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
         >
           <h1>Admin</h1>
           <div>
-            <label className="admin-field-label" htmlFor="admin-password">Password</label>
+            <label className="admin-field-label" htmlFor="admin-password">Jelszó</label>
             <div className="admin-password-wrap">
               <input
                 id="admin-password"
@@ -152,7 +152,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
                 onClick={() => setShowPassword(v => !v)}
                 tabIndex={-1}
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? 'Elrejtés' : 'Megjelenítés'}
               </button>
             </div>
           </div>
@@ -171,7 +171,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             )}
           </AnimatePresence>
           <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
-            {loading ? 'Logging in…' : 'Log in'}
+            {loading ? 'Bejelentkezés…' : 'Bejelentkezés'}
           </button>
         </motion.form>
       </div>
@@ -248,10 +248,10 @@ function PoemCard({
       }}
       onDragEnd={e => { (e.currentTarget as HTMLElement).draggable = true; onDragEnd(); }}
     >
-      {poem.featured && <span className="admin-featured-label">Featured</span>}
-      <button type="button" className="admin-delete-btn" onClick={onDelete} title="Delete poem">×</button>
+      {poem.featured && <span className="admin-featured-label">Kiemelt</span>}
+      <button type="button" className="admin-delete-btn" onClick={onDelete} title="Vers törlése">×</button>
       <div className="admin-poem-image-col">
-        <span className="admin-field-label">Background image</span>
+        <span className="admin-field-label">Háttérkép</span>
         <img
           src={edit.imagePreview ?? gridThumb(poem.image || PLACEHOLDER_IMAGE)}
           alt={poem.title}
@@ -259,7 +259,7 @@ function PoemCard({
           loading="eager"
         />
         <label className="admin-file-label">
-          Choose file
+          Fájl kiválasztása
           <input
             ref={fileInputRef}
             type="file"
@@ -275,7 +275,7 @@ function PoemCard({
 
       <div className="admin-poem-fields">
         <div>
-          <label className="admin-field-label">Title</label>
+          <label className="admin-field-label">Cím</label>
           <input
             type="text"
             className="admin-input"
@@ -284,7 +284,7 @@ function PoemCard({
           />
         </div>
         <div>
-          <label className="admin-field-label">Poem text</label>
+          <label className="admin-field-label">Vers szövege</label>
           <textarea
             className="admin-overlay-textarea"
             value={edit.overlay}
@@ -319,7 +319,7 @@ function PoemCard({
 
         {edit.customSlidesOpen && (
           <div className="admin-custom-slides">
-            <span className="admin-field-label">Custom Slides</span>
+            <span className="admin-field-label">Egyéni diák</span>
             {(edit.customSlides ?? []).map((slide, idx) => (
               <div key={idx} className="admin-slide-row">
                 <span className="admin-slide-num">{idx + 1}</span>
@@ -345,7 +345,7 @@ function PoemCard({
                 className="admin-btn"
                 onClick={() => onChange({ customSlides: [...(edit.customSlides ?? []), ''] })}
               >
-                + Add Slide
+                + Dia hozzáadása
               </button>
             </div>
           </div>
@@ -358,7 +358,7 @@ function PoemCard({
             onClick={() => setPendingSave(true)}
             disabled={status === 'saving'}
           >
-            {status === 'saving' ? 'Saving…' : 'Save'}
+            {status === 'saving' ? 'Mentés…' : 'Mentés'}
           </button>
           <button
             type="button"
@@ -372,7 +372,7 @@ function PoemCard({
               }
             }}
           >
-            {edit.customSlidesOpen ? 'Original' : 'Custom Slides'}
+            {edit.customSlidesOpen ? 'Eredeti' : 'Egyéni diák'}
           </button>
           <button
             type="button"
@@ -380,10 +380,10 @@ function PoemCard({
             onClick={onToggleFeature}
             disabled={status === 'saving'}
           >
-            {poem.featured ? 'Unfeature' : 'Feature'}
+            {poem.featured ? 'Kiemelés megszüntetése' : 'Kiemelés'}
           </button>
-          {status === 'saved' && <span className="admin-save-status">Saved</span>}
-          {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>Error saving</span>}
+          {status === 'saved' && <span className="admin-save-status">Mentve</span>}
+          {status === 'error' && <span className="admin-save-status" style={{ color: '#e05a5a' }}>Hiba a mentéskor</span>}
         </div>
       </div>
     </div>
@@ -392,11 +392,11 @@ function PoemCard({
       {pendingSave && (
         <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setPendingSave(false)}>
           <motion.div className="admin-modal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.18 }} onClick={e => e.stopPropagation()}>
-            <p className="admin-modal-title">Save changes?</p>
-            <p className="admin-modal-body">This will persist all changes to this poem.</p>
+            <p className="admin-modal-title">Menti a változásokat?</p>
+            <p className="admin-modal-body">Ez véglegesíti a vershez tartozó összes módosítást.</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>Save</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingSave(false)}>Mégse</button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={() => { setPendingSave(false); onSave(); }}>Mentés</button>
             </div>
           </motion.div>
         </motion.div>
@@ -420,11 +420,11 @@ function PoemCard({
             transition={{ duration: 0.18 }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="admin-modal-title">Restore original?</p>
-            <p className="admin-modal-body">The poem will revert to its auto-split layout. Your custom slides will be discarded.</p>
+            <p className="admin-modal-title">Visszaállítja az eredetit?</p>
+            <p className="admin-modal-body">A vers visszaáll az automatikusan tördelt elrendezésre. Az egyéni diák elvesznek.</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>Restore</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingRestoreOriginal(false)}>Mégse</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => { setPendingRestoreOriginal(false); onCancelCustomSlides(); }}>Visszaállítás</button>
             </div>
           </motion.div>
         </motion.div>
@@ -448,11 +448,11 @@ function PoemCard({
             transition={{ duration: 0.18 }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="admin-modal-title">Delete slide</p>
-            <p className="admin-modal-body">Are you sure you want to delete this slide?</p>
+            <p className="admin-modal-title">Dia törlése</p>
+            <p className="admin-modal-body">Biztosan törli ezt a diát?</p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn" onClick={() => setPendingRemoveIdx(null)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => confirmRemoveSlide(pendingRemoveIdx)}>Delete</button>
+              <button type="button" className="admin-btn" onClick={() => setPendingRemoveIdx(null)}>Mégse</button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={() => confirmRemoveSlide(pendingRemoveIdx)}>Törlés</button>
             </div>
           </motion.div>
         </motion.div>
@@ -643,9 +643,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleAddPoem = () => {
     const tempId = `poem-draft-${Date.now()}`;
-    const newPoem: Poem = { id: tempId, title: 'New Poem', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
+    const newPoem: Poem = { id: tempId, title: 'Új vers', overlay: DRAFT_OVERLAY, image: PLACEHOLDER_IMAGE };
     setOrderedPoems(prev => [newPoem, ...prev]);
-    setEdits(prev => ({ ...prev, [tempId]: { title: 'New Poem', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null, customSlides: null, customSlidesOpen: false, customSlidesEnabled: false } }));
+    setEdits(prev => ({ ...prev, [tempId]: { title: 'Új vers', overlay: DRAFT_OVERLAY, imageFile: null, imagePreview: null, customSlides: null, customSlidesOpen: false, customSlidesEnabled: false } }));
     setDraftIds(prev => new Set([...prev, tempId]));
   };
 
@@ -706,19 +706,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           exit={{ opacity: 0, transition: { duration: 0.1 } }}
           transition={{ duration: 0.3 }}
         >
-          Loading poems…
+          Versek betöltése…
         </motion.p>
       ) : (
         <motion.div key="list" className="admin-poem-list" variants={listVariants} initial="hidden" animate="show">
           <motion.div className="admin-top-row" variants={cardVariants}>
             <div className="admin-mode-toggle">
-              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>List</button>
-              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Order</button>
+              <button type="button" className={`admin-mode-btn${mode === 'list' ? ' active' : ''}`} onClick={() => handleSetMode('list')}>Lista</button>
+              <button type="button" className={`admin-mode-btn${mode === 'grid' ? ' active' : ''}`} onClick={() => handleSetMode('grid')}>Sorrend</button>
             </div>
             {mode === 'list' && (
               <div className="admin-add-row">
                 <button type="button" className="admin-add-btn" onClick={handleAddPoem}>+</button>
-                <span className="admin-add-label">Add Poem</span>
+                <span className="admin-add-label">Vers hozzáadása</span>
               </div>
             )}
           </motion.div>
@@ -865,10 +865,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       onMouseDown={e => e.stopPropagation()}
                       onTouchStart={e => e.stopPropagation()}
                       onClick={e => { e.stopPropagation(); handleToggleFeature(poem.id); }}
-                      title={poem.featured ? 'Unfeature poem' : 'Feature poem'}
+                      title={poem.featured ? 'Kiemelés megszüntetése' : 'Vers kiemelése'}
                     >
                       <span className="admin-grid-unfeature-x">{poem.featured ? '×' : '✓'}</span>
-                      <span>{poem.featured ? 'Featured' : 'Feature?'}</span>
+                      <span>{poem.featured ? 'Kiemelt' : 'Kiemeli?'}</span>
                     </button>
                     <div className="admin-grid-card-img-wrap">
                       <img src={edits[poem.id]?.imagePreview ?? gridThumb(poem.image ?? PLACEHOLDER_IMAGE)} alt={poem.title} loading="eager" />
@@ -904,11 +904,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               transition={{ duration: 0.18 }}
               onClick={e => e.stopPropagation()}
             >
-              <p className="admin-modal-title">Delete poem</p>
-              <p className="admin-modal-body">Are you sure you want to delete this poem?</p>
+              <p className="admin-modal-title">Vers törlése</p>
+              <p className="admin-modal-body">Biztosan törli ezt a verset?</p>
               <div className="admin-modal-actions">
-                <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Cancel</button>
-                <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Delete</button>
+                <button type="button" className="admin-btn" onClick={() => setPendingDeleteId(null)}>Mégse</button>
+                <button type="button" className="admin-btn admin-btn-danger" onClick={() => { handleDelete(pendingDeleteId); setPendingDeleteId(null); }}>Törlés</button>
               </div>
             </motion.div>
           </motion.div>
