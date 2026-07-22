@@ -2,7 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: 'main-hungarian'
+    branches: 'main'
+  workflow_dispatch:
     
 permissions:
   contents: read
@@ -20,8 +21,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # Deploy runs on main (the only branch the github-pages environment allows),
+      # but builds the Hungarian branch so Pages serves the Hungarian version.
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: main-hungarian
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
