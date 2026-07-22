@@ -112,6 +112,7 @@ All user-facing text lives in locale files, so the whole app (public site **and*
 | **JWT** | Admin authentication |
 | **CSS Custom Properties** | Theming & responsive design |
 | **Google Fonts (Esteban)** | Serif font for poem text |
+| **Biome** | Linting & formatting (single tool, replaces ESLint + Prettier) |
 
 ---
 
@@ -168,9 +169,25 @@ npm run dev
 
 # Production build
 npm run build
+
+# Type-check every package (tsc via Turbo)
+npm run typecheck
+
+# Lint with Biome
+npm run lint
+
+# Auto-format with Biome
+npm run format
+
+# CI check: lint + formatting verification (fails on errors)
+npm run check
 ```
 
 The web dev server runs on `http://localhost:3000` and the API on `http://localhost:4000`. Vite proxies `/api` requests to the API in development.
+
+### Code quality
+
+Linting and formatting are handled by **[Biome](https://biomejs.dev)** — one fast tool covering both, configured in `biome.json` (2-space indent, single quotes, semicolons, 100-col width). A few rules are relaxed to fit the app: CSS `vh`/`svh` progressive-enhancement fallbacks, deliberately interactive drag/swipe elements, and the intentional login autofocus. `useExhaustiveDependencies` and `noArrayIndexKey` are surfaced as warnings rather than errors, since blindly changing effect dependencies or list keys in the animation-heavy code can alter runtime behavior. Type-checking stays separate as each package's `typecheck` script (`tsc --noEmit`), orchestrated by Turbo.
 
 ---
 
