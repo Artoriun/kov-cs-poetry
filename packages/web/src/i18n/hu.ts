@@ -31,6 +31,7 @@ export const hu: Dict = {
     index: 'Tartalom',
     back: '← Versek',
     more: 'Több vers',
+    loading: 'Betöltés',
   },
   theme: {
     toDark: 'Váltás sötét módra',
@@ -53,7 +54,7 @@ export const hu: Dict = {
     incorrectPassword: 'Helytelen jelszó.',
     loggingIn: 'Bejelentkezés…',
     logIn: 'Bejelentkezés',
-    loadingPoems: 'Versek betöltése…',
+    loadingPoems: 'Betöltés',
     list: 'Lista',
     order: 'Sorrend',
     addPoem: 'Vers hozzáadása',
