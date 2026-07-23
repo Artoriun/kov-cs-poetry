@@ -1,6 +1,7 @@
 import type { Poem } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
+import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
@@ -1194,6 +1195,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           </motion.div>
         )}
       </AnimatePresence>
+      <Footer />
     </div>
   );
 }
