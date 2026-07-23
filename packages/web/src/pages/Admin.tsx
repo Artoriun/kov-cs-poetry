@@ -880,7 +880,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         {!initialized ? (
           <motion.p
             key="loading"
-            style={{ textAlign: 'center', padding: '64px 0' }}
+            className="loading-prompt"
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0, transition: { duration: 0.1 } }}
