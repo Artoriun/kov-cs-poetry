@@ -11,7 +11,7 @@ const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 
 const optimizeUrl = (url: string) =>
-  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_500/');
+  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400/');
 
 // Card enter/exit variants for the poems grid; custom(i) provides per-card stagger index
 const cardVariants = {
@@ -67,6 +67,38 @@ export default function Poems() {
   const pulseNavRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Stores a highlight callback to fire after the incoming grid page finishes entering
   const pendingHighlightRef = useRef<(() => void) | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(0);
+
+  // Batch size adapts to how many columns fit the viewport, so a page always fills
+  // complete rows and never leaves a single card orphaned on the last row.
+  // Uses the multiple of `columns` nearest to PER_PAGE (e.g. 2 cols -> 8, 3 cols -> 9).
+  const perPage = (() => {
+    if (columns <= 1) return PER_PAGE;
+    const lower = Math.floor(PER_PAGE / columns) * columns;
+    const upper = Math.ceil(PER_PAGE / columns) * columns;
+    return PER_PAGE - lower <= upper - PER_PAGE ? lower : upper;
+  })();
+
+  // Measure the grid's real column count (auto-fill resolves to actual tracks)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const g = gridRef.current;
+      if (!g) return;
+      const cols = getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length;
+      setColumns((c) => (c === cols ? c : cols));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [id]);
+
+  // If a resize shrinks the page count below the current page, snap back to the first
+  useEffect(() => {
+    if (poems.length && page * perPage >= poems.length) setPage(0);
+  }, [perPage, poems.length, page]);
+
+  const displayed = poems.slice(page * perPage, (page + 1) * perPage);
 
   // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
@@ -164,8 +196,8 @@ export default function Poems() {
     if (!ul || !line) return;
     const nav = ul.parentElement as HTMLElement;
 
-    const firstIndex = page * PER_PAGE;
-    const lastIndex = Math.min((page + 1) * PER_PAGE - 1, poems.length - 1);
+    const firstIndex = page * perPage;
+    const lastIndex = Math.min((page + 1) * perPage - 1, poems.length - 1);
     const first = ul.children[firstIndex] as HTMLElement | undefined;
     const last = ul.children[lastIndex] as HTMLElement | undefined;
     if (!first || !last) return;
@@ -203,7 +235,7 @@ export default function Poems() {
       nav.removeEventListener('scroll', setTop);
       ro.disconnect();
     };
-  }, [page, id]);
+  }, [page, id, perPage]);
 
   useEffect(() => {
     if (!id) return;
@@ -445,7 +477,7 @@ export default function Poems() {
                   style={{ animationDelay: `${btnDelay}ms` }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const targetPage = Math.floor(poems.findIndex((p) => p.id === id) / PER_PAGE);
+                    const targetPage = Math.floor(poems.findIndex((p) => p.id === id) / perPage);
                     sessionStorage.setItem(
                       'poems-grid-state',
                       JSON.stringify({ page: targetPage, activePoemId: id }),
@@ -481,10 +513,8 @@ export default function Poems() {
 
   // ── Grid page ─────────────────────────────────────────────────────────────────
 
-  const displayed = poems.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
-
   const handleNextPage = () => {
-    const nextPage = (page + 1) * PER_PAGE >= poems.length ? 0 : page + 1;
+    const nextPage = (page + 1) * perPage >= poems.length ? 0 : page + 1;
     tocDirectionRef.current = nextPage > page ? 'down' : 'up';
     retractTocLine(); // retract the indicator line before AnimatePresence starts the exit
     if (activeCardRef.current) {
@@ -505,7 +535,7 @@ export default function Poems() {
         el.classList.remove('poem-highlight', 'poem-highlight-static');
       });
     setActivePoemId(poemId);
-    const targetPage = Math.floor(poems.findIndex((p) => p.id === poemId) / PER_PAGE);
+    const targetPage = Math.floor(poems.findIndex((p) => p.id === poemId) / perPage);
 
     // Pulses the card and then navigates to its detail page
     const doHighlight = () => {
@@ -592,64 +622,78 @@ export default function Poems() {
           <div ref={tocLineRef} className="toc-range-line" />
         </div>
         <div className="poems-content">
-          {/* mode="wait" sequences exit then enter so cards never overlap between pages */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={page}
-              className="poems-grid"
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              onAnimationComplete={(definition) => {
-                // Only fire after the enter animation ("show"), not the exit
-                if (definition === 'show' && pendingHighlightRef.current) {
-                  pendingHighlightRef.current();
-                  pendingHighlightRef.current = null;
-                }
-              }}
+          {loading && poems.length === 0 ? (
+            <motion.p
+              className="loading-prompt"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              transition={{ duration: 0.3 }}
             >
-              {displayed.map((poem, i) => (
-                // Each card staggered via the custom prop passed to cardVariants
+              {t.poems.loading}
+            </motion.p>
+          ) : (
+            <>
+              {/* mode="wait" sequences exit then enter so cards never overlap between pages */}
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key={poem.id}
-                  id={poem.id}
-                  className="poem-card-wrapper"
-                  variants={cardVariants}
-                  custom={i}
+                  key={page}
+                  ref={gridRef}
+                  className="poems-grid"
+                  initial="hidden"
+                  animate="show"
+                  exit="exit"
+                  onAnimationComplete={(definition) => {
+                    // Only fire after the enter animation ("show"), not the exit
+                    if (definition === 'show' && pendingHighlightRef.current) {
+                      pendingHighlightRef.current();
+                      pendingHighlightRef.current = null;
+                    }
+                  }}
                 >
-                  <div className="poem-card-title">{poem.title}</div>
-                  <Link
-                    to={`/poems/${poem.id}`}
-                    className="poem-card"
-                    onClick={() => {
-                      pulseNavRef.current.forEach(clearTimeout);
-                      pulseNavRef.current = [];
-                      document
-                        .querySelectorAll<HTMLElement>(
-                          '.poem-card.poem-highlight, .poem-card.poem-highlight-static',
-                        )
-                        .forEach((el) => {
-                          el.classList.remove('poem-highlight', 'poem-highlight-static');
-                        });
-                      sessionStorage.setItem(
-                        'poems-grid-state',
-                        JSON.stringify({ page, activePoemId: poem.id }),
-                      );
-                      setActivePoemId(poem.id);
-                    }}
-                  >
-                    <div className="poem-card-img-wrap">
-                      <img src={optimizeUrl(poem.image)} alt={poem.title} loading="eager" />
-                    </div>
-                    {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
-                  </Link>
+                  {displayed.map((poem, i) => (
+                    // Each card staggered via the custom prop passed to cardVariants
+                    <motion.div
+                      key={poem.id}
+                      id={poem.id}
+                      className="poem-card-wrapper"
+                      variants={cardVariants}
+                      custom={i}
+                    >
+                      <div className="poem-card-title">{poem.title}</div>
+                      <Link
+                        to={`/poems/${poem.id}`}
+                        className="poem-card"
+                        onClick={() => {
+                          pulseNavRef.current.forEach(clearTimeout);
+                          pulseNavRef.current = [];
+                          document
+                            .querySelectorAll<HTMLElement>(
+                              '.poem-card.poem-highlight, .poem-card.poem-highlight-static',
+                            )
+                            .forEach((el) => {
+                              el.classList.remove('poem-highlight', 'poem-highlight-static');
+                            });
+                          sessionStorage.setItem(
+                            'poems-grid-state',
+                            JSON.stringify({ page, activePoemId: poem.id }),
+                          );
+                          setActivePoemId(poem.id);
+                        }}
+                      >
+                        <div className="poem-card-img-wrap">
+                          <img src={optimizeUrl(poem.image)} alt={poem.title} loading="eager" />
+                        </div>
+                        {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
+                      </Link>
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-          <button type="button" className="btn-more" onClick={handleNextPage}>
-            {t.poems.more}
-          </button>
+              </AnimatePresence>
+              <button type="button" className="btn-more" onClick={handleNextPage}>
+                {t.poems.more}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
