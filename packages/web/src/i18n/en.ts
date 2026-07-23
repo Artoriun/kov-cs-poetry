@@ -30,7 +30,7 @@ export const en = {
     index: 'Index',
     back: '← Poems',
     more: 'More Poems',
-    loading: 'Loading',
+    loading: 'Loading…',
   },
   theme: {
     toDark: 'Switch to dark mode',
@@ -53,7 +53,7 @@ export const en = {
     incorrectPassword: 'Incorrect password.',
     loggingIn: 'Logging in…',
     logIn: 'Log in',
-    loadingPoems: 'Loading',
+    loadingPoems: 'Loading…',
     list: 'List',
     order: 'Order',
     addPoem: 'Add Poem',
