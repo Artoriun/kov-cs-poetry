@@ -11,7 +11,7 @@ const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 
 const optimizeUrl = (url: string) =>
-  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_800/');
+  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_500/');
 
 // Card enter/exit variants for the poems grid; custom(i) provides per-card stagger index
 const cardVariants = {
@@ -31,7 +31,13 @@ export default function Poems() {
   const t = useT();
   const { poems, loading } = usePoemsContext();
   const { id } = useParams<{ id: string }>();
-  const savedState = !id ? sessionStorage.getItem('poems-grid-state') : null;
+  // On a full page reload always start at the first batch — the saved grid state
+  // exists only to return the user to their page when coming back from a poem's detail view.
+  const isReload =
+    typeof performance !== 'undefined' &&
+    (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)
+      ?.type === 'reload';
+  const savedState = !id && !isReload ? sessionStorage.getItem('poems-grid-state') : null;
   const savedParsed = savedState ? JSON.parse(savedState) : null;
   const [page, setPage] = useState<number>(savedParsed?.page ?? 0);
   const navigate = useNavigate();
@@ -633,7 +639,7 @@ export default function Poems() {
                     }}
                   >
                     <div className="poem-card-img-wrap">
-                      <img src={optimizeUrl(poem.image)} alt={poem.title} loading="lazy" />
+                      <img src={optimizeUrl(poem.image)} alt={poem.title} loading="eager" />
                     </div>
                     {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
                   </Link>

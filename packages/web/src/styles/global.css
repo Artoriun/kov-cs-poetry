@@ -1675,8 +1675,13 @@ html.dark-mode .header-login-btn:hover {
   }
 
   .poems-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .poems-grid .poem-card:has(.poem-overlay) .poem-overlay {
+    font-size: 11px;
+    padding: 14px 9px;
   }
 
   .theme-toggle {
