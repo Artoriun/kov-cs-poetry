@@ -69,6 +69,7 @@ export default function Poems() {
   const pendingHighlightRef = useRef<(() => void) | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
+  const [imagesReady, setImagesReady] = useState(false);
 
   // Batch size adapts to how many columns fit the viewport, so a page always fills
   // complete rows and never leaves a single card orphaned on the last row.
@@ -99,6 +100,46 @@ export default function Poems() {
   }, [perPage, poems.length, page]);
 
   const displayed = poems.slice(page * perPage, (page + 1) * perPage);
+
+  // Hold the grid behind the "Loading…" prompt until the batch's images are cached,
+  // so the cards fade in with images present instead of popping in one by one.
+  // ponytail: new Image() fires onload even for HTTP-cached URLs, so client-side nav
+  // reveals near-instantly; the batch's <img> tags then paint from cache.
+  useEffect(() => {
+    const batch = poems.slice(page * perPage, (page + 1) * perPage);
+    if (batch.length === 0) {
+      setImagesReady(true);
+      return;
+    }
+    setImagesReady(false);
+    let loaded = 0;
+    let done = false;
+    const bump = () => {
+      loaded += 1;
+      if (loaded >= batch.length && !done) {
+        done = true;
+        setImagesReady(true);
+      }
+    };
+    const imgs = batch.map((p) => {
+      const img = new Image();
+      img.onload = bump;
+      img.onerror = bump;
+      img.src = optimizeUrl(p.image);
+      return img;
+    });
+    const t = setTimeout(() => {
+      done = true;
+      setImagesReady(true);
+    }, 4000); // fallback so a slow image can't hang the grid
+    return () => {
+      clearTimeout(t);
+      for (const img of imgs) {
+        img.onload = null;
+        img.onerror = null;
+      }
+    };
+  }, [page, perPage, poems]);
 
   // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
@@ -622,7 +663,15 @@ export default function Poems() {
           <div ref={tocLineRef} className="toc-range-line" />
         </div>
         <div className="poems-content">
-          {loading && poems.length === 0 ? (
+          {/* Always-rendered hidden probe so column count is measurable even while
+              the grid is gated behind the loading prompt (avoids a reveal flash) */}
+          <div
+            ref={gridRef}
+            className="poems-grid"
+            aria-hidden="true"
+            style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}
+          />
+          {loading || !imagesReady ? (
             <motion.p
               className="loading-prompt"
               initial={{ opacity: 0 }}
@@ -637,7 +686,6 @@ export default function Poems() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={page}
-                  ref={gridRef}
                   className="poems-grid"
                   initial="hidden"
                   animate="show"
