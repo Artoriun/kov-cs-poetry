@@ -1485,7 +1485,15 @@ h3 {
   border-top: 1px solid var(--border-color);
   padding: 24px;
   text-align: center;
-  animation: page-load-fade 350ms ease 700ms both;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* Hide the footer while a loading prompt is on screen (admin + poems grid),
+   then fade it in once the content is ready. */
+body:has(.loading-prompt) .site-footer {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .footer-inner {
@@ -1496,6 +1504,11 @@ h3 {
   align-items: center;
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+/* Copyright uses the poem-overlay serif to match the site's poetry styling */
+.footer-inner p {
+  font-family: "Esteban", serif;
 }
 
 .back-to-top {
