@@ -88,6 +88,7 @@ Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](
 - **Frontend → GitHub Pages** via `.github/workflows/deploy.yml` (triggers on push to `main`).
 - **API → Render** (free tier). Set `CORS_ORIGIN` (`https://<your-username>.github.io`) on Render, and add the deployed API URL as the `VITE_API_URL` GitHub Actions secret so the Pages build can reach it.
   - Build: `npm install && cd packages/api && npm run build` — Start: `node packages/api/dist/index.js`
+  - Optional safety step: use `npm run typecheck && npm run build` as the build command so a type error can't deploy (the API package type-checks via `typecheck`; there is no per-package `lint` — Biome linting runs from the repo root).
 
 ---
 
