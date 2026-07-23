@@ -69,7 +69,7 @@ export default function Poems() {
   const pendingHighlightRef = useRef<(() => void) | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
-  const [imagesReady, setImagesReady] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   // Batch size adapts to how many columns fit the viewport, so a page always fills
   // complete rows and never leaves a single card orphaned on the last row.
@@ -101,25 +101,30 @@ export default function Poems() {
 
   const displayed = poems.slice(page * perPage, (page + 1) * perPage);
 
-  // Hold the grid behind the "Loading…" prompt until the batch's images are cached,
-  // so the cards fade in with images present instead of popping in one by one.
-  // ponytail: new Image() fires onload even for HTTP-cached URLs, so client-side nav
-  // reveals near-instantly; the batch's <img> tags then paint from cache.
+  // Reveal the grid once — after the data loads and the first visible batch's images
+  // are cached — then never re-gate. Latched a single time (like the admin grid's
+  // `initialized`) so the cards fade in exactly once, not again when `poems` updates
+  // (fallback → API) or an effect re-runs. Page changes animate via AnimatePresence.
+  // ponytail: new Image() fires onload even for HTTP-cached URLs, so the reveal is
+  // near-instant on a warm cache; the batch's <img> tags then paint from cache.
   useEffect(() => {
+    if (revealed || loading || poems.length === 0) return;
     const batch = poems.slice(page * perPage, (page + 1) * perPage);
     if (batch.length === 0) {
-      setImagesReady(true);
+      setRevealed(true);
       return;
     }
-    setImagesReady(false);
     let loaded = 0;
     let done = false;
+    const finish = () => {
+      if (!done) {
+        done = true;
+        setRevealed(true);
+      }
+    };
     const bump = () => {
       loaded += 1;
-      if (loaded >= batch.length && !done) {
-        done = true;
-        setImagesReady(true);
-      }
+      if (loaded >= batch.length) finish();
     };
     const imgs = batch.map((p) => {
       const img = new Image();
@@ -128,10 +133,7 @@ export default function Poems() {
       img.src = optimizeUrl(p.image);
       return img;
     });
-    const t = setTimeout(() => {
-      done = true;
-      setImagesReady(true);
-    }, 4000); // fallback so a slow image can't hang the grid
+    const t = setTimeout(finish, 4000); // fallback so a slow image can't hang the grid
     return () => {
       clearTimeout(t);
       for (const img of imgs) {
@@ -139,7 +141,7 @@ export default function Poems() {
         img.onerror = null;
       }
     };
-  }, [page, perPage, poems]);
+  }, [revealed, loading, poems, page, perPage]);
 
   // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
@@ -671,7 +673,7 @@ export default function Poems() {
             aria-hidden="true"
             style={{ height: 0, overflow: 'hidden', visibility: 'hidden' }}
           />
-          {loading || !imagesReady ? (
+          {!revealed ? (
             <motion.p
               className="loading-prompt"
               initial={{ opacity: 0 }}
