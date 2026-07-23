@@ -17,9 +17,5 @@
     "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },
-  "packageManager": "npm@10.9.0",
-  "dependencies": {
-    "@cloudinary/react": "^1.14.4",
-    "@cloudinary/url-gen": "^1.22.0"
-  }
+  "packageManager": "npm@10.9.0"
 }
