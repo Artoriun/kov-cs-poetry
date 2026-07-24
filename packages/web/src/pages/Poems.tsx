@@ -715,7 +715,6 @@ export default function Poems() {
 
   return (
     <div className={`page poems-grid-page${revealed ? ' is-revealed' : ''}`}>
-      <h1 className="poems-heading">{t.poems.heading}</h1>
       <div className="poems-layout">
         <div className="poems-toc-wrap">
           <nav className="poems-toc">
@@ -739,6 +738,7 @@ export default function Poems() {
           <div ref={tocLineRef} className="toc-range-line" />
         </div>
         <div className="poems-content">
+          <h1 className="poems-heading">{t.poems.heading}</h1>
           {/* Always-rendered hidden probe so column count is measurable even while
               the grid is gated behind the loading prompt (avoids a reveal flash) */}
           <div

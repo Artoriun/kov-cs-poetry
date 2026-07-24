@@ -698,17 +698,30 @@ h3 {
 
 .poems-toc-wrap {
   position: sticky;
-  top: calc(var(--header-height, 72px) + 24px);
+  top: var(--header-height, 72px);
   width: 160px;
   flex-shrink: 0;
-  height: calc(100svh - var(--header-height, 72px) - 48px);
+  /* Spans from just below the header down to the viewport bottom. Uses dvh, not svh:
+     on Android the URL bar collapses while scrolling and changes the viewport height,
+     and an svh-pinned sidebar keeps its old height through that — which is what let
+     the footer show at the bottom of the sidebar. dvh tracks the live viewport. */
+  height: calc(100dvh - var(--header-height, 72px));
   clip-path: inset(0 0 0 -20px);
+  background: var(--bg-primary);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
 }
 
 .poems-toc {
   height: 100%;
   overflow-y: auto;
   scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  /* Span the full height when the list is long (safe falls back to top-aligned +
+     scrollable); center vertically when there aren't enough poems to fill it. */
+  justify-content: safe center;
 }
 
 .toc-range-line {
@@ -808,6 +821,8 @@ h3 {
 .poems-content {
   flex: 1;
   min-width: 0;
+  /* Keep the column at least as tall as the ToC so the footer always sits below it */
+  min-height: calc(100dvh - var(--header-height, 72px));
 }
 
 @keyframes poem-fade-in {
@@ -854,7 +869,12 @@ h3 {
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--text-primary);
-  margin-bottom: 36px;
+  margin-bottom: 16px;
+}
+
+/* Tighten the poems page's vertical padding so the ToC hugs the header/footer */
+.poems-grid-page {
+  padding-block: 16px;
 }
 
 .poems-grid {
@@ -1789,6 +1809,27 @@ html.dark-mode .header-login-btn:hover {
 
   .site-header {
     position: relative;
+  }
+
+  /* Header scrolls away in landscape, so pin the ToC near the top and span the
+     full height; the content column's matching min-height keeps the footer below. */
+  .poems-toc-wrap {
+    top: 16px;
+    height: calc(100dvh - 16px);
+  }
+
+  .poems-content {
+    min-height: calc(100dvh - 16px);
+  }
+
+  /* Very little vertical room in landscape — tighten the page/heading so the ToC
+     sits close to the header and footer. */
+  .poems-grid-page {
+    padding-block: 8px;
+  }
+
+  .poems-heading {
+    margin-bottom: 8px;
   }
 
   .poem-detail {
