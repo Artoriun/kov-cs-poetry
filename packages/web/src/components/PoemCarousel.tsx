@@ -103,98 +103,115 @@ export default function PoemCarousel() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="carousel-section-label">{t.carousel.featured}</div>
-
-      {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
-      {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
-      <div
-        style={{ position: 'relative', overflow: 'hidden' }}
-        onDragStart={(e) => e.preventDefault()}
-      >
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={current}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-            onAnimationComplete={() => {
-              animatingRef.current = false;
-            }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
-            onDragStart={() => {
-              isDraggingRef.current = true;
-            }}
-            onDragEnd={(_, info) => {
-              if (info.offset.x < -50) paginate(1);
-              else if (info.offset.x > 50) paginate(-1);
-              // Delay clearing so the click event that fires after drag-end is still blocked
-              setTimeout(() => {
-                isDraggingRef.current = false;
-              }, 100);
-            }}
-            className={`carousel-slide${imageLoaded ? ' image-ready' : ''}`}
+      {/* Cold-cache loading prompt; fades out as the carousel fades in */}
+      <AnimatePresence>
+        {!firstImageLoaded && (loading || count > 0) && (
+          <motion.p
+            key="carousel-loading"
+            className="loading-prompt carousel-loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            {poem && (
-              <>
-                <Link
-                  to={`/poems/${poem.id}`}
-                  className="carousel-link"
-                  onClick={(e) => {
-                    if (isDraggingRef.current) e.preventDefault();
-                  }}
-                >
-                  <div className="carousel-image-container">
-                    <img
-                      src={poem.image}
-                      alt={poem.title}
-                      draggable={false}
-                      onLoad={() => {
-                        setImageLoaded(true);
-                        setFirstImageLoaded(true);
-                      }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                    {/* Text reveal animations are gated on .image-ready (set by onLoad) */}
-                    <div className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
-                    {poem.overlay && (
-                      <span className="carousel-overlay">
-                        <span>
-                          {poem.overlay.split('\n').map((line, i) => (
-                            <span
-                              key={i}
-                              className="carousel-overlay-line"
-                              style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
-                            >
-                              {line || ' '}
-                            </span>
-                          ))}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                </Link>
-                <Link
-                  to={`/poems/${poem.id}`}
-                  className="carousel-read-more-btn"
-                  onClick={(e) => {
-                    if (isDraggingRef.current) e.preventDefault();
-                  }}
-                >
-                  {t.carousel.readMore}
-                </Link>
-              </>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            {t.poems.loading}
+          </motion.p>
+        )}
+      </AnimatePresence>
+      <div className="carousel-inner">
+        <div className="carousel-section-label">{t.carousel.featured}</div>
 
-      <PrevArrow onClick={() => paginate(-1)} label={t.carousel.prev} />
-      <NextArrow onClick={() => paginate(1)} label={t.carousel.next} />
+        {/* Horizontally sliding carousel; mode="popLayout" lets exit and enter overlap */}
+        {/* onDragStart suppresses native HTML5 drag (text/image copy) so Motion gets the pointer cleanly */}
+        <div
+          style={{ position: 'relative', overflow: 'hidden' }}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          <AnimatePresence initial={false} custom={direction} mode="popLayout">
+            <motion.div
+              key={current}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.6, ease: 'easeInOut' }}
+              onAnimationComplete={() => {
+                animatingRef.current = false;
+              }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.1}
+              onDragStart={() => {
+                isDraggingRef.current = true;
+              }}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -50) paginate(1);
+                else if (info.offset.x > 50) paginate(-1);
+                // Delay clearing so the click event that fires after drag-end is still blocked
+                setTimeout(() => {
+                  isDraggingRef.current = false;
+                }, 100);
+              }}
+              className={`carousel-slide${imageLoaded ? ' image-ready' : ''}`}
+            >
+              {poem && (
+                <>
+                  <Link
+                    to={`/poems/${poem.id}`}
+                    className="carousel-link"
+                    onClick={(e) => {
+                      if (isDraggingRef.current) e.preventDefault();
+                    }}
+                  >
+                    <div className="carousel-image-container">
+                      <img
+                        src={poem.image}
+                        alt={poem.title}
+                        draggable={false}
+                        onLoad={() => {
+                          setImageLoaded(true);
+                          setFirstImageLoaded(true);
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      {/* Text reveal animations are gated on .image-ready (set by onLoad) */}
+                      <div className="carousel-slide-title carousel-overlay-line">{poem.title}</div>
+                      {poem.overlay && (
+                        <span className="carousel-overlay">
+                          <span>
+                            {poem.overlay.split('\n').map((line, i) => (
+                              <span
+                                key={i}
+                                className="carousel-overlay-line"
+                                style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
+                              >
+                                {line || ' '}
+                              </span>
+                            ))}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  <Link
+                    to={`/poems/${poem.id}`}
+                    className="carousel-read-more-btn"
+                    onClick={(e) => {
+                      if (isDraggingRef.current) e.preventDefault();
+                    }}
+                  >
+                    {t.carousel.readMore}
+                  </Link>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <PrevArrow onClick={() => paginate(-1)} label={t.carousel.prev} />
+        <NextArrow onClick={() => paginate(1)} label={t.carousel.next} />
+      </div>
     </div>
   );
 }

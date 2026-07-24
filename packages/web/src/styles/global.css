@@ -556,10 +556,19 @@ h3 {
 
 .poem-carousel-wrapper {
   position: relative;
+  /* Reserve the carousel's height up front so the page doesn't reflow when the
+     slide (and its full-height image) renders in. */
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100svh - var(--header-height, 72px));
+}
+
+/* Inner content is gated (not the whole wrapper) so the loading prompt can overlay
+   the reserved carousel space while the first image loads. */
+.carousel-inner {
   opacity: 0;
 }
 
-.poem-carousel-wrapper.carousel-loaded.image-ready {
+.poem-carousel-wrapper.carousel-loaded.image-ready .carousel-inner {
   animation: poem-fade-in var(--carousel-fade-duration) ease both;
 }
 
@@ -847,9 +856,16 @@ h3 {
   gap: 20px;
 }
 
+/* Every loading prompt (grid, admin, detail, carousel) centers in the viewport,
+   so they all appear in the same spot regardless of their container. */
 .loading-prompt {
-  text-align: center;
-  padding: 64px 0;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-secondary);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1225,8 +1241,19 @@ h3 {
   }
 }
 
+/* Hold the background and text hidden until the image has loaded, then reveal
+   together — otherwise the full-screen image pops in after the text on a cold cache. */
 .detail-img-anim {
+  opacity: 0;
+}
+
+.poem-detail.image-ready .detail-img-anim {
   animation: detail-fade-in 0.6s ease both;
+}
+
+.poem-detail:not(.image-ready) .detail-overlay-line {
+  animation: none;
+  opacity: 0;
 }
 
 .detail-overlay-line {

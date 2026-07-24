@@ -10,8 +10,37 @@ const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
 const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button appears
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 
-const optimizeUrl = (url: string) =>
-  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400/');
+const optimizeUrl = (url: string, w = 400) =>
+  url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`);
+
+// Load image URLs into the browser cache, then call done() once (or after 4s, so a
+// slow image can't strand a page change). Gates grid page transitions so the incoming
+// cards fade in with their images already cached instead of popping in one by one.
+function preloadImages(urls: string[], done: () => void) {
+  if (urls.length === 0) {
+    done();
+    return;
+  }
+  let loaded = 0;
+  let finished = false;
+  const finish = () => {
+    if (!finished) {
+      finished = true;
+      done();
+    }
+  };
+  for (const url of urls) {
+    const img = new Image();
+    const bump = () => {
+      loaded += 1;
+      if (loaded >= urls.length) finish();
+    };
+    img.onload = bump;
+    img.onerror = bump;
+    img.src = url;
+  }
+  window.setTimeout(finish, 4000);
+}
 
 // Card enter/exit variants for the poems grid; custom(i) provides per-card stagger index
 const cardVariants = {
@@ -70,6 +99,7 @@ export default function Poems() {
   const gridRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [detailImgReady, setDetailImgReady] = useState(false);
 
   // Batch size adapts to how many columns fit the viewport, so a page always fills
   // complete rows and never leaves a single card orphaned on the last row.
@@ -151,7 +181,23 @@ export default function Poems() {
     setUpBtnVisible(false);
     setDownBtnVisible(true);
     setBackBtnVisible(false);
+    setDetailImgReady(false);
   }, [id]);
+
+  // Preload the detail background; the "Loading…" prompt stays until it's cached, then
+  // the image + text reveal together. Driven by a dedicated Image() (not the rendered
+  // <img>'s ref) so readiness never flips true before the pixels are actually available.
+  useEffect(() => {
+    if (!id || !detailPoem) return;
+    const img = new Image();
+    img.onload = () => setDetailImgReady(true);
+    img.onerror = () => setDetailImgReady(true);
+    img.src = optimizeUrl(detailPoem.image, 1600);
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [id, detailPoem]);
 
   // Measure overlay lines and split into pages that fit the available viewport height
   useLayoutEffect(() => {
@@ -372,7 +418,11 @@ export default function Poems() {
 
   if (id) {
     if (!detailPoem)
-      return loading ? null : (
+      return loading ? (
+        <div className="page poem-detail">
+          <p className="loading-prompt detail-loading">{t.poems.loading}</p>
+        </div>
+      ) : (
         <div className="page">
           <p>Poem not found.</p>
         </div>
@@ -432,7 +482,7 @@ export default function Poems() {
     return (
       <div
         ref={poemDetailRef}
-        className="page poem-detail"
+        className={`page poem-detail${detailImgReady ? ' image-ready' : ''}`}
         onMouseDown={(e) => dragStart(e.clientY)}
         onMouseMove={(e) => dragMove(e.clientY)}
         onMouseUp={(e) => dragEnd(e.clientY)}
@@ -445,10 +495,26 @@ export default function Poems() {
         onTouchEnd={(e) => dragEnd(e.changedTouches[0].clientY)}
       >
         <img
-          src={detailPoem.image}
+          src={optimizeUrl(detailPoem.image, 1600)}
           alt={detailPoem.title}
           className="detail-fixed-bg detail-img-anim"
         />
+
+        {/* Cold-cache loading prompt; fades out as the image + text fade in */}
+        <AnimatePresence>
+          {!detailImgReady && (
+            <motion.p
+              key="detail-loading"
+              className="loading-prompt detail-loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {t.poems.loading}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         <button
           type="button"
@@ -566,7 +632,11 @@ export default function Poems() {
     }
     setActivePoemId(null);
     sessionStorage.removeItem('poems-grid-state');
-    setPage(nextPage);
+    // Cache the next batch's images before switching, so the cards fade in smoothly
+    const nextUrls = poems
+      .slice(nextPage * perPage, (nextPage + 1) * perPage)
+      .map((p) => optimizeUrl(p.image));
+    preloadImages(nextUrls, () => setPage(nextPage));
   };
 
   const handleTocClick = (poemId: string) => {
@@ -636,7 +706,11 @@ export default function Poems() {
     }
     // Queue the highlight to fire after the incoming page finishes entering
     pendingHighlightRef.current = doHighlight;
-    setPage(targetPage);
+    // Cache the target batch's images before switching, so the cards fade in smoothly
+    const targetUrls = poems
+      .slice(targetPage * perPage, (targetPage + 1) * perPage)
+      .map((p) => optimizeUrl(p.image));
+    preloadImages(targetUrls, () => setPage(targetPage));
   };
 
   return (
