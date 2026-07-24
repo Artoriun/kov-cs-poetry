@@ -5,7 +5,16 @@ export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <p>{t.footer.copyright}</p>
+        <p>
+          <a
+            className="footer-copyright-link"
+            href="https://github.com/Artoriun"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t.footer.copyright}
+          </a>
+        </p>
         <a href="#top" className="back-to-top">
           {t.footer.backToTop}
         </a>

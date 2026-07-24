@@ -833,11 +833,18 @@ h3 {
 }
 
 /* ===== POEMS GRID ===== */
-.poems-heading {
+/* Heading + TOC stay hidden until the grid's images have loaded (is-revealed),
+   then fade in together with the cards. */
+.poems-heading,
+.poems-toc-wrap {
+  opacity: 0;
+}
+
+.poems-grid-page.is-revealed .poems-heading {
   animation: poem-fade-in var(--page-fade-duration) ease both;
 }
 
-.poems-toc-wrap {
+.poems-grid-page.is-revealed .poems-toc-wrap {
   animation: poem-fade-in var(--page-fade-duration) ease var(--page-fade-stagger) both;
 }
 
@@ -1536,6 +1543,15 @@ body:has(.loading-prompt) .site-footer {
 /* Copyright uses the poem-overlay serif to match the site's poetry styling */
 .footer-inner p {
   font-family: "Esteban", serif;
+}
+
+.footer-copyright-link {
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.footer-copyright-link:hover {
+  color: var(--text-secondary);
 }
 
 .back-to-top {
