@@ -1150,8 +1150,12 @@ h3 {
   max-width: none;
   margin: 0;
   position: relative;
+  /* svh, not dvh: the text is paginated once against this height, so it has to be a
+     constant. dvh grows when the URL bar collapses and would leave that split stale.
+     svh is the smallest the viewport gets, so the lines always fit; the fixed layers
+     below are sized in lvh, so the extra space is still covered by the image. */
   height: calc(100vh - var(--header-height, 72px));
-  height: calc(100dvh - var(--header-height, 72px));
+  height: calc(100svh - var(--header-height, 72px));
   overflow: hidden;
 }
 
@@ -1161,8 +1165,9 @@ h3 {
   top: 0;
   left: 0;
   width: 100%;
+  /* lvh so the image still covers once the URL bar retracts */
   height: 100vh;
-  height: 100dvh;
+  height: 100lvh;
   object-fit: cover;
   z-index: -1;
 }
@@ -1170,7 +1175,13 @@ h3 {
 .poem-detail::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Matches .detail-fixed-bg: a fixed inset:0 box is sized to the small viewport, which
+     left the bottom strip of the image undimmed once the URL bar collapsed. */
+  height: 100vh;
+  height: 100lvh;
   background: rgba(0, 0, 0, calc(1 - var(--img-brightness-overlay)));
   z-index: 0;
   pointer-events: none;
