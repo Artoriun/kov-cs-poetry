@@ -24,6 +24,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--header-height, 72px);
+  background: var(--bg-primary-color);
 }
 
 @keyframes page-load-fade {
@@ -61,15 +62,34 @@ body {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
-  background: var(--bg-primary);
-  background-attachment: fixed;
-  background-size: cover;
-  background-position: center;
+  background: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
+}
+
+/* Parchment backdrop as a fixed layer rather than `background-attachment: fixed`
+   on the body. Both a fixed background and a fixed element with `inset: 0` are
+   sized to the *small* viewport on Android, so once the URL bar collapses they
+   fall ~77px short and expose the flat fallback colour (#1a1a1a — identical to
+   --footer-bg) as a strip along the bottom. 100lvh is the large viewport (browser
+   chrome retracted), i.e. the tallest the viewport ever gets, so it always covers;
+   the overhang is simply off-screen while the URL bar is showing. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100lvh;
+  z-index: -1;
+  background: var(--bg-primary);
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
 }
 
 a {
@@ -698,10 +718,15 @@ h3 {
 
 .poems-toc-wrap {
   position: sticky;
-  top: calc(var(--header-height, 72px) + 24px);
+  top: var(--header-height, 72px);
   width: 160px;
   flex-shrink: 0;
-  height: calc(100svh - var(--header-height, 72px) - 48px);
+  /* Spans from just below the header down to the viewport bottom. lvh, not dvh:
+     dvh only settles after the URL-bar collapse finishes, so mid-scroll the sidebar
+     is short by the toolbar height and then visibly snaps down on scroll-end. lvh is
+     a constant (the URL-bar-retracted height), so it stays pinned to the bottom. */
+  height: calc(100vh - var(--header-height, 72px));
+  height: calc(100lvh - var(--header-height, 72px));
   clip-path: inset(0 0 0 -20px);
 }
 
@@ -709,6 +734,11 @@ h3 {
   height: 100%;
   overflow-y: auto;
   scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  /* Span the full height when the list is long (safe falls back to top-aligned +
+     scrollable); center vertically when there aren't enough poems to fill it. */
+  justify-content: safe center;
 }
 
 .toc-range-line {
@@ -808,6 +838,9 @@ h3 {
 .poems-content {
   flex: 1;
   min-width: 0;
+  /* Keep the column at least as tall as the ToC so the footer always sits below it */
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100lvh - var(--header-height, 72px));
 }
 
 @keyframes poem-fade-in {
@@ -833,11 +866,18 @@ h3 {
 }
 
 /* ===== POEMS GRID ===== */
-.poems-heading {
+/* Heading + TOC stay hidden until the grid's images have loaded (is-revealed),
+   then fade in together with the cards. */
+.poems-heading,
+.poems-toc-wrap {
+  opacity: 0;
+}
+
+.poems-grid-page.is-revealed .poems-heading {
   animation: poem-fade-in var(--page-fade-duration) ease both;
 }
 
-.poems-toc-wrap {
+.poems-grid-page.is-revealed .poems-toc-wrap {
   animation: poem-fade-in var(--page-fade-duration) ease var(--page-fade-stagger) both;
 }
 
@@ -847,7 +887,12 @@ h3 {
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--text-primary);
-  margin-bottom: 36px;
+  margin-bottom: 16px;
+}
+
+/* Tighten the poems page's vertical padding so the ToC hugs the header/footer */
+.poems-grid-page {
+  padding-block: 16px;
 }
 
 .poems-grid {
@@ -1538,6 +1583,15 @@ body:has(.loading-prompt) .site-footer {
   font-family: "Esteban", serif;
 }
 
+.footer-copyright-link {
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.footer-copyright-link:hover {
+  color: var(--text-secondary);
+}
+
 .back-to-top {
   font-size: 12px;
   letter-spacing: 2px;
@@ -1773,6 +1827,29 @@ html.dark-mode .header-login-btn:hover {
 
   .site-header {
     position: relative;
+  }
+
+  /* Header scrolls away in landscape, so pin the ToC near the top and span the
+     full height; the content column's matching min-height keeps the footer below. */
+  .poems-toc-wrap {
+    top: 16px;
+    height: calc(100vh - 16px);
+    height: calc(100lvh - 16px);
+  }
+
+  .poems-content {
+    min-height: calc(100vh - 16px);
+    min-height: calc(100lvh - 16px);
+  }
+
+  /* Very little vertical room in landscape — tighten the page/heading so the ToC
+     sits close to the header and footer. */
+  .poems-grid-page {
+    padding-block: 8px;
+  }
+
+  .poems-heading {
+    margin-bottom: 8px;
   }
 
   .poem-detail {
