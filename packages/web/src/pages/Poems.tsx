@@ -227,11 +227,13 @@ export default function Poems() {
     }
     const container = overlay.closest<HTMLElement>('.detail-image-container');
     const cs = container ? getComputedStyle(container) : null;
-    const headerH =
-      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) ||
-      72;
-    const landscape = window.innerHeight <= 500;
-    const slideH = landscape ? 2 * (window.innerHeight - headerH) : window.innerHeight - headerH;
+    // Measure the rendered slide instead of deriving it from window.innerHeight. The CSS
+    // sizes .poem-detail in svh/dvh, but window.innerHeight tracks the live visual
+    // viewport — so arriving from an already-scrolled grid (URL bar collapsed)
+    // over-estimated the height by the toolbar, doubled in landscape, and packed too many
+    // lines per page, running the text under the down arrow.
+    const detail = overlay.closest<HTMLElement>('.poem-detail');
+    const slideH = detail ? detail.getBoundingClientRect().height : window.innerHeight - 72;
     const os = getComputedStyle(overlay);
     const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
     const containerPadV = cs ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 160;
