@@ -714,7 +714,7 @@ export default function Poems() {
   };
 
   return (
-    <div className="page poems-grid-page">
+    <div className={`page poems-grid-page${revealed ? ' is-revealed' : ''}`}>
       <h1 className="poems-heading">{t.poems.heading}</h1>
       <div className="poems-layout">
         <div className="poems-toc-wrap">

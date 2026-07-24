@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { PoemsProvider } from './context/PoemsContext';
@@ -8,18 +7,6 @@ import Home from './pages/Home';
 import Poems from './pages/Poems';
 
 export default function App() {
-  useEffect(() => {
-    const handler = () => window.location.reload();
-    screen.orientation
-      ? screen.orientation.addEventListener('change', handler)
-      : window.addEventListener('orientationchange', handler);
-    return () => {
-      screen.orientation
-        ? screen.orientation.removeEventListener('change', handler)
-        : window.removeEventListener('orientationchange', handler);
-    };
-  }, []);
-
   return (
     <PoemsProvider>
       <div className="page-load-scrim" aria-hidden="true" />
