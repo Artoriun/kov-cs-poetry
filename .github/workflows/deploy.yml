@@ -27,6 +27,30 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main-hungarian
+          fetch-depth: 0
+
+      # Pushing main and pushing main-hungarian are two separate events, so this job
+      # can start before main-hungarian has been merged — publishing a stale build.
+      # Wait for it to catch up to the commit that triggered us, then build that.
+      # Skipped for workflow_dispatch so a manual run can always deploy as-is.
+      - name: Wait for main-hungarian to contain main
+        if: github.event_name == 'push'
+        run: |
+          for i in $(seq 1 20); do
+            # Explicit refspec so the remote-tracking ref is definitely updated.
+            git fetch --no-tags -q origin \
+              '+refs/heads/main-hungarian:refs/remotes/origin/main-hungarian' || true
+            # Errors (e.g. GITHUB_SHA not fetched yet) count as "not ready" and retry.
+            if git merge-base --is-ancestor "$GITHUB_SHA" origin/main-hungarian 2>/dev/null; then
+              git checkout -q -B main-hungarian origin/main-hungarian
+              echo "Building main-hungarian at $(git log -1 --format='%h %s')"
+              exit 0
+            fi
+            echo "main-hungarian does not contain ${GITHUB_SHA:0:7} yet; retrying in 15s ($i/20)"
+            sleep 15
+          done
+          echo "::error::main-hungarian never caught up to main@${GITHUB_SHA:0:7}. Merge main into main-hungarian, then re-run this workflow."
+          exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
