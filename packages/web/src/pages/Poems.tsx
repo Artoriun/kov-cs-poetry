@@ -294,8 +294,10 @@ export default function Poems() {
     const layoutTop = first.offsetTop;
     const height = last.offsetTop + last.offsetHeight - layoutTop;
 
-    // Auto-scroll the nav so the current range is always in view
-    nav.scrollTop = Math.max(0, layoutTop - 24);
+    // Auto-scroll the nav so the current range is always in view. The first page is a
+    // special case: item 0's offsetTop already includes the TOC title above it, so the
+    // usual 24px lead-in would scroll down just far enough to clip that title.
+    nav.scrollTop = firstIndex === 0 ? 0 : Math.max(0, layoutTop - 24);
 
     const setTop = () => {
       line.style.top = `${layoutTop - nav.scrollTop}px`;
@@ -324,7 +326,9 @@ export default function Poems() {
       nav.removeEventListener('scroll', setTop);
       ro.disconnect();
     };
-  }, [page, id, perPage]);
+    // poems.length matters: on a cold load the list is empty, so the <li> lookup above
+    // bails out and the line is never drawn — it has to redraw once the poems arrive.
+  }, [page, id, perPage, poems.length]);
 
   useEffect(() => {
     if (!id) return;
