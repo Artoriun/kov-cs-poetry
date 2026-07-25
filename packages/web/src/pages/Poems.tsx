@@ -86,6 +86,7 @@ export default function Poems() {
     return detailPoem?.overlay ? [detailPoem.overlay.split('\n')] : [];
   }, [customSlidesKey, detailPoem?.overlay]);
   const measureLines = sourceSlides.flat();
+  const usesCustomSlides = customSlidesKey !== '';
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(
@@ -220,6 +221,19 @@ export default function Poems() {
   useLayoutEffect(() => {
     if (!id || !detailPoem || detailPages !== null) return;
     if (sourceSlides.length === 0) return;
+    // Custom slides are authored as complete pages, so they are used verbatim — never
+    // measured or subdivided. The slide grows to fit instead (see .poem-detail.custom-slides),
+    // scrolling past the viewport when a slide is long.
+    if (usesCustomSlides) {
+      setDetailPages(sourceSlides);
+      if (sourceSlides.length === 1) {
+        setBackBtnVisible(true);
+        setDownBtnVisible(false);
+      } else {
+        setDownBtnVisible(true);
+      }
+      return;
+    }
     const detail = poemDetailRef.current;
     // Always measure the hidden full-poem copy, never the visible slide — see .detail-measure
     const measure = detail?.querySelector<HTMLElement>('.detail-measure .detail-overlay');
@@ -291,7 +305,7 @@ export default function Poems() {
     } else {
       setDownBtnVisible(true);
     }
-  }, [id, detailPages, sourceSlides]);
+  }, [id, detailPages, sourceSlides, usesCustomSlides]);
 
   // Rotating changes the slide height (portrait is one viewport, landscape two) and the
   // container padding, but the effect above only runs once per poem — so the split made
@@ -545,7 +559,7 @@ export default function Poems() {
     return (
       <div
         ref={poemDetailRef}
-        className={`page poem-detail${detailImgReady ? ' image-ready' : ''}`}
+        className={`page poem-detail${detailImgReady ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
         onMouseDown={(e) => dragStart(e.clientY)}
         onMouseMove={(e) => dragMove(e.clientY)}
         onMouseUp={(e) => dragEnd(e.clientY)}

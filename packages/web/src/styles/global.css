@@ -1164,6 +1164,17 @@ h3 {
   overflow: hidden;
 }
 
+/* Custom slides are authored as complete pages and are shown verbatim, so the slide
+   grows to whatever height its text needs and scrolls past the viewport rather than
+   being paginated to fit. Only min-height is pinned, so a short slide still fills the
+   screen and a long one is not clipped. */
+.poem-detail.custom-slides {
+  height: auto;
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100svh - var(--header-height, 72px));
+  overflow: visible;
+}
+
 /* ===== DETAIL PAGE OVERLAY ===== */
 .detail-fixed-bg {
   position: fixed;
@@ -1285,6 +1296,18 @@ h3 {
 
 .poem-detail .detail-image-container.has-title:has(.detail-overlay) {
   padding-top: 96px;
+}
+
+/* Let the slide and its text box grow with the content instead of being pinned to the
+   viewport, so a long authored slide is scrolled rather than clipped. */
+.poem-detail.custom-slides .detail-slide {
+  height: auto;
+}
+
+.poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
+  height: auto;
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100svh - var(--header-height, 72px));
 }
 
 /* Off-screen measuring copy of the full poem. Must match the real overlay's width so
@@ -1897,6 +1920,18 @@ html.dark-mode .header-login-btn:hover {
 
   .poem-detail {
     height: calc(2 * (100svh - var(--header-height, 72px)));
+  }
+
+  /* One screen minimum rather than the two a paginated slide gets: the slide already
+     grows to fit its own text, so reserving a second screen would only add dead space
+     between the last line and the button. */
+  .poem-detail.custom-slides {
+    height: auto;
+    min-height: calc(100svh - var(--header-height, 72px));
+  }
+
+  .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
+    min-height: calc(100svh - var(--header-height, 72px));
   }
 
   .poem-detail .slick-vertical .slick-slide {
