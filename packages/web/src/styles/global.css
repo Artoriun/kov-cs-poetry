@@ -1529,6 +1529,12 @@ html.dark-mode .contact-error {
   text-align: center;
   opacity: 1;
   transition: opacity 0.4s ease;
+  /* Lifted above the poem detail's dimming scrim. That scrim is fixed and covers the whole
+     viewport at z-index 0, and an unpositioned footer paints below any positioned element,
+     so it was being tinted along with the image — the footer and its text came out at 68%
+     brightness on poem pages only, which also cost the link its contrast. */
+  position: relative;
+  z-index: 1;
 }
 
 /* Hide the footer while a loading prompt is on screen (admin + poems grid),
