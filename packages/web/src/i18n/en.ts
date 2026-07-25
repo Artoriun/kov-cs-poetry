@@ -47,6 +47,7 @@ export const en = {
     sending: 'Sending…',
     error: 'Your message could not be sent. Please try again later.',
     tooMany: 'Too many messages sent. Please try again later.',
+    back: 'Back',
   },
   admin: {
     title: 'Admin',
