@@ -8,11 +8,14 @@
   --bg-tertiary: #f0f0f0;
   --text-primary: #2c2c2c;
   --text-secondary: #555555;
-  --text-tertiary: #888888;
+  /* The lightest grey that still clears WCAG AA on #fafafa: 4.54:1, where #888888 was
+     3.40:1. Deliberately the minimum rather than something safely darker — this is the
+     recessive label colour (subtitle, TOC heading, footer) and it should stay quiet. */
+  --text-tertiary: #737373;
   /* Darker than the rest of the light-mode scale suggests, on purpose: this is used for
      body text (links, the contact confirmation) and the hamburger bars, and the old
      #aaaaaa gave only 2.3:1 against the #fafafa background — below the 4.5:1 WCAG AA
-     minimum. #6f6f6f is 4.8:1. Dark mode keeps #aaa, which is already 7:1 on #1a1a1a. */
+     minimum. #6f6f6f is 4.8:1. */
   --text-light: #6f6f6f;
   --text-hover: #000000;
   --border-color: #0e0a0a;
@@ -41,7 +44,9 @@ html.dark-mode {
   --bg-tertiary: #2a2a2a;
   --text-primary: #ccc;
   --text-secondary: #999;
-  --text-tertiary: #777;
+  /* Darkest grey that still clears AA on #1a1a1a: 4.53:1, where #777 was 3.89:1. This
+     failed in dark mode too, not only light. */
+  --text-tertiary: #828282;
   --text-light: #aaa;
   --text-hover: #fff;
   --border-color: #2a2a2a;
