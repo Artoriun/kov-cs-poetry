@@ -88,6 +88,9 @@ export default function Poems() {
   const measureLines = sourceSlides.flat();
   const usesCustomSlides = customSlidesKey !== '';
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
+  // Height of the poem's longest custom slide, so every slide reserves the same space
+  // and the footer doesn't hop as you page through. Null for measured poems.
+  const [slideFloor, setSlideFloor] = useState<number | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(
     savedParsed?.activePoemId ?? id ?? null,
@@ -194,6 +197,7 @@ export default function Poems() {
   // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
     setDetailPages(null);
+    setSlideFloor(null);
     setCurrentSlide(0);
     setSeenSlides(new Set<number>());
     setUpBtnVisible(false);
@@ -231,6 +235,34 @@ export default function Poems() {
         setDownBtnVisible(false);
       } else {
         setDownBtnVisible(true);
+      }
+      // Reserve the height of the tallest slide. Authored slides differ in length, so
+      // once they outgrow the viewport the page height follows whichever one is showing
+      // and the footer visibly hops between slides. Pinning it to the longest keeps the
+      // footer still; shorter slides just centre in the space.
+      const el = poemDetailRef.current;
+      const box = el?.querySelector<HTMLElement>('.detail-measure .detail-overlay');
+      const wrap = el?.querySelector<HTMLElement>('.detail-image-container');
+      if (box && wrap) {
+        const wcs = getComputedStyle(wrap);
+        const bcs = getComputedStyle(box);
+        const padding =
+          parseFloat(wcs.paddingTop) +
+          parseFloat(wcs.paddingBottom) +
+          parseFloat(bcs.paddingTop) +
+          parseFloat(bcs.paddingBottom);
+        const all = Array.from(box.querySelectorAll<HTMLElement>('span'));
+        let at = 0;
+        let tallest = 0;
+        for (const slide of sourceSlides) {
+          let h = 0;
+          for (let k = 0; k < slide.length; k++) {
+            h += all[at + k]?.getBoundingClientRect().height ?? 0;
+          }
+          at += slide.length;
+          tallest = Math.max(tallest, h);
+        }
+        setSlideFloor(Math.ceil(tallest + padding));
       }
       return;
     }
@@ -317,6 +349,7 @@ export default function Poems() {
     const mq = window.matchMedia('(orientation: landscape)');
     const repaginate = () => {
       setDetailPages(null);
+      setSlideFloor(null); // line heights change with the orientation
       setCurrentSlide(0); // page count changes, so the old index may not exist
       setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
       setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
@@ -560,6 +593,7 @@ export default function Poems() {
       <div
         ref={poemDetailRef}
         className={`page poem-detail${detailImgReady ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
+        style={slideFloor ? { minHeight: slideFloor } : undefined}
         onMouseDown={(e) => dragStart(e.clientY)}
         onMouseMove={(e) => dragMove(e.clientY)}
         onMouseUp={(e) => dragEnd(e.clientY)}
