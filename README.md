@@ -107,8 +107,13 @@ FIREBASE_CLIENT_EMAIL=your-client-email
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
 
-# Contact form — any SMTP provider. Omit these and POST /api/contact returns 503
-# rather than silently discarding messages.
+# Contact form. Resend (HTTPS) is preferred and is required in production —
+# Render's free instances block outbound ports 25/465/587, so SMTP times out there.
+RESEND_API_KEY=re_...
+RESEND_FROM=onboarding@resend.dev   # optional; needs no domain verification
+
+# SMTP fallback, used only when RESEND_API_KEY is unset. Fine locally.
+# Omit both and POST /api/contact returns 503 rather than discarding messages.
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=you@example.com
