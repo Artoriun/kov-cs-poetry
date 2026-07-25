@@ -10,10 +10,13 @@
     "typecheck": "turbo run typecheck",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
+    "@playwright/test": "^1.62.0",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },

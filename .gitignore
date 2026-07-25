@@ -6,3 +6,9 @@ dist
 *firebase-adminsdk*.json
 *.tsbuildinfo
 packages/api/scripts/
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache

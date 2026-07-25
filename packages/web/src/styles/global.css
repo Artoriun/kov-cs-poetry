@@ -1179,7 +1179,7 @@ h3 {
   /* Slides differ in length, so the poem — and the footer under it — changes height
      between them. JS sets an explicit height per slide (auto has nothing to animate
      from) and this eases it, matching the 0.45s slide transition. */
-  transition: height 0.45s ease;
+  transition: min-height 0.45s ease;
 }
 
 /* ===== DETAIL PAGE OVERLAY ===== */
