@@ -1,17 +1,15 @@
 # Render Blueprint for the API.
 #
 # The service already exists and was configured by hand in Render's dashboard, so this
-# file is a description of it rather than its source of truth. Before applying it as a
-# Blueprint, reconcile `buildCommand` and `startCommand` with what the dashboard actually
-# has — applying a mismatched Blueprint would reconfigure a working service.
+# file describes it rather than being its source of truth. Reconcile it with the dashboard
+# before applying as a Blueprint — applying a mismatched one would reconfigure a working
+# service.
 #
-# Note `npm start` (node dist/index.js) does NOT currently work: the API imports POEMS
-# from @gedichtenv2/shared, which ships raw TypeScript (main: src/index.ts), so Node
-# fails on it at require time. Whatever the dashboard runs today, it is not that script.
-# Options, cheapest first: run the TS directly with tsx (as `dev` does — it would need
-# moving from devDependencies to dependencies, since Render installs with NODE_ENV
-# =production and skips devDeps); or give `shared` a build step and point its main at the
-# compiled output; or bundle the API so dist is self-contained.
+# The service runs the TypeScript directly via tsx, which is why tsx is a runtime
+# dependency rather than a dev one: Render installs with NODE_ENV=production and can skip
+# devDependencies. Running from source also sidesteps the fact that `node dist/index.js`
+# cannot work as things stand — the API imports POEMS from @gedichtenv2/shared, which
+# ships raw TypeScript, so Node fails on it at require time.
 services:
   - type: web
     name: kov-cs-poetry
@@ -20,15 +18,17 @@ services:
     # Region is whatever the existing service uses — set it before applying.
     # region: frankfurt
     rootDir: .
-    buildCommand: npm ci && npm run build --workspace=packages/api
-    startCommand: npx tsx packages/api/src/index.ts
+    # No compile step: the service runs from source, so a build would only emit a dist
+    # nothing loads. Type errors are caught by CI before merge instead.
+    buildCommand: npm ci
+    startCommand: npm start --workspace=packages/api
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: '22'
       # Render injects PORT itself; the app already reads it.
-      # Secrets stay dashboard-managed — sync: false means "exists, value not in git".
+      # Secrets stay dashboard-managed — sync: false means "required, value not in git".
       - key: ADMIN_PASSWORD
         sync: false
       - key: JWT_SECRET
