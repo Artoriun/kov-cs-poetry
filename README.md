@@ -14,7 +14,9 @@ A responsive, bilingual (Hungarian/English) poetry portfolio built with **React*
 - Home carousel of featured poems — auto-advances by line count, swipeable, with sequenced mask-wipe text reveals
 - Paginated poems grid with a scroll-tracking table of contents
 - Full-screen poem reader — vertical swipe between pages, staggered line reveals, dedicated landscape layout
+- Working contact form — messages are delivered by email, with validation, a honeypot and per-IP rate limiting
 - Light/dark mode, page-load fade-in sequence, fully responsive (portrait & landscape)
+- Text colours meet WCAG AA contrast in both themes
 
 **Admin portal (`/admin`)** — password login + JWT auth (auto-logout on expiry)
 - Create, edit, delete, and drag-to-reorder poems; changes persist to Firestore and reflect site-wide instantly
@@ -42,6 +44,7 @@ All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) beh
 | **Firebase Firestore** | Poem overrides & display order |
 | **Cloudinary** | Image upload & hosting |
 | **JWT** | Admin authentication |
+| **Resend** / **Nodemailer** | Contact-form delivery over HTTPS, with SMTP as a local fallback |
 | **Biome** | Linting & formatting (one tool, replaces ESLint + Prettier) |
 | **Playwright** | Layout regression tests across desktop and mobile viewports |
 
@@ -50,20 +53,28 @@ All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) beh
 ## Project Structure
 
 ```
+.nvmrc                          # Node 22 — required, see Deployment
+playwright.config.ts            # 3 viewport projects
+render.yaml                     # API infrastructure as code
+e2e/                            # layout.spec.ts + API-stubbing fixtures
 packages/
 ├── shared/src/index.ts         # Poem type + hardcoded fallback data
 ├── api/src/                    # Express server (port 4000)
-│   ├── index.ts
+│   ├── index.ts                # app + /health and /health/deps
+│   ├── loadEnv.ts              # .env resolved relative to the file, not the cwd
+│   ├── firebaseAdmin.ts
 │   ├── routes/                 # auth.ts, contact.ts, poems.ts
 │   └── middleware/requireAuth.ts
-└── web/src/                    # Vite React app (port 3000)
-    ├── App.tsx                 # Routes + PoemsProvider
-    ├── context/                # PoemsContext, ThemeContext
-    ├── i18n/                   # en.ts, hu.ts, LanguageProvider
-    ├── lib/api.ts              # Typed API client
-    ├── components/             # Header, PoemCarousel, ThemeToggle, …
-    ├── pages/                  # Home, Poems, Admin, Contact
-    └── styles/                 # global.css, themes.css, admin.css
+└── web/                        # Vite React app (port 3000)
+    ├── public/favicon.svg
+    └── src/
+        ├── App.tsx             # Routes + PoemsProvider
+        ├── context/            # PoemsContext, ThemeContext
+        ├── i18n/               # en.ts, hu.ts, LanguageProvider
+        ├── lib/api.ts          # Typed API client
+        ├── components/         # Header, PoemCarousel, ThemeToggle, …
+        ├── pages/              # Home, Poems, Admin, Contact
+        └── styles/             # global.css, themes.css, admin.css
 ```
 
 ---
@@ -82,6 +93,37 @@ npm run test:e2e   # Playwright layout tests (3 viewports)
 ```
 
 Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](https://biomejs.dev)** (config in `biome.json`); type-checking is each package's `typecheck` script, orchestrated by Turbo.
+
+---
+
+## Testing
+
+```bash
+npm run test:e2e        # all three viewports
+npx playwright test --project=desktop
+```
+
+Playwright covers **viewports rather than browsers** — desktop, Pixel 8a portrait and
+landscape — because the regressions this project actually suffers are layout ones at a
+particular size. Each test corresponds to something that has broken before: horizontal
+overflow, content rendering past the footer, a reload not landing at the top, poem text
+running under the navigation button, a slide orphaned to one or two lines, lines lost when
+paging, the TOC indicator failing to draw on a cold load.
+
+The API is stubbed from the shared fixtures and the poem images are stubbed with a 1×1 PNG.
+That keeps the suite deterministic and independent of the Render instance, which sleeps on
+the free tier — and it is why the assertions can be geometric without being flaky.
+
+---
+
+## API
+
+| Endpoint | Notes |
+| --- | --- |
+| `GET /health` | Liveness only. Render's health check points here, and it must stay shallow — a probe that fails when Firestore blips would restart a healthy container. |
+| `GET /health/deps` | Reads from Firestore and returns 503 if that fails. For uptime monitoring. Cached 30s so a public flood cannot burn the quota. |
+| `GET /api/poems` | Falls back to the hardcoded poems if Firestore is unreachable, so the site degrades rather than breaking — which is exactly why `/health/deps` exists. |
+| `POST /api/contact` | Validates and length-caps every field, rejects newlines in the ones that reach mail headers, drops honeypot submissions, and rate-limits to 5/hour per IP. Returns 503 if no mail transport is configured rather than discarding the message. |
 
 ---
 
@@ -121,18 +163,6 @@ SMTP_PASS=your-app-password
 CONTACT_TO=pjcr.dekeijzer@gmail.com   # optional; this is the default
 ```
 
-### Health endpoints
-
-| Endpoint | Checks | Use |
-| --- | --- | --- |
-| `/health` | process is alive | Render's health check — must stay shallow, or a Firebase blip restarts a healthy container |
-| `/health/deps` | reads from Firestore | uptime monitoring — returns 503 when the data layer is broken |
-
-`/health/deps` exists because `GET /api/poems` falls back to the hardcoded poems if
-Firestore fails, answering 200. That keeps the site up for visitors, but without a deeper
-probe the API can look healthy while admin edits have silently stopped appearing. The
-result is cached for 30s so a public flood cannot burn the Firestore quota.
-
 For Gmail, `SMTP_PASS` has to be an [App Password](https://myaccount.google.com/apppasswords) — a normal account password is rejected — and the account needs 2-Step Verification switched on. The same variables are declared in `render.yaml` for production.
 
 For the Pages build, set `VITE_API_URL` as a repository secret. Without it, the frontend falls back to relative `/api` paths (local dev behind the Vite proxy).
@@ -156,3 +186,11 @@ To add a fallback poem, append to `POEMS`:
 ## Theming
 
 Edit colours in `packages/web/src/styles/themes.css` via CSS custom properties (`--bg-primary`, `--text-primary`, `--header-bg`, …). Light mode is under `:root`; dark mode overrides under `html.dark-mode`.
+
+Every text colour currently clears the WCAG AA 4.5:1 contrast minimum against its
+background, and `--text-tertiary` (`#737373` light, `#828282` dark) sits at the *least*
+changed value that still passes — it is the recessive label colour and should stay quiet.
+Worth re-checking the ratio before darkening or lightening any of them. Note that contrast
+maths on the variables is not the whole story: the poem reader lays a dimming scrim over
+the viewport, so anything painted beneath it renders at 68% brightness regardless of what
+the colour value says.
