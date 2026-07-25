@@ -609,7 +609,17 @@ export default function Poems() {
       <div
         ref={poemDetailRef}
         className={`page poem-detail${detailImgReady ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
-        style={slideHeights ? { height: slideHeights[currentSlide] } : undefined}
+        // A floor, not a fixed height: the measured copy can under-estimate (the webfont
+        // may still be loading when it is measured, so the real text wraps onto more
+        // rows). With a fixed height the extra rows overflowed and ran under the nav
+        // button; as a floor the box just grows. max() keeps the CSS one-viewport floor.
+        style={
+          slideHeights
+            ? {
+                minHeight: `max(${slideHeights[currentSlide]}px, calc(100svh - var(--header-height, 72px)))`,
+              }
+            : undefined
+        }
         onMouseDown={(e) => dragStart(e.clientY)}
         onMouseMove={(e) => dragMove(e.clientY)}
         onMouseUp={(e) => dragEnd(e.clientY)}
