@@ -31,6 +31,36 @@ function rateLimited(ip: string): boolean {
   return false;
 }
 
+// Render's free tier blocks outbound traffic on ports 25, 465 and 587, so SMTP cannot work
+// there at all — connections are dropped, surfacing as ETIMEDOUT at the CONN stage. Resend
+// goes over HTTPS on 443 instead, which is not blocked. SMTP is kept as a fallback for
+// local development and for paid plans, where it works fine.
+async function sendViaResend(mail: {
+  from: string;
+  replyTo: string;
+  subject: string;
+  text: string;
+}): Promise<void> {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: mail.from,
+      to: [TO],
+      reply_to: mail.replyTo,
+      subject: mail.subject,
+      text: mail.text,
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    throw new Error(`resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+}
+
 function transport() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
@@ -95,9 +125,10 @@ contactRouter.post('/', async (req, res) => {
   }
 
   const mailer = transport();
-  if (!mailer) {
+  const useResend = !!process.env.RESEND_API_KEY;
+  if (!useResend && !mailer) {
     // Better a clear failure than pretending to send into a void.
-    console.error('[contact] SMTP is not configured; message not sent');
+    console.error('[contact] no mail transport configured; message not sent');
     res.status(503).json({ error: 'Mail is not configured' });
     return;
   }
@@ -105,17 +136,22 @@ contactRouter.post('/', async (req, res) => {
   try {
     // Quotes would terminate the display name early, so swap them out.
     const display = name.replace(/"/g, "'");
-    await mailer.sendMail({
-      to: TO,
-      // The address must be the authenticated mailbox — Gmail rejects or rewrites a From
-      // it did not authenticate, which is the point of SPF/DMARC. Only the display name is
-      // free, so the visitor's name goes there: the inbox shows "Jane Doe (via Kovács)"
-      // rather than your own name against every enquiry.
-      from: `"${display} (via Kovács)" <${process.env.SMTP_USER}>`,
+    // The address must be one the provider will vouch for — the authenticated mailbox for
+    // SMTP, a verified sender for Resend — because that is what SPF and DMARC check. Only
+    // the display name is free, so the visitor's name goes there: the inbox reads
+    // "Jane Doe (via Kovács)" rather than your own name against every enquiry.
+    const fromAddress = useResend
+      ? (process.env.RESEND_FROM ?? 'onboarding@resend.dev')
+      : process.env.SMTP_USER;
+    const mail = {
+      from: `"${display} (via Kovács)" <${fromAddress}>`,
       replyTo: `"${display}" <${email}>`,
       subject: `[kovacs] ${subject}`,
       text: `From: ${name} <${email}>\n\n${message}`,
-    });
+    };
+
+    if (useResend) await sendViaResend(mail);
+    else await mailer!.sendMail({ to: TO, ...mail });
     res.json({ ok: true });
   } catch (err) {
     // Log the code and response explicitly: the bare error object renders as [Object] in
