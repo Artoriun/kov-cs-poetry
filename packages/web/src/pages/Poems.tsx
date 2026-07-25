@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
@@ -72,12 +72,29 @@ export default function Poems() {
   const navigate = useNavigate();
   const detailPoem = id ? (poems.find((p) => p.id === id) ?? null) : null;
   const detailLines = detailPoem?.overlay ? detailPoem.overlay.split('\n') : [];
+  // The author's intended breaks: custom slides if the poem defines them, otherwise the
+  // whole poem as one block. Each is a hard break that pagination never merges across —
+  // it only subdivides one further when it doesn't fit the current viewport.
+  // Flattened to a primitive so useMemo gets a stable key. A NUL separator is used
+  // because slide text legitimately contains both spaces and newlines.
+  const customSlidesKey =
+    detailPoem?.customSlidesEnabled && detailPoem.customSlides?.length
+      ? detailPoem.customSlides.join('\u0000')
+      : '';
+  const sourceSlides: string[][] = useMemo(() => {
+    if (customSlidesKey) return customSlidesKey.split('\u0000').map((s) => s.split('\n'));
+    return detailPoem?.overlay ? [detailPoem.overlay.split('\n')] : [];
+  }, [customSlidesKey, detailPoem?.overlay]);
+  const measureLines = sourceSlides.flat();
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(
     savedParsed?.activePoemId ?? id ?? null,
   );
   const [currentSlide, setCurrentSlide] = useState(0);
+  // Bumped on orientation change so the slide remounts and replays its reveal animations;
+  // without it the key stays 0 and React reuses the nodes, leaving the CSS animations done.
+  const [layoutGen, setLayoutGen] = useState(0);
   const [slideDir, setSlideDir] = useState(1); // 1 = next/down, -1 = prev/up
   const [upBtnVisible, setUpBtnVisible] = useState(false);
   const [downBtnVisible, setDownBtnVisible] = useState(true);
@@ -202,54 +219,53 @@ export default function Poems() {
   // Measure overlay lines and split into pages that fit the available viewport height
   useLayoutEffect(() => {
     if (!id || !detailPoem || detailPages !== null) return;
-    if (
-      detailPoem.customSlidesEnabled &&
-      detailPoem.customSlides &&
-      detailPoem.customSlides.length > 0
-    ) {
-      const pages = detailPoem.customSlides.map((s) => s.split('\n'));
-      setDetailPages(pages);
-      if (pages.length === 1) {
-        setBackBtnVisible(true);
-        setDownBtnVisible(false);
-      } else {
-        setDownBtnVisible(true);
-      }
-      return;
-    }
-    if (!detailPoem.overlay) return;
-    const overlay = document.querySelector<HTMLElement>('.detail-overlay');
-    if (!overlay) {
+    if (sourceSlides.length === 0) return;
+    const detail = poemDetailRef.current;
+    // Always measure the hidden full-poem copy, never the visible slide — see .detail-measure
+    const measure = detail?.querySelector<HTMLElement>('.detail-measure .detail-overlay');
+    if (!detail || !measure) {
       setDetailPages([detailLines]);
       setBackBtnVisible(true);
       setDownBtnVisible(false);
       return;
     }
-    const container = overlay.closest<HTMLElement>('.detail-image-container');
+    // Padding comes from the real container; CSS media queries have already switched it to
+    // the current orientation even while the outgoing slide is still on screen.
+    const container = detail.querySelector<HTMLElement>('.detail-image-container');
     const cs = container ? getComputedStyle(container) : null;
     // Measure the rendered slide instead of deriving it from window.innerHeight. The CSS
     // sizes .poem-detail in svh/dvh, but window.innerHeight tracks the live visual
     // viewport — so arriving from an already-scrolled grid (URL bar collapsed)
     // over-estimated the height by the toolbar, doubled in landscape, and packed too many
     // lines per page, running the text under the down arrow.
-    const detail = overlay.closest<HTMLElement>('.poem-detail');
-    const slideH = detail ? detail.getBoundingClientRect().height : window.innerHeight - 72;
-    const os = getComputedStyle(overlay);
+    const slideH = detail.getBoundingClientRect().height;
+    const os = getComputedStyle(measure);
     const overlayPadV = parseFloat(os.paddingTop) + parseFloat(os.paddingBottom);
     const containerPadV = cs ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 160;
     const available = slideH - containerPadV - overlayPadV;
-    const spans = Array.from(overlay.querySelectorAll<HTMLElement>('.detail-overlay-line'));
-    const pages: string[][] = [[]];
-    let accH = 0;
-    for (let i = 0; i < spans.length; i++) {
-      const h = spans[i].getBoundingClientRect().height;
-      if (accH + h > available && pages[pages.length - 1].length > 0) {
-        pages.push([]);
-        accH = 0;
+    const spans = Array.from(measure.querySelectorAll<HTMLElement>('span'));
+    // Walk the author's slides in order, breaking a slide across pages when it outgrows
+    // the viewport. Pages never span two source slides, so hand-authored breaks survive
+    // while an over-long one is subdivided instead of overflowing off-screen.
+    const pages: string[][] = [];
+    let idx = 0;
+    for (const slide of sourceSlides) {
+      let current: string[] = [];
+      let accH = 0;
+      for (const line of slide) {
+        const h = spans[idx]?.getBoundingClientRect().height ?? 0;
+        idx += 1;
+        if (accH + h > available && current.length > 0) {
+          pages.push(current);
+          current = [];
+          accH = 0;
+        }
+        current.push(line);
+        accH += h;
       }
-      pages[pages.length - 1].push(detailLines[i]);
-      accH += h;
+      if (current.length > 0) pages.push(current);
     }
+    if (pages.length === 0) pages.push([]);
     setDetailPages(pages);
     if (pages.length === 1) {
       setBackBtnVisible(true);
@@ -257,7 +273,30 @@ export default function Poems() {
     } else {
       setDownBtnVisible(true);
     }
-  }, [id, detailPages, detailPoem?.overlay, detailPoem?.customSlides]);
+  }, [id, detailPages, sourceSlides]);
+
+  // Rotating changes the slide height (portrait is one viewport, landscape two) and the
+  // container padding, but the effect above only runs once per poem — so the split made
+  // for the old orientation overflowed. Clearing detailPages re-runs it.
+  // Deliberately matchMedia and not a resize listener: Android fires resize whenever the
+  // URL bar collapses during a scroll, which would re-paginate constantly mid-read.
+  useEffect(() => {
+    if (!id) return;
+    const mq = window.matchMedia('(orientation: landscape)');
+    const repaginate = () => {
+      setDetailPages(null);
+      setCurrentSlide(0); // page count changes, so the old index may not exist
+      setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
+      setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
+      setUpBtnVisible(false);
+      setDownBtnVisible(true);
+      setBackBtnVisible(false);
+      // Rotating can leave the reader part-way down a slide that no longer exists
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    mq.addEventListener('change', repaginate);
+    return () => mq.removeEventListener('change', repaginate);
+  }, [id]);
 
   useEffect(
     () => () => {
@@ -506,6 +545,21 @@ export default function Poems() {
           className="detail-fixed-bg detail-img-anim"
         />
 
+        {/* Hidden copy of the whole poem that pagination measures. It lives outside
+            AnimatePresence so it is always mounted: measuring the visible slide meant
+            measuring whichever page happened to be on screen (and during a transition
+            mode="wait" hasn't mounted the incoming one yet), so rotating from a later
+            page silently dropped every line that wasn't in it. */}
+        <div className="detail-measure" aria-hidden="true">
+          <p className="detail-overlay">
+            {measureLines.map((line, i) => (
+              <span key={i} className="detail-overlay-line-revealed">
+                {line || ' '}
+              </span>
+            ))}
+          </p>
+        </div>
+
         {/* Cold-cache loading prompt; fades out as the image + text fade in */}
         <AnimatePresence>
           {!detailImgReady && (
@@ -541,7 +595,8 @@ export default function Poems() {
         {/* Vertical carousel: AnimatePresence swaps pages with a direction-aware fade+translate */}
         <AnimatePresence initial={false} custom={slideDir} mode="wait">
           <motion.div
-            key={currentSlide}
+            key={`${layoutGen}-${currentSlide}`}
+            className="detail-slide"
             custom={slideDir}
             variants={slideVariants}
             initial="enter"
