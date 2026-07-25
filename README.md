@@ -43,6 +43,7 @@ All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) beh
 | **Cloudinary** | Image upload & hosting |
 | **JWT** | Admin authentication |
 | **Biome** | Linting & formatting (one tool, replaces ESLint + Prettier) |
+| **Playwright** | Layout regression tests across desktop and mobile viewports |
 
 ---
 
@@ -53,7 +54,7 @@ packages/
 ├── shared/src/index.ts         # Poem type + hardcoded fallback data
 ├── api/src/                    # Express server (port 4000)
 │   ├── index.ts
-│   ├── routes/                 # auth.ts, poems.ts
+│   ├── routes/                 # auth.ts, contact.ts, poems.ts
 │   └── middleware/requireAuth.ts
 └── web/src/                    # Vite React app (port 3000)
     ├── App.tsx                 # Routes + PoemsProvider
@@ -77,6 +78,7 @@ npm run typecheck  # tsc across all packages (via Turbo)
 npm run lint       # Biome linter
 npm run format     # Biome auto-format
 npm run check      # lint + format verification (CI)
+npm run test:e2e   # Playwright layout tests (3 viewports)
 ```
 
 Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](https://biomejs.dev)** (config in `biome.json`); type-checking is each package's `typecheck` script, orchestrated by Turbo.
@@ -85,10 +87,11 @@ Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](
 
 ## Deployment
 
-- **Frontend → GitHub Pages** via `.github/workflows/deploy.yml` (triggers on push to `main`).
+- **Frontend → GitHub Pages** via `.github/workflows/ci.yml` (triggers on push to `main`). The deploy job runs `needs: [verify, e2e]`, so lint, typecheck, build and the layout tests all have to pass before anything publishes — a red build simply does not ship.
+- **Node 22 is required** (`.nvmrc`). The compiled API imports raw TypeScript from `packages/shared`, which only loads on a runtime that strips types; on Node 20 it fails pointing at another package with no hint why.
 - **API → Render** (free tier). Set `CORS_ORIGIN` (`https://<your-username>.github.io`) on Render, and add the deployed API URL as the `VITE_API_URL` GitHub Actions secret so the Pages build can reach it.
   - Build: `npm install && cd packages/api && npm run build` — Start: `node packages/api/dist/index.js`
-  - Optional safety step: use `npm run typecheck && npm run build` as the build command so a type error can't deploy (the API package type-checks via `typecheck`; there is no per-package `lint` — Biome linting runs from the repo root).
+  - Infrastructure is described in `render.yaml`; reconcile it against the dashboard before applying it as a Blueprint.
 
 ---
 
