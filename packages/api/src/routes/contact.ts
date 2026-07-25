@@ -40,6 +40,13 @@ function transport() {
     port,
     secure: port === 465, // 465 is implicit TLS; 587 upgrades via STARTTLS
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    // Nodemailer waits 2 minutes to connect by default. When the host cannot reach the
+    // mail server at all, that leaves the visitor watching a spinner for the full two
+    // minutes before it fails. Fail in seconds instead — a mail server that has not
+    // answered in 15s is not going to.
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 }
 
@@ -111,7 +118,13 @@ contactRouter.post('/', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (err) {
-    console.error('[contact] send failed:', err);
+    // Log the code and response explicitly: the bare error object renders as [Object] in
+    // Render's log view, which hides exactly the part that identifies the cause
+    // (ETIMEDOUT = cannot reach the server, EAUTH = credentials rejected, 5xx = refused).
+    const e = err as { code?: string; command?: string; response?: string; message?: string };
+    console.error(
+      `[contact] send failed: code=${e.code ?? 'none'} command=${e.command ?? 'none'} response=${e.response ?? 'none'} message=${e.message ?? String(err)}`,
+    );
     res.status(502).json({ error: 'Could not send the message' });
   }
 });

@@ -37,14 +37,24 @@ export interface ContactMessage {
 }
 
 export async function apiSendContact(msg: ContactMessage): Promise<void> {
-  const res = await fetch(`${BASE}/api/contact`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(msg),
-  });
-  if (!res.ok) {
-    // 429 gets its own message; the visitor can act on "wait" but not on "bad gateway".
-    throw new Error(res.status === 429 ? 'rate-limited' : 'failed');
+  // Without a deadline the button sits on "Sending…" indefinitely if the API is slow to
+  // wake or the mail server is unreachable. 30s is past a normal send (a few seconds) but
+  // well short of giving up on the visitor.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 30_000);
+  try {
+    const res = await fetch(`${BASE}/api/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(msg),
+      signal: abort.signal,
+    });
+    if (!res.ok) {
+      // 429 gets its own message; the visitor can act on "wait" but not on "bad gateway".
+      throw new Error(res.status === 429 ? 'rate-limited' : 'failed');
+    }
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -1607,6 +1607,21 @@ h3 {
   border-color: var(--input-border-focus);
 }
 
+/* Chrome paints its own near-white background on autofilled fields and ignores
+   background-color overrides, so in dark mode a remembered email turned the field white.
+   A large inset shadow is the one thing that does cover it; text-fill-color and caret-color
+   have to be set alongside or the text is dark-on-dark. */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active,
+.form-group textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  -webkit-text-fill-color: var(--text-primary);
+  caret-color: var(--text-primary);
+}
+
 .form-group textarea {
   resize: vertical;
   min-height: 120px;
