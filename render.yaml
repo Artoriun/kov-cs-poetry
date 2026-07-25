@@ -37,3 +37,16 @@ services:
         sync: false
       - key: FIREBASE_STORAGE_BUCKET
         sync: false
+      # Contact form. Any SMTP provider works — the code is not tied to one. Without
+      # these the endpoint returns 503 rather than pretending to have sent.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      # Defaults to pjcr.dekeijzer@gmail.com if unset.
+      - key: CONTACT_TO
+        sync: false

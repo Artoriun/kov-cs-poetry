@@ -45,6 +45,9 @@ export const hu: Dict = {
     subject: 'Tárgy',
     message: 'Üzenet',
     send: 'Üzenet küldése',
+    sending: 'Küldés…',
+    error: 'Az üzenetet nem sikerült elküldeni. Kérem, próbálja újra később.',
+    tooMany: 'Túl sok üzenetet küldött. Kérem, próbálja újra később.',
   },
   admin: {
     title: 'Admin',

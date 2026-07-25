@@ -103,7 +103,17 @@ FIREBASE_PROJECT_ID=your-project-id
 FIREBASE_CLIENT_EMAIL=your-client-email
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
+
+# Contact form — any SMTP provider. Omit these and POST /api/contact returns 503
+# rather than silently discarding messages.
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@example.com
+SMTP_PASS=your-app-password
+CONTACT_TO=pjcr.dekeijzer@gmail.com   # optional; this is the default
 ```
+
+For Gmail, `SMTP_PASS` has to be an [App Password](https://myaccount.google.com/apppasswords) — a normal account password is rejected — and the account needs 2-Step Verification switched on. The same variables are declared in `render.yaml` for production.
 
 For the Pages build, set `VITE_API_URL` as a repository secret. Without it, the frontend falls back to relative `/api` paths (local dev behind the Vite proxy).
 
