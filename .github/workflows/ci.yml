@@ -1,8 +1,11 @@
 name: CI
 
-# Validates every push and pull request. Deploying used to be the only automation, so a
-# commit that failed typecheck or lint reached main and was only caught by the deploy
-# going red afterwards.
+# Validates every push and pull request, and publishes only if those checks pass.
+#
+# Deploying used to be a separate workflow on the same `push: main` trigger, so the two
+# ran concurrently and the shorter one usually won — a commit with failing tests shipped
+# to production regardless, and the checks only told you afterwards. Keeping the deploy in
+# the same workflow behind `needs:` makes that ordering structural rather than a policy.
 on:
   push:
     branches: ['main']
@@ -78,3 +81,52 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: [verify, e2e]
+    # Never from a pull request — a PR build must not publish to production.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Builds again rather than reusing the verify job's output on purpose: this one needs
+      # VITE_API_URL baked in, and verify builds without secrets. Reusing that artifact
+      # would publish a bundle pointing at an empty API URL.
+      - name: Build All Packages
+        run: npx turbo run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp packages/web/dist/index.html packages/web/dist/404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'packages/web/dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
