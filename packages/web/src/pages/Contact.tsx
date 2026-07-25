@@ -1,9 +1,12 @@
 import { type FormEvent, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useT } from '../i18n';
 import { apiSendContact } from '../lib/api';
 
 export default function Contact() {
   const t = useT();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,10 +35,21 @@ export default function Contact() {
   }
 
   if (submitted) {
+    // location.key is 'default' only for the entry the app was loaded on, so this
+    // distinguishes "navigated here from another page" from "opened /contact directly or
+    // refreshed" — where going back would leave the site entirely.
+    const cameFromWithinSite = location.key !== 'default';
     return (
-      <div className="page contact-page">
+      <div className="page contact-page is-success">
         <h1>{t.contact.title}</h1>
         <p className="contact-success">{t.contact.success}</p>
+        <button
+          type="button"
+          className="btn-submit contact-return-btn"
+          onClick={() => (cameFromWithinSite ? navigate(-1) : navigate('/'))}
+        >
+          {t.contact.back}
+        </button>
       </div>
     );
   }
