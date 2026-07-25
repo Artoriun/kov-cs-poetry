@@ -1,13 +1,24 @@
 import { POEMS } from '@gedichtenv2/shared';
 import { test as base } from '@playwright/test';
 
-// The app has no offline fallback — on a failed fetch it renders nothing — so the API is
-// stubbed with the shared fixtures. Keeps the suite deterministic and independent of the
-// Render instance, which sleeps on the free tier.
+// 1x1 transparent PNG — the poem images are sized entirely by CSS (object-fit: cover), so
+// a stub lays out identically while removing every Cloudinary round-trip.
+const PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 export const test = base.extend({
   page: async ({ page }, use) => {
+    // The app has no offline fallback — a failed fetch renders nothing — so serve the
+    // shared fixtures. Also keeps the suite off the Render instance, which sleeps.
     await page.route('**/api/poems', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(POEMS) }),
+    );
+    // Network variance is the enemy of geometric assertions: image loads gate the reveal,
+    // and a late webfont changes text metrics and therefore line wrapping.
+    await page.route('**res.cloudinary.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL }),
     );
     await use(page);
   },
@@ -30,8 +41,18 @@ export const PAGES = [
   '/contact',
 ];
 
-/** Waits for the poem to be laid out — the reveal is gated on images, so settle first. */
+/**
+ * Waits until the page is actually measurable: fonts resolved (they change wrapping) and
+ * the image-gated reveal finished. Polls rather than sleeping a fixed time so it holds up
+ * on a slow CI runner.
+ */
 export async function settled(page: import('@playwright/test').Page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1200);
+  await page.waitForLoadState('domcontentloaded');
+  await page.evaluate(() => document.fonts.ready);
+  // The reveal latches a class once the first batch of images is cached; the loading
+  // prompt disappearing is the observable signal that layout has stopped moving.
+  await page
+    .waitForFunction(() => !document.querySelector('.loading-prompt'), null, { timeout: 15_000 })
+    .catch(() => {});
+  await page.waitForTimeout(600);
 }
