@@ -656,7 +656,11 @@ h3 {
   justify-content: center;
   height: calc(100vh - var(--header-height, 72px));
   height: calc(100svh - var(--header-height, 72px));
+  /* Reserve the title strip above and the READ MORE button below (32px offset + ~36px
+     tall), so the overlay centres between the two rather than against the viewport
+     bottom — otherwise the padding is one-sided and the text sits too low. */
   padding-top: 80px;
+  padding-bottom: 72px;
 }
 
 .carousel-image-container:has(.carousel-overlay) img {
@@ -683,7 +687,8 @@ h3 {
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
   max-width: 90%;
-  max-height: calc(100svh - var(--header-height, 72px) - 120px);
+  /* Matches the container's 80px + 72px padding so a long poem can't grow past it */
+  max-height: calc(100svh - var(--header-height, 72px) - 152px);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: "Esteban", serif;
@@ -1259,17 +1264,44 @@ h3 {
   text-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
 }
 
+/* The slide wrapper has to carry the height so the container below can fill it */
+.poem-detail .detail-slide {
+  height: 100%;
+}
+
 .poem-detail .detail-image-container:has(.detail-overlay) {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* Without a height this box is content-sized, so justify-content had nothing to
+     centre within and the text was top-anchored with all the slack falling below it.
+     Filling the slide lets the padding reserve the title above and the scroll-down
+     button below (32px offset + 42px tall), centring the poem between the two. */
+  height: 100%;
   padding-top: 80px;
   padding-bottom: 80px;
 }
 
 .poem-detail .detail-image-container.has-title:has(.detail-overlay) {
-  padding-top: 140px;
+  padding-top: 96px;
+}
+
+/* Off-screen measuring copy of the full poem. Must match the real overlay's width so
+   lines wrap identically; visibility:hidden keeps it laid out (and therefore measurable)
+   while absolute positioning keeps it out of the visible flow. */
+.detail-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.detail-measure .detail-overlay {
+  margin: 0 auto;
 }
 
 .detail-overlay {
@@ -1885,6 +1917,9 @@ html.dark-mode .header-login-btn:hover {
   }
 
   .poem-detail .detail-image-container:has(.detail-overlay) {
+    /* .poem-detail is two viewport-heights tall in landscape, so filling it would
+       centre the poem across the fold. Stay content-sized and top-anchored here. */
+    height: auto;
     padding-top: 72px;
     padding-bottom: 100px;
   }
