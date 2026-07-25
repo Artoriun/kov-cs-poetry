@@ -113,6 +113,18 @@ SMTP_PASS=your-app-password
 CONTACT_TO=pjcr.dekeijzer@gmail.com   # optional; this is the default
 ```
 
+### Health endpoints
+
+| Endpoint | Checks | Use |
+| --- | --- | --- |
+| `/health` | process is alive | Render's health check — must stay shallow, or a Firebase blip restarts a healthy container |
+| `/health/deps` | reads from Firestore | uptime monitoring — returns 503 when the data layer is broken |
+
+`/health/deps` exists because `GET /api/poems` falls back to the hardcoded poems if
+Firestore fails, answering 200. That keeps the site up for visitors, but without a deeper
+probe the API can look healthy while admin edits have silently stopped appearing. The
+result is cached for 30s so a public flood cannot burn the Firestore quota.
+
 For Gmail, `SMTP_PASS` has to be an [App Password](https://myaccount.google.com/apppasswords) — a normal account password is rejected — and the account needs 2-Step Verification switched on. The same variables are declared in `render.yaml` for production.
 
 For the Pages build, set `VITE_API_URL` as a repository secret. Without it, the frontend falls back to relative `/api` paths (local dev behind the Vite proxy).
