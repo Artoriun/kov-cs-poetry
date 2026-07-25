@@ -123,7 +123,13 @@ h3 {
 .site {
   display: flex;
   flex-direction: column;
+  /* dvh, not vh or svh. vh is the URL-bar-retracted height, so the footer was parked
+     below what is on screen. svh fixes that but is static, so once the bar retracts the
+     page is shorter than the viewport and a strip opens up past the footer. dvh tracks
+     the live viewport, so the page always ends exactly where the screen does. This is
+     layout only -- nothing is measured against it, so it can change freely. */
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .main-content {
@@ -1164,15 +1170,24 @@ h3 {
   overflow: hidden;
 }
 
-/* Custom slides are authored as complete pages and are shown verbatim, so the slide
-   grows to whatever height its text needs and scrolls past the viewport rather than
-   being paginated to fit. Only min-height is pinned, so a short slide still fills the
-   screen and a long one is not clipped. */
+/* Custom slides are authored as complete pages and shown verbatim, never paginated to
+   fit. The slide fills the space left between header and footer and grows past it only
+   when the text needs more, so a short slide reaches exactly the footer (its backdrop
+   covering the gap, the footer pinned to the bottom of the viewport) and a long one
+   pushes the footer down and scrolls. flex rather than a min-height, so the floor is
+   "whatever is left of the viewport" instead of a fixed figure. The chain stays flex all
+   the way down to the text box — see .detail-slide below. */
+.main-content:has(.poem-detail.custom-slides) {
+  display: flex;
+  flex-direction: column;
+}
+
 .poem-detail.custom-slides {
   height: auto;
-  min-height: calc(100vh - var(--header-height, 72px));
-  min-height: calc(100svh - var(--header-height, 72px));
+  flex: 1 1 auto;
   overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ===== DETAIL PAGE OVERLAY ===== */
@@ -1298,16 +1313,24 @@ h3 {
   padding-top: 96px;
 }
 
-/* Let the slide and its text box grow with the content instead of being pinned to the
-   viewport, so a long authored slide is scrolled rather than clipped. */
+/* The slide fills the height the poem was stretched to, so a short one gives the existing
+   justify-content:center room to centre its text in rather than stacking it at the top,
+   and a long one still grows with its content instead of being clipped. */
 .poem-detail.custom-slides .detail-slide {
+  flex: 1 1 auto;
   height: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
+/* flex rather than height:100%: a percentage height does not resolve against a parent
+   that was itself sized by flex-grow, which left the text box content-sized and the poem
+   stacked at the top of a stretched slide. */
 .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
+  flex: 1 1 auto;
   height: auto;
-  min-height: calc(100vh - var(--header-height, 72px));
-  min-height: calc(100svh - var(--header-height, 72px));
+  min-height: 0;
 }
 
 /* Off-screen measuring copy of the full poem. Must match the real overlay's width so
@@ -1318,6 +1341,13 @@ h3 {
   top: 0;
   left: 0;
   width: 100%;
+  /* Zero-height and clipped: an absolutely positioned box still enlarges the scrollable
+     area of the page, so at full poem length this pushed the document ~176px past the
+     footer and the fixed poem image showed through the gap. .poem-detail used to be
+     overflow:hidden, which masked it; custom slides need overflow:visible. Clipping here
+     contains it instead. The child is still laid out, so it stays measurable. */
+  height: 0;
+  overflow: hidden;
   visibility: hidden;
   pointer-events: none;
   z-index: -1;
@@ -1927,11 +1957,10 @@ html.dark-mode .header-login-btn:hover {
      between the last line and the button. */
   .poem-detail.custom-slides {
     height: auto;
-    min-height: calc(100svh - var(--header-height, 72px));
   }
 
   .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
-    min-height: calc(100svh - var(--header-height, 72px));
+    min-height: 0;
   }
 
   .poem-detail .slick-vertical .slick-slide {
