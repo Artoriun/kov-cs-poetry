@@ -250,20 +250,38 @@ export default function Poems() {
     const pages: string[][] = [];
     let idx = 0;
     for (const slide of sourceSlides) {
-      let current: string[] = [];
+      const heights = slide.map((_, k) => spans[idx + k]?.getBoundingClientRect().height ?? 0);
+      idx += slide.length;
+
+      // First: the fewest pages this slide can occupy, by filling each to capacity.
+      let needed = 1;
       let accH = 0;
-      for (const line of slide) {
-        const h = spans[idx]?.getBoundingClientRect().height ?? 0;
-        idx += 1;
-        if (accH + h > available && current.length > 0) {
-          pages.push(current);
-          current = [];
+      for (const h of heights) {
+        if (accH + h > available && accH > 0) {
+          needed += 1;
           accH = 0;
         }
-        current.push(line);
         accH += h;
       }
-      if (current.length > 0) pages.push(current);
+
+      // Then spread the lines evenly over exactly that many pages. Filling each page to
+      // capacity instead would strand the remainder on a near-empty page whenever a slide
+      // only just overflows — an 11-line slide against a 10-line viewport came out as
+      // 10 + 1 rather than 6 + 5. Page count is unchanged, so this costs no extra paging.
+      let i = 0;
+      for (let p = 0; i < slide.length; p++) {
+        const target = Math.ceil((slide.length - i) / Math.max(1, needed - p));
+        const current: string[] = [];
+        let h = 0;
+        while (i < slide.length) {
+          if (current.length >= target) break;
+          if (h + heights[i] > available && current.length > 0) break;
+          current.push(slide[i]);
+          h += heights[i];
+          i += 1;
+        }
+        pages.push(current);
+      }
     }
     if (pages.length === 0) pages.push([]);
     setDetailPages(pages);
