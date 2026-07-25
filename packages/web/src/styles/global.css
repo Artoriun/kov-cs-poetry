@@ -1607,6 +1607,16 @@ h3 {
   border-color: var(--input-border-focus);
 }
 
+/* Subject and message keep spellcheck — it is useful there — but a flagged word is painted
+   in the browser's own colour, which reads as black against the dark theme. These highlight
+   pseudo-elements keep the text colour and leave only the underline to mark the word. */
+.form-group input::spelling-error,
+.form-group textarea::spelling-error,
+.form-group input::grammar-error,
+.form-group textarea::grammar-error {
+  color: var(--text-primary);
+}
+
 /* Chrome paints its own near-white background on autofilled fields and ignores
    background-color overrides, so in dark mode a remembered email turned the field white.
    A large inset shadow is the one thing that does cover it; text-fill-color and caret-color

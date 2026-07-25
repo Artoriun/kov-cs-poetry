@@ -60,12 +60,35 @@ export default function Contact() {
       <form className="contact-form" onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="name">{t.contact.name}</label>
-          <input type="text" id="name" name="name" maxLength={100} required />
+          {/* Same reasoning as the email field: proper nouns get flagged constantly. */}
+          <input
+            type="text"
+            id="name"
+            name="name"
+            maxLength={100}
+            spellCheck={false}
+            autoComplete="name"
+            required
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="email">{t.contact.email}</label>
-          <input type="email" id="email" name="email" maxLength={200} required />
+          {/* An address is never a dictionary word, so autocorrect only gets in the way —
+              and while a word is being marked, the browser paints it in its own colour,
+              which showed as black text in dark mode. Turning the marking off fixes the
+              cause rather than the symptom. */}
+          <input
+            type="email"
+            id="email"
+            name="email"
+            maxLength={200}
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
+            autoComplete="email"
+            required
+          />
         </div>
 
         <div className="form-group">
