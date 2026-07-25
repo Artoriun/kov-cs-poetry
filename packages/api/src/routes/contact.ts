@@ -69,8 +69,15 @@ contactRouter.post('/', async (req, res) => {
     res.status(400).json({ error: 'One or more fields are too long' });
     return;
   }
-  if (!EMAIL.test(email) || !HEADER_SAFE.test(email) || !HEADER_SAFE.test(subject)) {
-    res.status(400).json({ error: 'Invalid email address or subject' });
+  // name is included too: it lands in the From and Reply-To display names, so a newline in
+  // it is just as good an injection vector as one in the subject.
+  if (
+    !EMAIL.test(email) ||
+    !HEADER_SAFE.test(email) ||
+    !HEADER_SAFE.test(subject) ||
+    !HEADER_SAFE.test(name)
+  ) {
+    res.status(400).json({ error: 'Invalid name, email address or subject' });
     return;
   }
 
@@ -89,12 +96,16 @@ contactRouter.post('/', async (req, res) => {
   }
 
   try {
+    // Quotes would terminate the display name early, so swap them out.
+    const display = name.replace(/"/g, "'");
     await mailer.sendMail({
       to: TO,
-      // From must be the authenticated mailbox or the provider will reject it; the
-      // sender's address goes in replyTo so a reply reaches them directly.
-      from: `"Kovács — kapcsolat" <${process.env.SMTP_USER}>`,
-      replyTo: `"${name.replace(/"/g, "'")}" <${email}>`,
+      // The address must be the authenticated mailbox — Gmail rejects or rewrites a From
+      // it did not authenticate, which is the point of SPF/DMARC. Only the display name is
+      // free, so the visitor's name goes there: the inbox shows "Jane Doe (via Kovács)"
+      // rather than your own name against every enquiry.
+      from: `"${display} (via Kovács)" <${process.env.SMTP_USER}>`,
+      replyTo: `"${display}" <${email}>`,
       subject: `[kovacs] ${subject}`,
       text: `From: ${name} <${email}>\n\n${message}`,
     });
