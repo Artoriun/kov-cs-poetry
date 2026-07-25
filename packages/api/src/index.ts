@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './loadEnv';
 import cors from 'cors';
 import express from 'express';
 import { authRouter } from './routes/auth';
