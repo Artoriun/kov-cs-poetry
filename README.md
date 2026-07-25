@@ -1,6 +1,6 @@
 # Kovács — Modern Poetry Portfolio
 
-A responsive, bilingual (Hungarian/English) poetry portfolio built with **React**, **TypeScript**, **Vite**, **Motion**, and custom **CSS**. Elegant typography, immersive image overlays, an auto-advancing carousel, a full-screen swipeable poem reader, and a Firestore-backed admin portal — optimized for desktop and mobile.
+Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Swipeable full-screen poem reader, auto-advancing carousel, working contact form, WCAG AA contrast, and CI that gates every deploy on **Playwright** layout tests.
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
