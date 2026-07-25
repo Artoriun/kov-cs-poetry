@@ -27,6 +27,27 @@ export async function apiGetPoems(): Promise<Poem[]> {
   return res.json() as Promise<Poem[]>;
 }
 
+export interface ContactMessage {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  /** Honeypot — left empty by real users, filled by naive bots. */
+  website?: string;
+}
+
+export async function apiSendContact(msg: ContactMessage): Promise<void> {
+  const res = await fetch(`${BASE}/api/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(msg),
+  });
+  if (!res.ok) {
+    // 429 gets its own message; the visitor can act on "wait" but not on "bad gateway".
+    throw new Error(res.status === 429 ? 'rate-limited' : 'failed');
+  }
+}
+
 export async function apiAddPoem(): Promise<Poem> {
   const res = await fetch(`${BASE}/api/poems`, {
     method: 'POST',

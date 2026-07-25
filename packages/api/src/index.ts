@@ -2,10 +2,16 @@ import './loadEnv';
 import cors from 'cors';
 import express from 'express';
 import { authRouter } from './routes/auth';
+import { contactRouter } from './routes/contact';
 import { poemsRouter } from './routes/poems';
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
+
+// Render terminates TLS at its proxy, so without this req.ip is the proxy's address and
+// the contact form's per-IP rate limit would apply to every visitor collectively. One hop
+// only — trusting the whole chain would let a client spoof X-Forwarded-For.
+app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -23,6 +29,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/contact', contactRouter);
 app.use('/api/poems', poemsRouter);
 
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
