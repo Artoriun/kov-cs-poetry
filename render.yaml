@@ -1,27 +1,21 @@
-# Render Blueprint for the API.
+# Render Blueprint for the API — mirrors the service that was configured by hand in the
+# dashboard, so the config lives in git rather than only in a web UI.
 #
-# The service already exists and was configured by hand in Render's dashboard, so this
-# file describes it rather than being its source of truth. Reconcile it with the dashboard
-# before applying as a Blueprint — applying a mismatched one would reconfigure a working
-# service.
-#
-# The service runs the TypeScript directly via tsx, which is why tsx is a runtime
-# dependency rather than a dev one: Render installs with NODE_ENV=production and can skip
-# devDependencies. Running from source also sidesteps the fact that `node dist/index.js`
-# cannot work as things stand — the API imports POEMS from @gedichtenv2/shared, which
-# ships raw TypeScript, so Node fails on it at require time.
+# Node version matters here and is not incidental. The API imports POEMS from
+# @gedichtenv2/shared, which ships raw TypeScript (main: src/index.ts), so the compiled
+# dist/index.js requires a runtime that strips types on load — Node 22.18+ does this
+# natively. On Node 20 the same command dies with `Unexpected token 'export'` pointing at
+# packages/shared, with nothing to indicate the real cause. packages/api declares
+# engines.node accordingly.
 services:
   - type: web
     name: kov-cs-poetry
     runtime: node
     plan: free
-    # Region is whatever the existing service uses — set it before applying.
-    # region: frankfurt
+    region: frankfurt
     rootDir: .
-    # No compile step: the service runs from source, so a build would only emit a dist
-    # nothing loads. Type errors are caught by CI before merge instead.
-    buildCommand: npm ci
-    startCommand: npm start --workspace=packages/api
+    buildCommand: npm install && cd packages/api && npm run build
+    startCommand: node packages/api/dist/index.js
     healthCheckPath: /health
     autoDeploy: true
     envVars:
