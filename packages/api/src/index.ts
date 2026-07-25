@@ -15,6 +15,13 @@ const allowedOrigins = [
 app.use(cors({ origin: allowedOrigins, allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 
+// Liveness probe for Render's health check and for uptime monitoring. Deliberately does
+// not touch Firebase or Cloudinary: a health check that depends on downstream services
+// turns a blip in one of them into a restart loop.
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', uptime: Math.round(process.uptime()) });
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/poems', poemsRouter);
 

@@ -1,0 +1,45 @@
+# Render Blueprint for the API.
+#
+# The service already exists and was configured by hand in Render's dashboard, so this
+# file is a description of it rather than its source of truth. Before applying it as a
+# Blueprint, reconcile `buildCommand` and `startCommand` with what the dashboard actually
+# has — applying a mismatched Blueprint would reconfigure a working service.
+#
+# Note `npm start` (node dist/index.js) does NOT currently work: the API imports POEMS
+# from @gedichtenv2/shared, which ships raw TypeScript (main: src/index.ts), so Node
+# fails on it at require time. Whatever the dashboard runs today, it is not that script.
+# Options, cheapest first: run the TS directly with tsx (as `dev` does — it would need
+# moving from devDependencies to dependencies, since Render installs with NODE_ENV
+# =production and skips devDeps); or give `shared` a build step and point its main at the
+# compiled output; or bundle the API so dist is self-contained.
+services:
+  - type: web
+    name: kov-cs-poetry
+    runtime: node
+    plan: free
+    # Region is whatever the existing service uses — set it before applying.
+    # region: frankfurt
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace=packages/api
+    startCommand: npx tsx packages/api/src/index.ts
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      # Render injects PORT itself; the app already reads it.
+      # Secrets stay dashboard-managed — sync: false means "exists, value not in git".
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
