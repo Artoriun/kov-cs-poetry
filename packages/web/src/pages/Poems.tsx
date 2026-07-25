@@ -9,6 +9,7 @@ const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
 const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
 const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button appears
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
+const SLIDE_RESIZE = 450; // ms — must match the height transition on .poem-detail.custom-slides
 
 const optimizeUrl = (url: string, w = 400) =>
   url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`);
@@ -88,9 +89,10 @@ export default function Poems() {
   const measureLines = sourceSlides.flat();
   const usesCustomSlides = customSlidesKey !== '';
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
-  // Height of the poem's longest custom slide, so every slide reserves the same space
-  // and the footer doesn't hop as you page through. Null for measured poems.
-  const [slideFloor, setSlideFloor] = useState<number | null>(null);
+  // Height each custom slide needs, so switching slides animates the poem (and the footer
+  // below it) instead of snapping. Null for measured poems, whose pages are equal by
+  // construction and never change height.
+  const [slideHeights, setSlideHeights] = useState<number[] | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const [activePoemId, setActivePoemId] = useState<string | null>(
     savedParsed?.activePoemId ?? id ?? null,
@@ -197,7 +199,7 @@ export default function Poems() {
   // Reset all detail state when navigating to a different poem
   useLayoutEffect(() => {
     setDetailPages(null);
-    setSlideFloor(null);
+    setSlideHeights(null);
     setCurrentSlide(0);
     setSeenSlides(new Set<number>());
     setUpBtnVisible(false);
@@ -236,10 +238,10 @@ export default function Poems() {
       } else {
         setDownBtnVisible(true);
       }
-      // Reserve the height of the tallest slide. Authored slides differ in length, so
-      // once they outgrow the viewport the page height follows whichever one is showing
-      // and the footer visibly hops between slides. Pinning it to the longest keeps the
-      // footer still; shorter slides just centre in the space.
+      // Height each slide will need. Applied explicitly so the change between slides is a
+      // transition rather than a jump — an auto height has nothing to animate from, which
+      // is why the footer snapped up when a shorter slide came in. CSS min-height still
+      // floors it at one viewport, so short slides resolve to the same value and sit still.
       const el = poemDetailRef.current;
       const box = el?.querySelector<HTMLElement>('.detail-measure .detail-overlay');
       const wrap = el?.querySelector<HTMLElement>('.detail-image-container');
@@ -253,16 +255,15 @@ export default function Poems() {
           parseFloat(bcs.paddingBottom);
         const all = Array.from(box.querySelectorAll<HTMLElement>('span'));
         let at = 0;
-        let tallest = 0;
-        for (const slide of sourceSlides) {
+        const heights = sourceSlides.map((slide) => {
           let h = 0;
           for (let k = 0; k < slide.length; k++) {
             h += all[at + k]?.getBoundingClientRect().height ?? 0;
           }
           at += slide.length;
-          tallest = Math.max(tallest, h);
-        }
-        setSlideFloor(Math.ceil(tallest + padding));
+          return Math.ceil(h + padding);
+        });
+        setSlideHeights(heights);
       }
       return;
     }
@@ -349,7 +350,7 @@ export default function Poems() {
     const mq = window.matchMedia('(orientation: landscape)');
     const repaginate = () => {
       setDetailPages(null);
-      setSlideFloor(null); // line heights change with the orientation
+      setSlideHeights(null); // line heights change with the orientation
       setCurrentSlide(0); // page count changes, so the old index may not exist
       setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
       setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
@@ -507,8 +508,23 @@ export default function Poems() {
       return s;
     });
     setCurrentSlide(next);
-    if (window.innerHeight <= 500 && poemDetailRef.current) {
-      window.scrollTo({ top: poemDetailRef.current.offsetTop, behavior: 'smooth' });
+    // Land at the top of the incoming slide. Previously gated on a landscape-sized
+    // viewport, so in portrait you kept whatever scroll offset you had — pressing up from
+    // the last slide left you part-way down the one before it. Repeated once the height
+    // transition finishes: going to a taller slide, the page is still short at this point
+    // and the browser clamps the scroll a few pixels shy of the target.
+    const el = poemDetailRef.current;
+    if (el) {
+      // Where the top of the slide actually is depends on the header. While it is sticky
+      // it covers the first 72px of the page, so the slide reads as "at the top" at scroll
+      // 0; scrolling to the slide's own offset would tuck its first lines behind it. In
+      // landscape the header is relative and scrolls away, so there the offset is right.
+      const header = document.querySelector<HTMLElement>('.site-header');
+      const stickyHeader = header ? getComputedStyle(header).position === 'sticky' : true;
+      const target = stickyHeader ? 0 : el.offsetTop;
+      const toTop = () => window.scrollTo({ top: target, behavior: 'smooth' });
+      toTop();
+      window.setTimeout(toTop, SLIDE_RESIZE);
     }
   };
 
@@ -593,7 +609,7 @@ export default function Poems() {
       <div
         ref={poemDetailRef}
         className={`page poem-detail${detailImgReady ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
-        style={slideFloor ? { minHeight: slideFloor } : undefined}
+        style={slideHeights ? { height: slideHeights[currentSlide] } : undefined}
         onMouseDown={(e) => dragStart(e.clientY)}
         onMouseMove={(e) => dragMove(e.clientY)}
         onMouseUp={(e) => dragEnd(e.clientY)}

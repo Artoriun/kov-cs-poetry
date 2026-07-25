@@ -123,13 +123,7 @@ h3 {
 .site {
   display: flex;
   flex-direction: column;
-  /* dvh, not vh or svh. vh is the URL-bar-retracted height, so the footer was parked
-     below what is on screen. svh fixes that but is static, so once the bar retracts the
-     page is shorter than the viewport and a strip opens up past the footer. dvh tracks
-     the live viewport, so the page always ends exactly where the screen does. This is
-     layout only -- nothing is measured against it, so it can change freely. */
   min-height: 100vh;
-  min-height: 100dvh;
 }
 
 .main-content {
@@ -1171,23 +1165,21 @@ h3 {
 }
 
 /* Custom slides are authored as complete pages and shown verbatim, never paginated to
-   fit. The slide fills the space left between header and footer and grows past it only
-   when the text needs more, so a short slide reaches exactly the footer (its backdrop
-   covering the gap, the footer pinned to the bottom of the viewport) and a long one
-   pushes the footer down and scrolls. flex rather than a min-height, so the floor is
-   "whatever is left of the viewport" instead of a fixed figure. The chain stays flex all
-   the way down to the text box — see .detail-slide below. */
-.main-content:has(.poem-detail.custom-slides) {
-  display: flex;
-  flex-direction: column;
-}
-
+   fit. Same footprint as a paginated poem — one viewport tall, so the footer sits just
+   past the fold — except this one is a floor rather than a fixed height, because an
+   authored slide too long for the screen has to grow instead of being cut. A short slide
+   centres in the viewport; the chain stays flex down to the text box, see .detail-slide. */
 .poem-detail.custom-slides {
   height: auto;
-  flex: 1 1 auto;
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100svh - var(--header-height, 72px));
   overflow: visible;
   display: flex;
   flex-direction: column;
+  /* Slides differ in length, so the poem — and the footer under it — changes height
+     between them. JS sets an explicit height per slide (auto has nothing to animate
+     from) and this eases it, matching the 0.45s slide transition. */
+  transition: height 0.45s ease;
 }
 
 /* ===== DETAIL PAGE OVERLAY ===== */
@@ -1316,8 +1308,11 @@ h3 {
 /* The slide fills the height the poem was stretched to, so a short one gives the existing
    justify-content:center room to centre its text in rather than stacking it at the top,
    and a long one still grows with its content instead of being clipped. */
+/* 1 0 auto, so it grows to fill the row when the poem is short (giving the centring
+   below something to centre in) but never shrinks below its text when the poem is long —
+   shrinking is what let a tall slide overflow the row instead of scrolling it. */
 .poem-detail.custom-slides .detail-slide {
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   height: auto;
   min-height: 0;
   display: flex;
@@ -1326,9 +1321,11 @@ h3 {
 
 /* flex rather than height:100%: a percentage height does not resolve against a parent
    that was itself sized by flex-grow, which left the text box content-sized and the poem
-   stacked at the top of a stretched slide. */
+   stacked at the top of a stretched slide. `safe` centre so an over-long poem falls back
+   to top-aligned instead of overflowing off both ends, where the top would be unreachable. */
 .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
-  flex: 1 1 auto;
+  justify-content: safe center;
+  flex: 1 0 auto;
   height: auto;
   min-height: 0;
 }
