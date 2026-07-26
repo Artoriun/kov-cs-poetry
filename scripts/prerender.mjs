@@ -218,9 +218,16 @@ for (const route of routes) {
     failures++;
   }
 
+  // Drop the page-load scrim from the captured markup and flag the document so App does
+  // not render one either. It exists to cover the flat background while the parchment
+  // image loads; here the page is already painted, so all it can do is hide it — and
+  // React re-creating it on mount replays the fade from opacity 1, which reads as a flash
+  // on mobile and left Lighthouse reporting NO_LCP.
+  const body = root.replace(/<div class="page-load-scrim"[^>]*><\/div>/g, '');
   const html = template
+    .replace('<html ', '<html data-prerendered ')
     .replace(/<title>.*?<\/title>/s, head(route))
-    .replace('<div id="root"></div>', `<div id="root">${root}</div>`);
+    .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
 
   const out =
     route.path === '/' ? join(DIST, 'index.html') : join(DIST, route.path.slice(1), 'index.html');

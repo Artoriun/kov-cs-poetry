@@ -19,11 +19,25 @@ function RouteMeta() {
   return null;
 }
 
+/**
+ * The scrim hides the flat background colour while the parchment image loads, then fades.
+ * On a prerendered page it does the opposite: the markup is already painted, and React
+ * re-creating this element on mount restarts the 400ms animation from opacity 1, covering
+ * content the visitor could already see. Under mobile CPU throttling the remount lands
+ * after the prerendered scrim has finished, so it reads as a flash — and it destroyed the
+ * Largest Contentful Paint measurement, which reported NO_LCP on most mobile runs.
+ *
+ * Read once at module scope: the prerenderer strips the scrim from its output and marks
+ * the document, so this is false for every prerendered route and true in dev.
+ */
+const NEEDS_SCRIM =
+  typeof document === 'undefined' || !document.documentElement.hasAttribute('data-prerendered');
+
 export default function App() {
   return (
     <PoemsProvider>
       <RouteMeta />
-      <div className="page-load-scrim" aria-hidden="true" />
+      {NEEDS_SCRIM && <div className="page-load-scrim" aria-hidden="true" />}
       <Routes>
         {/* The admin portal runs in English by default, independently of the public site,
             which stays Hungarian. A nested provider keeps the two separate: switching
