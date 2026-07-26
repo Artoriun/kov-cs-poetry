@@ -1065,8 +1065,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                         if (i !== dst) {
                           setOrderedPoems((prev) => {
                             const next = [...prev];
-                            const [moved] = next.splice(i, 1);
-                            next.splice(dst, 0, moved);
+                            // Swap, matching the mouse path's handleDrop(i, true). Touch
+                            // drag is a separate code path, so it has to be kept in step.
+                            [next[i], next[dst]] = [next[dst], next[i]];
                             apiUpdateOrder(next.map((p) => p.id))
                               .then(() => refreshPoems())
                               .catch(() => {});
