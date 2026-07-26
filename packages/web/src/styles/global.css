@@ -417,6 +417,9 @@ h3 {
      slide (and its full-height image) renders in. */
   min-height: calc(100vh - var(--header-height, 72px));
   min-height: calc(100dvh - var(--header-height, 72px));
+  /* dvh tracks the live viewport, so this grows when Android retracts the URL bar on
+     scroll. Eased so that reads as the image settling rather than a snap. */
+  transition: min-height 0.25s ease;
 }
 
 /* Inner content is gated (not the whole wrapper) so the loading prompt can overlay
@@ -478,7 +481,8 @@ h3 {
   filter: brightness(var(--img-brightness));
   transition:
     transform 0.4s ease,
-    filter 0.4s ease;
+    filter 0.4s ease,
+    height 0.25s ease;
 }
 
 .carousel-link:hover .carousel-image-container img {
@@ -493,6 +497,7 @@ h3 {
   justify-content: center;
   height: calc(100vh - var(--header-height, 72px));
   height: calc(100dvh - var(--header-height, 72px));
+  transition: height 0.25s ease;
   /* Reserve the title strip above and the READ MORE button below (32px offset + ~36px
      tall), so the overlay centres between the two rather than against the viewport
      bottom — otherwise the padding is one-sided and the text sits too low. */
