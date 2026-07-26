@@ -1,6 +1,7 @@
 import type { Poem } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
+import AdminLangToggle from '../components/AdminLangToggle';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
@@ -144,6 +145,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   return (
     <div className="admin-page">
       <Header />
+      <AdminLangToggle />
       <div className="admin-login-wrap">
         <motion.form
           className="admin-login"
@@ -876,6 +878,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="admin-page">
       <Header onLogout={onLogout} />
+      <AdminLangToggle />
 
       <AnimatePresence mode="wait">
         {!initialized ? (

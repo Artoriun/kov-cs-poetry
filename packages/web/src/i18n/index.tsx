@@ -13,9 +13,9 @@ const DEFAULT_LANG: Lang = import.meta.env.VITE_DEFAULT_LANG === 'en' ? 'en' : '
 // Language precedence: ?lang= query param (per-load override) → default (Hungarian).
 // The choice is intentionally NOT persisted, so a refresh always returns to the
 // default language unless ?lang= is present in the URL.
-function resolveInitialLang(): Lang {
+function resolveInitialLang(fallback: Lang = DEFAULT_LANG): Lang {
   const q = new URLSearchParams(window.location.search).get('lang');
-  return q === 'en' || q === 'hu' ? q : DEFAULT_LANG;
+  return q === 'en' || q === 'hu' ? q : fallback;
 }
 
 type LangContextValue = { lang: Lang; t: Dict; setLang: (l: Lang) => void };
@@ -25,13 +25,31 @@ const LangContext = createContext<LangContextValue>({
   setLang: () => {},
 });
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(resolveInitialLang);
+export function LanguageProvider({
+  children,
+  defaultLang,
+  scoped = false,
+}: {
+  children: ReactNode;
+  /** Starting language when ?lang= is absent. Defaults to the site default (Hungarian). */
+  defaultLang?: Lang;
+  /**
+   * Set on a nested provider covering part of the tree, such as the admin portal. Its
+   * language is independent of the surrounding site, so switching inside it cannot change
+   * the public pages, and leaving unmounts it and restores them.
+   */
+  scoped?: boolean;
+}) {
+  const [lang, setLangState] = useState<Lang>(() => resolveInitialLang(defaultLang));
 
   useEffect(() => {
+    // Only the root provider owns these. A nested one must not touch them: React runs
+    // child effects before parent ones, so on a direct page load the root would overwrite
+    // whatever the nested provider had just set.
+    if (scoped) return;
     document.documentElement.lang = lang;
     document.title = dicts[lang].meta.title;
-  }, [lang]);
+  }, [lang, scoped]);
 
   // Session-only switch (not persisted); a refresh reverts to the default language.
   const setLang = (l: Lang) => {

@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { PoemsProvider } from './context/PoemsContext';
+import { LanguageProvider } from './i18n';
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
@@ -11,7 +12,18 @@ export default function App() {
     <PoemsProvider>
       <div className="page-load-scrim" aria-hidden="true" />
       <Routes>
-        <Route path="/admin" element={<Admin />} />
+        {/* The admin portal runs in English by default, independently of the public site,
+            which stays Hungarian. A nested provider keeps the two separate: switching
+            language inside the portal cannot affect the rest of the site, and leaving it
+            unmounts this provider entirely. */}
+        <Route
+          path="/admin"
+          element={
+            <LanguageProvider defaultLang="en" scoped>
+              <Admin />
+            </LanguageProvider>
+          }
+        />
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/poems" element={<Poems />} />
