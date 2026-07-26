@@ -511,7 +511,7 @@ h3 {
   position: relative;
   z-index: 10;
   color: #fff;
-  text-align: center;
+  text-align: left;
   padding: 50px 60px;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
@@ -920,10 +920,13 @@ h3 {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* flex-start, not centre: align-items governs the horizontal axis in a column, so
+     leaving it centred would keep the text block centred whatever text-align says.
+     justify-content still handles the vertical centring. */
+  align-items: flex-start;
   justify-content: safe center;
   color: #fff;
-  text-align: center;
+  text-align: left;
   padding: 30px 20px;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: 14px;
@@ -1172,12 +1175,15 @@ h3 {
   position: relative;
   z-index: 10;
   color: #fff;
-  text-align: center;
+  text-align: left;
   padding: 50px 60px;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.6;
-  width: 100%;
+  /* No width: 100%. The container centres its children, so leaving the box to size itself
+     makes it hug the longest line and sit centred on the page, with the lines flush left
+     inside it. Forcing full width instead pinned the text to the far left edge of an
+     85%-wide box. The carousel overlay has always worked this way. */
   max-width: 85%;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1211,7 +1217,9 @@ h3 {
 .detail-overlay-line {
   display: block;
   width: fit-content;
-  margin: 0 auto;
+  /* margin-right auto only: the line hugs its text and sits at the left edge. With
+     `margin: 0 auto` each line was centred individually, which text-align cannot undo. */
+  margin: 0 auto 0 0;
   opacity: 0;
   -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
   mask-image: linear-gradient(to right, black 75%, transparent 100%);
@@ -1235,10 +1243,22 @@ h3 {
   }
 }
 
+/* The title carries .detail-overlay-line too, for its reveal animation, so it inherited
+   the left-hugging fit-content box and slid to the far left. Only the poem body should be
+   left-aligned — put the title back. Scoped selector so it beats the equal-specificity
+   .detail-overlay-line rule regardless of order. */
+.poem-detail .detail-title {
+  width: auto;
+  margin: 0;
+  text-align: center;
+}
+
 .detail-overlay-line-revealed {
   display: block;
   width: fit-content;
-  margin: 0 auto;
+  /* margin-right auto only: the line hugs its text and sits at the left edge. With
+     `margin: 0 auto` each line was centred individually, which text-align cannot undo. */
+  margin: 0 auto 0 0;
   opacity: 1;
   -webkit-mask-size: 130% 100%;
   mask-size: 130% 100%;
