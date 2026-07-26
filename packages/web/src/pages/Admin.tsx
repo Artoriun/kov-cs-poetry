@@ -859,11 +859,18 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleDrop = async (toIndex: number) => {
+  // Grid drops swap the two cards; list drops lift the card out and reinsert it, shifting
+  // everything in between. Dropping onto a specific tile reads as "put these two in each
+  // other's place", where dragging down a list reads as "move this one to here".
+  const handleDrop = async (toIndex: number, swap = false) => {
     if (dragIndex === null || dragIndex === toIndex) return;
     const next = [...orderedPoems];
-    const [moved] = next.splice(dragIndex, 1);
-    next.splice(toIndex, 0, moved);
+    if (swap) {
+      [next[dragIndex], next[toIndex]] = [next[toIndex], next[dragIndex]];
+    } else {
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(toIndex, 0, moved);
+    }
     setOrderedPoems(next);
     setDragIndex(null);
     setDropIndex(null);
@@ -1107,7 +1114,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       e.preventDefault();
                       setDropIndex(i);
                     }}
-                    onDrop={() => handleDrop(i)}
+                    onDrop={() => handleDrop(i, true)}
                   >
                     <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                     <div
