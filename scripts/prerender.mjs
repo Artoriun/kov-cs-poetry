@@ -76,8 +76,13 @@ const esc = (s) =>
 
 /** Per-route head. Deliberately no <meta name="keywords">: ignored by every major engine
  *  since 2009. The indexable signal is the poem text now sitting in the body. */
+/** The URL that actually serves a 200. Pages writes each route as a directory index, so
+ *  it 301s /poems/poem-5 to /poems/poem-5/; a canonical naming the redirecting form points
+ *  crawlers at a hop instead of at the page. */
+const canonical = (path) => `${SITE}${path === '/' ? '/' : `${path}/`}`;
+
 function head(route) {
-  const url = `${SITE}${route.path === '/' ? '/' : route.path}`;
+  const url = canonical(route.path);
   const image = route.poem?.image ?? live[0]?.image ?? '';
   const tags = [
     `<title>${esc(route.title)}</title>`,
@@ -221,16 +226,17 @@ const today = new Date().toISOString().slice(0, 10);
 writeFileSync(
   join(DIST, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${routes
-    .map(
-      (r) =>
-        `  <url><loc>${SITE}${r.path === '/' ? '/' : r.path}</loc><lastmod>${today}</lastmod></url>`,
-    )
+    .map((r) => `  <url><loc>${canonical(r.path)}</loc><lastmod>${today}</lastmod></url>`)
     .join('\n')}\n</urlset>\n`,
 );
 writeFileSync(
   join(DIST, 'robots.txt'),
-  // /admin is never prerendered, so it is only reachable through the SPA fallback and has
-  // no crawlable content — but it should not be requested at all.
+  // Crawlers only read robots.txt from the domain root, and this is a project page, so
+  // artoriun.github.io/robots.txt is what they fetch — not this file. It is written anyway
+  // because it costs nothing and becomes live the moment the site moves to a custom domain
+  // or a user-pages repo. Until then: /admin is not crawlable because it is the one route
+  // that is never prerendered, so Pages answers it with a 404; and the sitemap has to be
+  // submitted directly in Search Console rather than discovered through the line below.
   `User-agent: *\nAllow: /\nDisallow: /kov-cs-poetry/admin\n\nSitemap: ${SITE}/sitemap.xml\n`,
 );
 
