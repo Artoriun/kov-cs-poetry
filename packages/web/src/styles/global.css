@@ -123,14 +123,7 @@ h3 {
 .site {
   display: flex;
   flex-direction: column;
-  /* dvh, matching the sections inside. The two must agree or a gap appears somewhere:
-     with a vh floor (URL-bar-retracted) over svh sections (URL-bar-shown), .main-content
-     is flex:1 and stretches to fill the difference — a gap above the footer. With an svh
-     floor the page ends up shorter than the visible viewport once the bar retracts — a
-     gap below it. dvh tracks the live viewport, so the floor and the sections move
-     together and the content always exceeds it. */
   min-height: 100vh;
-  min-height: 100dvh;
 }
 
 .main-content {
@@ -416,10 +409,7 @@ h3 {
   /* Reserve the carousel's height up front so the page doesn't reflow when the
      slide (and its full-height image) renders in. */
   min-height: calc(100vh - var(--header-height, 72px));
-  min-height: calc(100dvh - var(--header-height, 72px));
-  /* dvh tracks the live viewport, so this grows when Android retracts the URL bar on
-     scroll. Eased so that reads as the image settling rather than a snap. */
-  transition: min-height 0.25s ease;
+  min-height: calc(100svh - var(--header-height, 72px));
 }
 
 /* Inner content is gated (not the whole wrapper) so the loading prompt can overlay
@@ -476,13 +466,12 @@ h3 {
 .carousel-image-container img {
   width: 100%;
   height: calc(100vh - var(--header-height, 72px));
-  height: calc(100dvh - var(--header-height, 72px));
+  height: calc(100svh - var(--header-height, 72px));
   object-fit: cover;
   filter: brightness(var(--img-brightness));
   transition:
     transform 0.4s ease,
-    filter 0.4s ease,
-    height 0.25s ease;
+    filter 0.4s ease;
 }
 
 .carousel-link:hover .carousel-image-container img {
@@ -496,8 +485,7 @@ h3 {
   align-items: center;
   justify-content: center;
   height: calc(100vh - var(--header-height, 72px));
-  height: calc(100dvh - var(--header-height, 72px));
-  transition: height 0.25s ease;
+  height: calc(100svh - var(--header-height, 72px));
   /* Reserve the title strip above and the READ MORE button below (32px offset + ~36px
      tall), so the overlay centres between the two rather than against the viewport
      bottom — otherwise the padding is one-sided and the text sits too low. */
@@ -530,7 +518,7 @@ h3 {
   line-height: 1.4;
   max-width: 90%;
   /* Matches the container's 80px + 72px padding so a long poem can't grow past it */
-  max-height: calc(100dvh - var(--header-height, 72px) - 152px);
+  max-height: calc(100svh - var(--header-height, 72px) - 152px);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: "Esteban", serif;
@@ -1758,7 +1746,7 @@ html.dark-mode .header-login-btn:hover {
 
   .carousel-image-container:has(.carousel-overlay) {
     height: calc(100vh - var(--header-height, 72px));
-    height: calc(100dvh - var(--header-height, 72px));
+    height: calc(100svh - var(--header-height, 72px));
   }
 
   .carousel-overlay {
@@ -1771,6 +1759,23 @@ html.dark-mode .header-login-btn:hover {
 }
 
 @media (max-height: 500px) {
+  /* Landscape only. Here the toolbar is a large share of the viewport, so sizing the
+     carousel in svh (the URL-bar-shown height) left a visible gap between the image and
+     the footer once the bar retracted. dvh tracks the live viewport so the two stay
+     flush, and .site has to use the same unit or .main-content — being flex:1 — absorbs
+     the difference and the gap reappears above the footer.
+     The trade-off is that the carousel resizes as the bar hides and shows; the eased
+     height turns that into the image settling rather than a jump. Portrait keeps svh,
+     where the toolbar is proportionally smaller and a static height is preferable. */
+  .site {
+    min-height: 100dvh;
+  }
+
+  .poem-carousel-wrapper {
+    min-height: calc(100dvh - var(--header-height, 72px));
+    transition: min-height 0.25s ease;
+  }
+
   .carousel-section-label {
     top: 8px;
   }
@@ -1783,6 +1788,8 @@ html.dark-mode .header-login-btn:hover {
   .carousel-image-container:has(.carousel-overlay) {
     align-items: flex-start;
     padding-top: 0;
+    height: calc(100dvh - var(--header-height, 72px));
+    transition: height 0.25s ease;
   }
 
   .carousel-overlay {
