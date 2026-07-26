@@ -14,6 +14,7 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 - Home carousel of featured poems — auto-advances by line count, swipeable, with sequenced mask-wipe text reveals
 - Paginated poems grid with a scroll-tracking table of contents
 - Full-screen poem reader — vertical swipe between pages, staggered line reveals, dedicated landscape layout
+- Poem text set flush left in a centred block — carousel, grid cards and reader alike
 - Working contact form — messages are delivered by email, with validation, a honeypot and per-IP rate limiting
 - Light/dark mode, page-load fade-in sequence, fully responsive (portrait & landscape)
 - Text colours meet WCAG AA contrast in both themes
@@ -23,12 +24,15 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 - **List** view (full edit cards) and **Order** view (drag-to-reorder preview grid, mobile touch support)
 - Feature poems for the home carousel; upload background images to Cloudinary
 - **Custom Slides** — manually split a poem into reader pages, pre-filled from an automatic layout measurement
+- Runs in English by default, with an EN/HU switch that affects the portal only
 
 ---
 
 ## Internationalization
 
-All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) behind a lightweight `LanguageProvider` + `useT()` hook — no i18n dependency. `hu.ts` is type-checked against the `en` shape, so a missing key is a build error. Language comes from the `?lang=` query param, defaulting to **Hungarian** (`VITE_DEFAULT_LANG`); the choice is not persisted, so a refresh always reverts to Hungarian unless `?lang=` is present. Poem content and the *Kovács* / *Admin* labels are left as authored. To add a string, add the key to both locale files and use `t.<key>`.
+All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) behind a lightweight `LanguageProvider` + `useT()` hook — no i18n dependency. `hu.ts` is type-checked against the `en` shape, so a missing key is a build error. Language comes from the `?lang=` query param, defaulting to **Hungarian** (`VITE_DEFAULT_LANG`); the choice is not persisted, so a refresh always reverts to the default unless `?lang=` is present. Poem content and the *Kovács* / *Admin* labels are left as authored.
+
+The **admin portal defaults to English** while the public site stays Hungarian. A second `LanguageProvider` wraps only the `/admin` route (`defaultLang="en" scoped`), so the two are independent: the EN/HU switch in the portal cannot change the public pages, and leaving `/admin` unmounts that provider rather than leaving a language behind. The scoped provider deliberately does not set `document.lang` or `document.title` — React runs child effects before parent ones, so on a direct load of `/admin` the root provider would overwrite it. To add a string, add the key to both locale files and use `t.<key>`.
 
 ---
 
