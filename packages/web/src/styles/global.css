@@ -516,7 +516,11 @@ h3 {
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
-  max-width: 90%;
+  /* The prev/next buttons are 40px wide at left/right:16px, so they own the outer 56px on
+     each side. 90% alone let a long-lined poem reach ~20px from the edge and run under the
+     left arrow (measured 15px of overlap at 412px wide). Reserving 2x56px keeps the box
+     clear of both buttons; on wider screens 90% is the smaller value and still wins. */
+  max-width: min(90%, calc(100% - 112px));
   /* Matches the container's 80px + 72px padding so a long poem can't grow past it */
   max-height: calc(100svh - var(--header-height, 72px) - 152px);
   white-space: pre-wrap;
