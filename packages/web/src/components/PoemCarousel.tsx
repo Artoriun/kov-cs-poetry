@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
+import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
 import '../styles/global.css';
 
 const PrevArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
@@ -82,7 +83,8 @@ export default function PoemCarousel() {
     if (count === 0) return;
     [(current + 1) % count, (current - 1 + count) % count].forEach((i) => {
       const img = new Image();
-      img.src = CAROUSEL_POEMS[i]?.image ?? '';
+      const next = CAROUSEL_POEMS[i]?.image;
+      img.src = next ? optimizeUrl(next, FULL_BLEED_W) : '';
     });
   }, [current, count]);
 
@@ -166,7 +168,7 @@ export default function PoemCarousel() {
                   >
                     <div className="carousel-image-container">
                       <img
-                        src={poem.image}
+                        src={optimizeUrl(poem.image, FULL_BLEED_W)}
                         alt={poem.title}
                         draggable={false}
                         onLoad={() => {

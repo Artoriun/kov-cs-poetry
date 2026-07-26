@@ -13,7 +13,8 @@
     "format": "biome format --write .",
     "check": "biome check .",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "check:budgets": "node scripts/check-budgets.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",

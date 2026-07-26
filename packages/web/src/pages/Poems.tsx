@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
+import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
@@ -11,9 +12,6 @@ const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 const SLIDE_RESIZE = 450; // ms — must match the height transition on .poem-detail.custom-slides
 const DETAIL_MS_PER_LINE = 1500; // ms of reading time per line before auto-advancing
-
-const optimizeUrl = (url: string, w = 400) =>
-  url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`);
 
 // Load image URLs into the browser cache, then call done() once (or after 4s, so a
 // slow image can't strand a page change). Gates grid page transitions so the incoming
@@ -217,7 +215,7 @@ export default function Poems() {
     const img = new Image();
     img.onload = () => setDetailImgReady(true);
     img.onerror = () => setDetailImgReady(true);
-    img.src = optimizeUrl(detailPoem.image, 1600);
+    img.src = optimizeUrl(detailPoem.image, FULL_BLEED_W);
     return () => {
       img.onload = null;
       img.onerror = null;
@@ -636,7 +634,7 @@ export default function Poems() {
         onTouchEnd={(e) => dragEnd(e.changedTouches[0].clientY)}
       >
         <img
-          src={optimizeUrl(detailPoem.image, 1600)}
+          src={optimizeUrl(detailPoem.image, FULL_BLEED_W)}
           alt={detailPoem.title}
           className="detail-fixed-bg detail-img-anim"
         />

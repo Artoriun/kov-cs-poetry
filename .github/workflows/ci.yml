@@ -39,6 +39,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Needs the build above: checks gzipped bundle sizes, and that no poem image URL
+      # skips optimizeUrl() the way the home carousel did.
+      - name: Budgets
+        run: npm run check:budgets
+
   e2e:
     name: Layout tests
     runs-on: ubuntu-latest
