@@ -10,7 +10,16 @@ on:
   push:
     branches: ['main']
   pull_request:
+  # Manual rebuild — the quickest way to push an admin-portal edit out to crawlers without
+  # waiting for the weekly run.
   workflow_dispatch:
+  # Prerendered HTML is a snapshot of the API taken at build time, so poems edited in the
+  # admin portal are live for visitors immediately but invisible to crawlers until the next
+  # build. A weekly rebuild keeps that gap bounded without a deploy credential in the app:
+  # search engines recrawl a site this size on the order of days anyway, so a webhook on
+  # every save would add a repo-write token to the attack surface for no practical gain.
+  schedule:
+    - cron: '0 4 * * 1'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -91,7 +100,9 @@ jobs:
     name: Deploy to GitHub Pages
     needs: [verify, e2e]
     # Never from a pull request — a PR build must not publish to production.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # `schedule` belongs here: without it the weekly run would build and test but skip the
+    # deploy, so the cron would silently do nothing for the one reason it exists.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -127,8 +138,13 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      # Same secret the build uses: the prerenderer reads the live API so poems edited in
+      # the admin portal reach the static HTML, falling back to the bundled poems (loudly)
+      # if Render is unreachable.
       - name: Prerender routes, sitemap and robots
         run: npm run prerender
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       # Still needed for /admin and any unknown path, which are not prerendered.
       - name: Copy index.html to 404.html for SPA routing

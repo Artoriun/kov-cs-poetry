@@ -33,7 +33,34 @@ const PIXEL = Buffer.from(
   'base64',
 );
 
-const live = POEMS.filter((p) => !p.deleted);
+/**
+ * Prefer the live API so a rebuild picks up anything edited in the admin portal. Falling
+ * back to the bundled poems keeps a sleeping or broken Render instance from publishing an
+ * empty site — but the fallback is announced, because silently shipping stale content is
+ * the worse failure: visitors would see the edit (the app fetches at runtime) while every
+ * crawler kept the old text, with nothing in the build log to explain why.
+ */
+async function loadPoems() {
+  const api = (process.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https://');
+  const bundled = POEMS.filter((p) => !p.deleted);
+  if (!api) {
+    console.warn('! VITE_API_URL not set — prerendering from bundled poems');
+    return bundled;
+  }
+  try {
+    const res = await fetch(`${api}/api/poems`, { signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) throw new Error('empty or malformed response');
+    console.log(`✓ prerendering from the live API (${data.length} poems)`);
+    return data.filter((p) => !p.deleted);
+  } catch (err) {
+    console.warn(`! live API unreachable (${err.message}) — prerendering from bundled poems`);
+    return bundled;
+  }
+}
+
+const live = await loadPoems();
 
 // Titles and descriptions come from the shared helper the running app also uses, so the
 // prerendered <title> and the one useRouteMeta sets on navigation cannot drift apart.
