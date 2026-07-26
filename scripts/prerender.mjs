@@ -13,8 +13,10 @@
  * with live API data, so admin edits are never more than one deploy from being reflected.
  *
  * Uses Playwright because it is already a dev dependency — no SSR runtime, no new
- * framework, and the API is stubbed exactly as e2e/fixtures.ts does it so a sleeping
- * Render instance can never produce an empty build.
+ * framework. Poems are fetched once from the live API and then served to the browser from
+ * a route stub, the way e2e/fixtures.ts does it: the content stays current without every
+ * one of the 37 page loads hitting Render, and a single fetch is the only thing that can
+ * fail. If it does, the bundled poems are used and the fallback is logged.
  */
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -74,13 +76,19 @@ const routes = paths.map((path) => ({
 const esc = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** Per-route head. Deliberately no <meta name="keywords">: ignored by every major engine
- *  since 2009. The indexable signal is the poem text now sitting in the body. */
 /** The URL that actually serves a 200. Pages writes each route as a directory index, so
  *  it 301s /poems/poem-5 to /poems/poem-5/; a canonical naming the redirecting form points
  *  crawlers at a hop instead of at the page. */
 const canonical = (path) => `${SITE}${path === '/' ? '/' : `${path}/`}`;
 
+// No <link rel="preload"> for the hero image: measured at 176ms either way over three
+// throttled runs. Prerendering already puts the <img> in the markup, so the browser's
+// preload scanner finds it in the first bytes of HTML — as early as an explicit hint
+// could. Lighthouse agrees from the other direction: "Preload Largest Contentful Paint
+// image" is not applicable here because the LCP element is text, not an image.
+
+/** Per-route head. Deliberately no <meta name="keywords">: ignored by every major engine
+ *  since 2009. The indexable signal is the poem text now sitting in the body. */
 function head(route) {
   const url = canonical(route.path);
   const image = route.poem?.image ?? live[0]?.image ?? '';

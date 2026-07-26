@@ -1,5 +1,8 @@
 @import "./themes.css";
-@import url("https://fonts.googleapis.com/css2?family=Esteban&display=swap");
+/* The Esteban @import moved to a <link> in index.html: an @import here is not discovered
+   until this file has been downloaded and parsed, serialising the font behind the
+   stylesheet. Vite inlines the themes.css import at build time, so that one costs
+   nothing. */
 
 /* ===== ANIMATION TIMING ===== */
 :root {
