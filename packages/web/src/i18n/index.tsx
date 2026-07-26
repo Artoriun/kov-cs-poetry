@@ -48,7 +48,11 @@ export function LanguageProvider({
     // whatever the nested provider had just set.
     if (scoped) return;
     document.documentElement.lang = lang;
-    document.title = dicts[lang].meta.title;
+    // document.title is deliberately not set here. The title is per-route, not
+    // per-language, and setting it on mount overwrote the per-route title the prerenderer
+    // had written into the HTML — so every crawler that runs JavaScript saw the generic
+    // site title on all 34 poems. useRouteMeta owns it now, via the same shared helper
+    // the prerenderer uses, so the two cannot drift apart.
   }, [lang, scoped]);
 
   // Session-only switch (not persisted); a refresh reverts to the default language.

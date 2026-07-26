@@ -121,6 +121,16 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
+      # Needs a browser: the prerenderer boots the built app and writes each route's DOM to
+      # its own index.html, so Pages serves real HTML at a 200 instead of falling back to
+      # 404.html. Also emits sitemap.xml and robots.txt from the same poem data.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Prerender routes, sitemap and robots
+        run: npm run prerender
+
+      # Still needed for /admin and any unknown path, which are not prerendered.
       - name: Copy index.html to 404.html for SPA routing
         run: cp packages/web/dist/index.html packages/web/dist/404.html
 

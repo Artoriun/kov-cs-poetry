@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { PoemsProvider } from './context/PoemsContext';
 import { LanguageProvider } from './i18n';
+import { useRouteMeta } from './lib/useRouteMeta';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import Poems from './pages/Poems';
@@ -12,9 +13,16 @@ import Poems from './pages/Poems';
 // this module, so it moves into the same chunk.
 const Admin = lazy(() => import('./pages/Admin'));
 
+/** Renders nothing; exists so the hook sits inside both the router and PoemsProvider. */
+function RouteMeta() {
+  useRouteMeta();
+  return null;
+}
+
 export default function App() {
   return (
     <PoemsProvider>
+      <RouteMeta />
       <div className="page-load-scrim" aria-hidden="true" />
       <Routes>
         {/* The admin portal runs in English by default, independently of the public site,

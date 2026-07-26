@@ -1,6 +1,12 @@
-import type { Poem } from '@gedichtenv2/shared';
+import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { apiGetPoems } from '../lib/api';
+
+// Initial state is the bundled poems rather than an empty array. Starting empty meant
+// React blanked the prerendered HTML on mount and only repainted once the API answered,
+// and left the site showing nothing at all whenever the API was unreachable. The API
+// response replaces this the moment it lands, so admin edits stay authoritative.
+const SEED = POEMS.filter((p) => !p.deleted);
 
 interface PoemsContextValue {
   poems: Poem[];
@@ -9,13 +15,13 @@ interface PoemsContextValue {
 }
 
 const PoemsContext = createContext<PoemsContextValue>({
-  poems: [],
+  poems: SEED,
   loading: false,
   refreshPoems: async () => {},
 });
 
 export function PoemsProvider({ children }: { children: ReactNode }) {
-  const [poems, setPoems] = useState<Poem[]>([]);
+  const [poems, setPoems] = useState<Poem[]>(SEED);
   const [loading, setLoading] = useState(true);
 
   const refreshPoems = useCallback(async () => {

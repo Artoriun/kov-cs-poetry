@@ -267,3 +267,42 @@ export const POEMS: Poem[] = [
       'Már Shakespeare sírján fű nőtt régesrégen,\nÉs Vörösmarty is elszenderült,\nPetőfi, Ady rég megistenült\nE könnyáztatta, véres földi téren….\nMikor már annyi évet láttak, mint te Énem\nÉs bár dicsőség fanfárját nem hallani,\nTúlélted őket, ez is valami….',
   },
 ];
+
+/**
+ * Page metadata derived from the poems, shared by the prerender script and the running
+ * app. It has to be one implementation: the prerenderer writes a per-route <title> into
+ * the HTML, and the client sets document.title on navigation. When those disagreed, the
+ * client's generic title overwrote the prerendered one on mount, so every crawler that
+ * executes JavaScript — Googlebot included — saw "Kovács | KÖLTÉSZET" on all 34 poems.
+ */
+
+export const SITE_TITLE = 'Kovács | KÖLTÉSZET';
+export const SITE_DESCRIPTION = 'Kovács verseinek gyűjteménye.';
+
+/** First ~155 characters of the poem, roughly what a search result displays. */
+export function describePoem(poem: Poem): string {
+  const text = (poem.overlay ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return `${poem.title} — vers Kovács gyűjteményéből.`;
+  return text.length <= 155 ? text : `${text.slice(0, 152).trimEnd()}…`;
+}
+
+/** `path` is the app-relative pathname, e.g. `/poems/poem-2`. */
+export function metaForRoute(
+  path: string,
+  poems: Poem[] = POEMS,
+): { title: string; description: string } {
+  const clean = path.replace(/\/+$/, '') || '/';
+  const poemMatch = clean.match(/^\/poems\/(.+)$/);
+  if (poemMatch) {
+    const poem = poems.find((p) => p.id === poemMatch[1]);
+    if (poem) return { title: `${poem.title} | Kovács`, description: describePoem(poem) };
+  }
+  if (clean === '/poems') {
+    return { title: 'Versek | Kovács', description: 'Kovács összes verse egy helyen.' };
+  }
+  if (clean === '/contact') {
+    return { title: 'Kapcsolat | Kovács', description: 'Írjon üzenetet Kovácsnak.' };
+  }
+  if (clean === '/admin') return { title: 'Admin | Kovács', description: '' };
+  return { title: SITE_TITLE, description: SITE_DESCRIPTION };
+}
