@@ -10,6 +10,7 @@ const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
 const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button appears
 const PAGE_FADE_OUT = 400; // ms — must match --page-fade-out-duration in CSS
 const SLIDE_RESIZE = 450; // ms — must match the height transition on .poem-detail.custom-slides
+const DETAIL_MS_PER_LINE = 1500; // ms of reading time per line before auto-advancing
 
 const optimizeUrl = (url: string, w = 400) =>
   url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`);
@@ -463,7 +464,10 @@ export default function Poems() {
     if (!id || !detailPages) return;
     if (currentSlide === detailPages.length - 1) return;
     const lines = detailPages[currentSlide]?.length ?? 1;
-    const timer = setTimeout(() => goToSlide(currentSlide + 1, 1), Math.max(lines, 1) * 2500);
+    const timer = setTimeout(
+      () => goToSlide(currentSlide + 1, 1),
+      Math.max(lines, 1) * DETAIL_MS_PER_LINE,
+    );
     return () => clearTimeout(timer);
   }, [id, currentSlide, detailPages]);
 
