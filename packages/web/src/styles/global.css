@@ -123,7 +123,14 @@ h3 {
 .site {
   display: flex;
   flex-direction: column;
+  /* svh, to match the units the page sections are built from. vh resolves to the
+     URL-bar-retracted height on Android while the carousel and poem reader are sized in
+     svh, the URL-bar-shown height — and .main-content, being flex:1, quietly absorbed the
+     difference by stretching. That surfaced as a gap between the bottom of the carousel
+     image and the footer in landscape, where the toolbar is a large share of the viewport.
+     With both in svh the content always exceeds this floor, so nothing stretches. */
   min-height: 100vh;
+  min-height: 100svh;
 }
 
 .main-content {
