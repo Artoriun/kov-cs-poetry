@@ -5,17 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Every poem image comes from Cloudinary and the body font from Google, so these
-         handshakes are worth starting before anything references them. -->
+    <!-- Every poem image comes from Cloudinary, so this handshake is worth starting before
+         the markup references one. The Google Fonts preconnects are gone with the
+         stylesheet: Esteban is self-hosted and its @font-face rides along in global.css. -->
     <link rel="preconnect" href="https://res.cloudinary.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Loaded here rather than as an @import inside global.css. An @import is only
-         discovered once global.css has itself been fetched and parsed, which serialises
-         stylesheet -> font CSS -> font file. As a link the font CSS is requested in
-         parallel with the stylesheet instead. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Esteban&display=swap" />
 
     <title>Kovács | KÖLTÉSZET</title>
   </head>
