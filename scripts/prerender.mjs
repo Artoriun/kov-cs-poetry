@@ -64,6 +64,46 @@ async function loadPoems() {
 
 const live = await loadPoems();
 
+/**
+ * Hydration compares the client's first render against this markup, and the client seeds
+ * PoemsContext from the bundled POEMS. When the API returned something different — i.e.
+ * a poem was edited in the admin portal — the two would disagree and React would throw
+ * the prerendered DOM away, defeating the point. Shipping the exact poems used keeps them
+ * in step. Identical data injects nothing, so the usual case costs no bytes.
+ */
+const bundledPoems = POEMS.filter((p) => !p.deleted);
+
+/** Ignore differences that cannot change what is rendered: the API returns `customSlides:
+ *  []` and `customSlidesEnabled: false` where the bundle simply omits them. */
+const norm = (p) =>
+  JSON.stringify({
+    ...p,
+    customSlides: p.customSlides?.length ? p.customSlides : undefined,
+    customSlidesEnabled: p.customSlidesEnabled || undefined,
+    featured: p.featured || undefined,
+  });
+
+const bundledById = new Map(bundledPoems.map((p) => [p.id, p]));
+const changed = live.filter((p) => {
+  const b = bundledById.get(p.id);
+  return !b || norm(p) !== norm(b);
+});
+const orderChanged = live.map((p) => p.id).join() !== bundledPoems.map((p) => p.id).join();
+
+// Send a patch, not the whole collection. Every poem is already in the JS bundle, so
+// embedding all 34 again cost 25KB of duplicated text in each of the 37 pages and pushed
+// first contentful paint out by more than a second. Order plus the handful of genuinely
+// edited poems is a fraction of that.
+const patch = changed.length || orderChanged ? { order: live.map((p) => p.id), changed } : null;
+const poemsScript = patch
+  ? `<script>window.__POEMS_PATCH__=${JSON.stringify(patch).replace(/</g, '\\u003c')}</script>`
+  : '';
+if (patch) {
+  console.log(
+    `  (embedding hydration patch: ${changed.length} edited poem(s)${orderChanged ? ' + order' : ''}, ${poemsScript.length} bytes)`,
+  );
+}
+
 // Titles and descriptions come from the shared helper the running app also uses, so the
 // prerendered <title> and the one useRouteMeta sets on navigation cannot drift apart.
 const paths = ['/', '/poems', '/contact', ...live.map((p) => `/poems/${p.id}`)];
@@ -151,6 +191,12 @@ for (let i = 0; i < 60; i++) {
 // ---- render -----------------------------------------------------------------
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Tells the app it is being captured, so it skips work whose result depends on this
+// viewport — chiefly poem pagination, which would otherwise bake a 1280x900 split into
+// markup that has to hydrate on a phone. See packages/web/src/lib/prerendered.ts.
+await page.addInitScript(() => {
+  window.__PRERENDERING__ = true;
+});
 await page.route('**/api/poems', (r) =>
   r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(live) }),
 );
@@ -227,7 +273,7 @@ for (const route of routes) {
   const html = template
     .replace('<html ', '<html data-prerendered ')
     .replace(/<title>.*?<\/title>/s, head(route))
-    .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
+    .replace('<div id="root"></div>', `${poemsScript}<div id="root">${body}</div>`);
 
   const out =
     route.path === '/' ? join(DIST, 'index.html') : join(DIST, route.path.slice(1), 'index.html');

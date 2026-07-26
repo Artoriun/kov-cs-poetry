@@ -6,7 +6,28 @@ import { apiGetPoems } from '../lib/api';
 // React blanked the prerendered HTML on mount and only repainted once the API answered,
 // and left the site showing nothing at all whenever the API was unreachable. The API
 // response replaces this the moment it lands, so admin edits stay authoritative.
-const SEED = POEMS.filter((p) => !p.deleted);
+//
+// Hydration compares the client's first render against the prerendered markup, so both
+// must start from the same poems. The prerenderer renders from the live API, which drifts
+// from the bundle as poems are edited or reordered in the admin portal, so it injects a
+// patch describing the difference — order plus any genuinely edited poems. Sending the
+// whole collection instead would duplicate 25KB of text that is already in this bundle.
+declare global {
+  interface Window {
+    __POEMS_PATCH__?: { order: string[]; changed: Poem[] };
+  }
+}
+
+function seedPoems(): Poem[] {
+  const bundled = POEMS.filter((p) => !p.deleted);
+  const patch = typeof window !== 'undefined' ? window.__POEMS_PATCH__ : undefined;
+  if (!patch) return bundled;
+  const byId = new Map(bundled.map((p) => [p.id, p]));
+  for (const p of patch.changed) byId.set(p.id, p);
+  return patch.order.map((id) => byId.get(id)).filter((p): p is Poem => Boolean(p) && !p?.deleted);
+}
+
+const SEED = seedPoems();
 
 interface PoemsContextValue {
   poems: Poem[];

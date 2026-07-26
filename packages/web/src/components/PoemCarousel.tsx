@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
+import { IS_PRERENDERED } from '../lib/prerendered';
 import '../styles/global.css';
 
 const PrevArrow = ({ onClick, label }: { onClick?: React.MouseEventHandler; label: string }) => (
@@ -63,9 +64,12 @@ export default function PoemCarousel() {
   // [current index, slide direction] packed together so one setState drives both
   const [[current, direction], setSlide] = useState([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  // Both start true on a prerendered page: the markup already shows the loaded carousel,
+  // so beginning at false would render the loading prompt the prerendered HTML does not
+  // have — a structural mismatch that makes React rebuild the DOM instead of hydrating it.
+  const [imageLoaded, setImageLoaded] = useState(IS_PRERENDERED);
   // Tracks whether the very first image has loaded; used to delay the wrapper fade-in
-  const [firstImageLoaded, setFirstImageLoaded] = useState(false);
+  const [firstImageLoaded, setFirstImageLoaded] = useState(IS_PRERENDERED);
   // Prevents navigating on a drag release that also fires a click event
   const isDraggingRef = useRef(false);
   // Blocks paginate during an active animation so rapid swipes don't queue up

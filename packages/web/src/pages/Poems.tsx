@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
+import { IS_PRERENDERED, IS_PRERENDERING } from '../lib/prerendered';
 
 const PER_PAGE = 9;
 const DETAIL_IMG_DURATION = 600; // ms — image + title fade-in
@@ -120,8 +121,11 @@ export default function Poems() {
   const pendingHighlightRef = useRef<(() => void) | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const [detailImgReady, setDetailImgReady] = useState(false);
+  // Start settled on a prerendered page — the cards and detail image are already painted
+  // in the markup, so beginning un-revealed would render a different tree than the HTML
+  // holds and cost us hydration. See lib/prerendered.ts.
+  const [revealed, setRevealed] = useState(IS_PRERENDERED);
+  const [detailImgReady, setDetailImgReady] = useState(IS_PRERENDERED);
 
   // Batch size adapts to how many columns fit the viewport, so a page always fills
   // complete rows and never leaves a single card orphaned on the last row.
@@ -226,6 +230,13 @@ export default function Poems() {
   useLayoutEffect(() => {
     if (!id || !detailPoem || detailPages !== null) return;
     if (sourceSlides.length === 0) return;
+    // Skipped while the prerenderer is capturing. Pagination depends on the measured
+    // viewport, so a page captured at 1280x900 splits differently than the same poem
+    // hydrating on a phone, and the markup would not match the client's first render —
+    // React would discard it. Leaving detailPages null captures `[detailLines]`, exactly
+    // what the client renders before this effect runs, and it puts the whole poem in the
+    // HTML rather than only the first slide, which is what a crawler wants anyway.
+    if (IS_PRERENDERING) return;
     // Custom slides are authored as complete pages, so they are used verbatim — never
     // measured or subdivided. The slide grows to fit instead (see .poem-detail.custom-slides),
     // scrolling past the viewport when a slide is long.

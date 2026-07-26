@@ -15,7 +15,7 @@ if ('scrollRestoration' in history) {
   window.scrollTo(0, 0);
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const tree = (
   <React.StrictMode>
     <LanguageProvider>
       <ThemeProvider>
@@ -24,5 +24,18 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       </ThemeProvider>
     </LanguageProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+
+const container = document.getElementById('root')!;
+
+// Prerendered routes are hydrated rather than re-rendered. createRoot over existing markup
+// throws all of it away and rebuilds, which removes every element Chrome had nominated for
+// Largest Contentful Paint; the trace showed six `largestContentfulPaint::Invalidate`
+// events and, on a third of mobile runs, no surviving candidate at all — reported as
+// NO_LCP. Hydration adopts the existing nodes, so nothing is removed.
+if (document.documentElement.hasAttribute('data-prerendered')) {
+  ReactDOM.hydrateRoot(container, tree);
+} else {
+  ReactDOM.createRoot(container).render(tree);
+}
