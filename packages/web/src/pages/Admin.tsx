@@ -293,7 +293,7 @@ function PoemCard({
           ×
         </button>
         <div className="admin-poem-image-col">
-          <span className="admin-field-label">{t.admin.backgroundImage}</span>
+          <span className="admin-field-label">{t.admin.poemPreview}</span>
           {/* Same overlay preview as the grid cards, so the list shows how the text sits on
               the image. Reads edit.overlay rather than poem.overlay so it tracks the
               textarea live instead of waiting for a save. */}
@@ -307,7 +307,7 @@ function PoemCard({
             {edit.overlay && <div className="admin-poem-thumb-overlay">{edit.overlay}</div>}
           </div>
           <label className="admin-file-label">
-            {t.admin.chooseFile}
+            {t.admin.chooseImage}
             <input
               ref={fileInputRef}
               type="file"
