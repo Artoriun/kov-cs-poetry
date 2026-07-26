@@ -795,10 +795,9 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  /* Left-aligned like the public grid, carousel and detail overlays. Stretch rather than
-     centre, so every card's text starts at the same inset instead of each one hugging its
-     own longest line — the same uniform-column reasoning as .detail-overlay. */
-  align-items: stretch;
+  /* Left-aligned like the public grid, carousel and detail overlays, but the block itself
+     stays centred on the card so short poems don't strand against the left edge. */
+  align-items: center;
   justify-content: safe center;
   color: #fff;
   text-align: left;
