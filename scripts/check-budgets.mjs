@@ -16,7 +16,10 @@ import { extname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const WEB = new URL('../packages/web/', import.meta.url).pathname;
-const BUDGET_GZIP = { '.js': 120 * 1024, '.css': 12 * 1024 };
+// `.js`/`.css` mark which extensions count toward the payload; `initial` is the budget
+// that actually gates. Set ~5KB above the current 112.2KB, so ordinary growth is fine but
+// pulling a heavy dependency into the entry chunk fails the build.
+const BUDGET_GZIP = { '.js': true, '.css': true, initial: 118 * 1024 };
 
 let failed = false;
 const fail = (msg) => {
@@ -59,17 +62,31 @@ try {
   console.error('✗ no dist/assets — run the build first');
   process.exit(1);
 }
-for (const name of readdirSync(assets)) {
+// Budget the initial payload — the entry chunks every visitor downloads — rather than
+// each file. Per-file budgets get weaker every time a route is split out: the numbers all
+// drop, nothing fails, and a lazy chunk could grow unnoticed. Route chunks (Admin) are
+// deliberately not budgeted; they cost only the person who opens that route.
+const kb = (n) => `${(n / 1024).toFixed(1)}KB`;
+const entry = readdirSync(assets).filter((n) => n.startsWith('index-'));
+const lazy = readdirSync(assets).filter((n) => !n.startsWith('index-') && BUDGET_GZIP[extname(n)]);
+
+let initial = 0;
+for (const name of entry) {
   const ext = extname(name);
-  const budget = BUDGET_GZIP[ext];
-  if (!budget) continue;
+  if (!BUDGET_GZIP[ext]) continue;
   const size = gzipSync(readFileSync(join(assets, name))).length;
-  const kb = (n) => `${(n / 1024).toFixed(1)}KB`;
-  if (size > budget) {
-    fail(`${name} is ${kb(size)} gzipped, over the ${kb(budget)} budget`);
-  } else {
-    console.log(`✓ ${name}: ${kb(size)} gzipped (budget ${kb(budget)})`);
-  }
+  initial += size;
+  console.log(`  entry ${name}: ${kb(size)} gzipped`);
+}
+if (initial > BUDGET_GZIP.initial) {
+  fail(`initial payload is ${kb(initial)} gzipped, over the ${kb(BUDGET_GZIP.initial)} budget`);
+} else {
+  console.log(`✓ initial payload: ${kb(initial)} gzipped (budget ${kb(BUDGET_GZIP.initial)})`);
+}
+for (const name of lazy) {
+  console.log(
+    `  lazy  ${name}: ${kb(gzipSync(readFileSync(join(assets, name))).length)} gzipped (not budgeted)`,
+  );
 }
 
 process.exit(failed ? 1 : 0);

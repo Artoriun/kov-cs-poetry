@@ -1,11 +1,16 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { PoemsProvider } from './context/PoemsContext';
 import { LanguageProvider } from './i18n';
-import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import Poems from './pages/Poems';
+
+// Split out of the main bundle: the portal and its stylesheet are only ever used by the
+// site owner, but were being downloaded by every visitor. admin.css is imported solely by
+// this module, so it moves into the same chunk.
+const Admin = lazy(() => import('./pages/Admin'));
 
 export default function App() {
   return (
@@ -20,7 +25,11 @@ export default function App() {
           path="/admin"
           element={
             <LanguageProvider defaultLang="en" scoped>
-              <Admin />
+              {/* Untranslated: the portal defaults to English and this shows only for the
+                  moment the chunk is in flight, before the dictionary is even loaded. */}
+              <Suspense fallback={<p className="loading-prompt">Loading…</p>}>
+                <Admin />
+              </Suspense>
             </LanguageProvider>
           }
         />
