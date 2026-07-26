@@ -516,7 +516,9 @@ h3 {
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.4;
-  max-width: 90%;
+  /* Same fixed column as .detail-overlay, for the same reason: a shrink-to-fit box moves
+     the left edge every time the carousel advances to a poem with different line lengths. */
+  width: min(90%, 21em);
   /* Matches the container's 80px + 72px padding so a long poem can't grow past it */
   max-height: calc(100svh - var(--header-height, 72px) - 152px);
   white-space: pre-wrap;
@@ -1180,11 +1182,13 @@ h3 {
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
   font-size: clamp(20px, 3.5vmin, 48px);
   line-height: 1.6;
-  /* No width: 100%. The container centres its children, so leaving the box to size itself
-     makes it hug the longest line and sit centred on the page, with the lines flush left
-     inside it. Forcing full width instead pinned the text to the far left edge of an
-     85%-wide box. The carousel overlay has always worked this way. */
-  max-width: 85%;
+  /* One column width for every poem, so the left edge never moves as you page between
+     them. Sizing the box to its own longest line (the previous approach) centres each
+     poem individually but shifts the text ~40px sideways going from a long-lined poem to
+     a short one. 21em tracks the clamp() font-size above, and the longest line in the
+     book measures ~16.6em at every viewport, so the column fits without introducing new
+     wrapping; the percentage takes over on narrow screens. */
+  width: min(85%, 21em);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: "Esteban", serif;

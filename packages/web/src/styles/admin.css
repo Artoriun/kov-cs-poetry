@@ -795,10 +795,13 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* Left-aligned like the public grid, carousel and detail overlays. Stretch rather than
+     centre, so every card's text starts at the same inset instead of each one hugging its
+     own longest line — the same uniform-column reasoning as .detail-overlay. */
+  align-items: stretch;
   justify-content: safe center;
   color: #fff;
-  text-align: center;
+  text-align: left;
   padding: 16px 10px;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
   font-size: 11px;
