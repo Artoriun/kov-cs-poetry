@@ -10,19 +10,21 @@ const OPTIONS: Lang[] = ['en', 'hu'];
 export default function AdminLangToggle() {
   const { lang, setLang } = useLang();
   return (
-    <fieldset className="admin-lang-toggle">
-      <legend className="admin-lang-legend">Admin language</legend>
-      {OPTIONS.map((code) => (
-        <button
-          key={code}
-          type="button"
-          className={`admin-lang-btn${lang === code ? ' is-active' : ''}`}
-          aria-pressed={lang === code}
-          onClick={() => setLang(code)}
-        >
-          {code.toUpperCase()}
-        </button>
-      ))}
-    </fieldset>
+    <div className="admin-lang-row">
+      <fieldset className="admin-lang-toggle">
+        <legend className="admin-lang-legend">Admin language</legend>
+        {OPTIONS.map((code) => (
+          <button
+            key={code}
+            type="button"
+            className={`admin-lang-btn${lang === code ? ' is-active' : ''}`}
+            aria-pressed={lang === code}
+            onClick={() => setLang(code)}
+          >
+            {code.toUpperCase()}
+          </button>
+        ))}
+      </fieldset>
+    </div>
   );
 }
