@@ -1,6 +1,6 @@
 # Kovács — Modern Poetry Portfolio
 
-Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Swipeable full-screen poem reader, auto-advancing carousel, working contact form, WCAG AA contrast, and CI that gates every deploy on **Playwright** layout tests.
+Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Swipeable full-screen poem reader, auto-advancing carousel, working contact form, WCAG AA contrast, and prerendered-then-hydrated pages so the poems are indexable without JavaScript. CI gates every deploy on **Playwright** layout tests and a bundle budget.
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
@@ -18,6 +18,8 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 - Working contact form — messages are delivered by email, with validation, a honeypot and per-IP rate limiting
 - Light/dark mode, page-load fade-in sequence, fully responsive (portrait & landscape)
 - Text colours meet WCAG AA contrast in both themes
+- Every route is prerendered to static HTML, so the poems are readable without JavaScript and each page carries its own title, description and structured data
+- Images are served through Cloudinary at the width the device asks for, and the body font is self-hosted rather than fetched from Google
 
 **Admin portal (`/admin`)** — password login + JWT auth (auto-logout on expiry)
 - Create, edit, delete, and drag-to-reorder poems; changes persist to Firestore and reflect site-wide instantly
@@ -32,7 +34,7 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 
 All UI text lives in typed locale files (`packages/web/src/i18n/{en,hu}.ts`) behind a lightweight `LanguageProvider` + `useT()` hook — no i18n dependency. `hu.ts` is type-checked against the `en` shape, so a missing key is a build error. Language comes from the `?lang=` query param, defaulting to **Hungarian** (`VITE_DEFAULT_LANG`); the choice is not persisted, so a refresh always reverts to the default unless `?lang=` is present. Poem content and the *Kovács* / *Admin* labels are left as authored.
 
-The **admin portal defaults to English** while the public site stays Hungarian. A second `LanguageProvider` wraps only the `/admin` route (`defaultLang="en" scoped`), so the two are independent: the EN/HU switch in the portal cannot change the public pages, and leaving `/admin` unmounts that provider rather than leaving a language behind. The scoped provider deliberately does not set `document.lang` or `document.title` — React runs child effects before parent ones, so on a direct load of `/admin` the root provider would overwrite it. To add a string, add the key to both locale files and use `t.<key>`.
+The **admin portal defaults to English** while the public site stays Hungarian. A second `LanguageProvider` wraps only the `/admin` route (`defaultLang="en" scoped`), so the two are independent: the EN/HU switch in the portal cannot change the public pages, and leaving `/admin` unmounts that provider rather than leaving a language behind. The scoped provider deliberately does not set `document.lang` — React runs child effects before parent ones, so on a direct load of `/admin` the root provider would overwrite it. Neither provider sets `document.title`: the title is per-route rather than per-language, and `useRouteMeta` owns it, reading the same shared helper the prerenderer uses so the two cannot drift. To add a string, add the key to both locale files and use `t.<key>`.
 
 ---
 
@@ -50,7 +52,7 @@ The **admin portal defaults to English** while the public site stays Hungarian. 
 | **JWT** | Admin authentication |
 | **Resend** / **Nodemailer** | Contact-form delivery over HTTPS, with SMTP as a local fallback |
 | **Biome** | Linting & formatting (one tool, replaces ESLint + Prettier) |
-| **Playwright** | Layout regression tests across desktop and mobile viewports |
+| **Playwright** | Layout regression tests across viewports — and the prerenderer, which drives the built app in a real browser |
 
 ---
 
@@ -61,8 +63,11 @@ The **admin portal defaults to English** while the public site stays Hungarian. 
 playwright.config.ts            # 3 viewport projects
 render.yaml                     # API infrastructure as code
 e2e/                            # layout.spec.ts + API-stubbing fixtures
+scripts/
+├── prerender.mjs               # static HTML per route + sitemap.xml + robots.txt
+└── check-budgets.mjs           # bundle budget + untransformed-image guard (CI)
 packages/
-├── shared/src/index.ts         # Poem type + hardcoded fallback data
+├── shared/src/index.ts         # Poem type, fallback data, per-route SEO metadata
 ├── api/src/                    # Express server (port 4000)
 │   ├── index.ts                # app + /health and /health/deps
 │   ├── loadEnv.ts              # .env resolved relative to the file, not the cwd
@@ -72,10 +77,16 @@ packages/
 └── web/                        # Vite React app (port 3000)
     ├── public/favicon.svg
     └── src/
-        ├── App.tsx             # Routes + PoemsProvider
+        ├── main.tsx            # hydrates prerendered pages, else createRoot
+        ├── App.tsx             # Routes + PoemsProvider (/admin is lazy-loaded)
+        ├── assets/fonts/       # self-hosted Esteban (OFL) + licence
         ├── context/            # PoemsContext, ThemeContext
         ├── i18n/               # en.ts, hu.ts, LanguageProvider
-        ├── lib/api.ts          # Typed API client
+        ├── lib/
+        │   ├── api.ts          # Typed API client
+        │   ├── images.ts       # Cloudinary transforms + srcset
+        │   ├── prerendered.ts  # IS_PRERENDERED / IS_PRERENDERING flags
+        │   └── useRouteMeta.ts # per-route <title> and description
         ├── components/         # Header, PoemCarousel, ThemeToggle, …
         ├── pages/              # Home, Poems, Admin, Contact
         └── styles/             # global.css, themes.css, admin.css
@@ -94,6 +105,9 @@ npm run lint       # Biome linter
 npm run format     # Biome auto-format
 npm run check      # lint + format verification (CI)
 npm run test:e2e   # Playwright layout tests (3 viewports)
+
+npm run prerender     # static HTML per route (needs a fresh `npm run build` first)
+npm run check:budgets # gzip bundle budget + untransformed-image guard (CI)
 ```
 
 Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](https://biomejs.dev)** (config in `biome.json`); type-checking is each package's `typecheck` script, orchestrated by Turbo.
@@ -120,6 +134,41 @@ the free tier — and it is why the assertions can be geometric without being fl
 
 ---
 
+## Rendering & SEO
+
+`scripts/prerender.mjs` runs after the build. It serves `dist`, drives the real app in
+Playwright — already a dev dependency, so there is no SSR runtime or second framework —
+and writes each route's DOM to its own `index.html`, plus `sitemap.xml` and `robots.txt`.
+Poems come from the live API so an admin edit reaches the static HTML, falling back to the
+bundled poems if the API is unreachable; the fallback is logged loudly, because visitors
+would see the edit either way and only crawlers would be left on stale text.
+
+Without this a crawler received `<div id="root"></div>` and an HTTP 404, since Pages serves
+an SPA by falling back to `404.html`. Each route now returns 200 with the poem in the
+markup, its own `<title>`, description, canonical and `CreativeWork` JSON-LD. There is
+deliberately no `<meta name="keywords">` — no major engine has used it since 2009.
+
+**Prerendered pages are hydrated, not re-rendered.** `createRoot` over existing markup
+discards it and rebuilds, and every discarded node takes a Largest Contentful Paint
+candidate with it — Lighthouse reported `NO_LCP` on roughly a third of mobile runs. Three
+things keep the client's first render matching the markup, and breaking any of them brings
+that back:
+
+- Flags like `imageLoaded` and `revealed` initialise from `IS_PRERENDERED`, so the first
+  render does not include a loading prompt the captured HTML lacks.
+- Poem pagination is skipped while `IS_PRERENDERING`. It measures the viewport, so a poem
+  split at 1280×900 could never match the same poem hydrating on a phone. Leaving it
+  unpaginated also puts the whole poem in the HTML rather than only the first slide.
+- The prerenderer embeds a patch — display order plus any genuinely edited poems — because
+  it renders from the API while the client seeds from the bundle.
+
+`npm run check:budgets` runs in CI's `verify` job and so gates the deploy. It caps the
+gzipped initial payload and fails on any poem image URL reaching a `src`/`srcSet` without
+`optimizeUrl()`; that guard exists because the home carousel shipped 1.2 MB originals for
+months purely because the helper was module-local to another file.
+
+---
+
 ## API
 
 | Endpoint | Notes |
@@ -133,7 +182,9 @@ the free tier — and it is why the assertions can be geometric without being fl
 
 ## Deployment
 
-- **Frontend → GitHub Pages** via `.github/workflows/ci.yml` (triggers on push to `main`). The deploy job runs `needs: [verify, e2e]`, so lint, typecheck, build and the layout tests all have to pass before anything publishes — a red build simply does not ship.
+- **Frontend → GitHub Pages** via `.github/workflows/ci.yml` (triggers on push to `main`). The deploy job runs `needs: [verify, e2e]`, so lint, typecheck, build, the budget guard and the layout tests all have to pass before anything publishes — a red build simply does not ship.
+- **Rebuilt weekly** (`schedule:` cron, Mondays 04:00 UTC) and on demand via `workflow_dispatch`. Prerendered HTML is a snapshot, so a poem edited in the admin portal is live for visitors immediately but invisible to crawlers until the next build; the cron bounds that gap without putting a repo-write token in the app. `schedule` is listed in the deploy job's `if:` — omit it and the weekly run builds, tests, then silently skips deploying.
+- **Pages-specific workarounds.** Vite builds with `--base=/kov-cs-poetry/`, the router takes a matching `basename`, and CI copies `index.html` to `404.html` for `/admin` and unknown paths. The generated `robots.txt` is inert here: crawlers read it from the domain root, and this is a project page, so `artoriun.github.io/robots.txt` is what they fetch. On a host serving from a domain root, drop the base path and the 404 copy, and `robots.txt` starts working.
 - **Node 22 is required** (`.nvmrc`). The compiled API imports raw TypeScript from `packages/shared`, which only loads on a runtime that strips types; on Node 20 it fails pointing at another package with no hint why.
 - **API → Render** (free tier). Set `CORS_ORIGIN` (`https://<your-username>.github.io`) on Render, and add the deployed API URL as the `VITE_API_URL` GitHub Actions secret so the Pages build can reach it.
   - Build: `npm install && cd packages/api && npm run build` — Start: `node packages/api/dist/index.js`
