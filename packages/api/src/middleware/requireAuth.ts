@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { currentEpoch } from '../authState';
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;
   if (!auth) {
     res.status(401).json({ error: 'no-auth-header' });
@@ -27,6 +28,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     // else with the same secret cannot be replayed here.
     if (typeof payload !== 'object' || payload === null || payload.admin !== true) {
       res.status(401).json({ error: 'jwt-invalid' });
+      return;
+    }
+    // Tokens minted before the last "revoke all" are refused even though their signature
+    // and expiry are still good. This is what makes a leaked token recoverable without
+    // rotating JWT_SECRET and restarting the API.
+    if ((payload.epoch ?? 0) < (await currentEpoch())) {
+      console.warn('[auth] token predates the current epoch; treating as revoked');
+      res.status(401).json({ error: 'jwt-revoked' });
       return;
     }
     next();

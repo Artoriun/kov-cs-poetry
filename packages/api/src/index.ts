@@ -2,6 +2,7 @@ import './loadEnv';
 import cors from 'cors';
 import express from 'express';
 import { db } from './firebaseAdmin';
+import { usingPlaintextPassword } from './password';
 import { authRouter } from './routes/auth';
 import { contactRouter } from './routes/contact';
 import { poemsRouter } from './routes/poems';
@@ -81,4 +82,14 @@ app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/poems', poemsRouter);
 
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`API running on http://localhost:${PORT}`);
+  // Said once at startup rather than per request. Not an error — the plaintext form stays
+  // supported on purpose so an existing deployment keeps working — but it does mean the
+  // password is readable in the hosting dashboard, and `npm run hash-password` fixes that.
+  if (usingPlaintextPassword()) {
+    console.warn(
+      '[auth] using plaintext ADMIN_PASSWORD. Run `npm run hash-password` and set ADMIN_PASSWORD_HASH instead.',
+    );
+  }
+});
