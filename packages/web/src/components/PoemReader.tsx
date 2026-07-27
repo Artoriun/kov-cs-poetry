@@ -219,11 +219,16 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   }, [detailPages, sourceSlides, usesCustomSlides]);
 
   // Discard the current page breaks and let the measuring effect above run again.
-  const repaginate = () => {
+  // `replayReveal` remounts the slide so its reveal animation runs from the top. That is
+  // right after a rotation, where the reader is looking at a layout that just changed, but
+  // wrong when the text is corrected underneath them a second after load: remounting plays
+  // the enter/exit transition, which is indistinguishable from the slide advancing on its
+  // own — it looked like autoplay firing instantly.
+  const repaginate = (replayReveal: boolean) => {
     setDetailPages(null);
     setSlideHeights(null); // line heights change with the orientation
     setCurrentSlide(0); // page count changes, so the old index may not exist
-    setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
+    if (replayReveal) setLayoutGen((g) => g + 1);
     setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
     setUpBtnVisible(false);
     setDownBtnVisible(true);
@@ -242,7 +247,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   useEffect(() => {
     if (paginatedForRef.current === contentKey) return;
     paginatedForRef.current = contentKey;
-    repaginate();
+    repaginate(false); // correct the text in place; see repaginate
   }, [contentKey]);
 
   // Rotating changes the slide height (portrait is one viewport, landscape two) and the
@@ -254,7 +259,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape)');
     const onRotate = () => {
-      repaginate();
+      repaginate(true);
       // Rotating can leave the reader part-way down a slide that no longer exists
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
