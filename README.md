@@ -2,9 +2,16 @@
 
 Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Every route is prerendered to static HTML and hydrated, so the poems are indexable without JavaScript. CI gates every deploy on lint, typecheck, API tests, layout tests and a bundle budget.
 
+[![CI](https://github.com/Artoriun/kov-cs-poetry/actions/workflows/ci.yml/badge.svg)](https://github.com/Artoriun/kov-cs-poetry/actions/workflows/ci.yml)
+
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
-<img width="1511" height="729" alt="Screenshot 2026-07-01 at 19 03 43" src="https://github.com/user-attachments/assets/309af18e-225e-4bd6-a0da-be411f6d72d1" />
+Lighthouse on the deployed site (mobile): **97** performance, **100** accessibility,
+**100** best practices, **100** SEO — LCP 2.5s, no blocking time, no layout shift.
+
+![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
+
+![The home page carousel](docs/screenshot-home.jpg)
 
 ---
 

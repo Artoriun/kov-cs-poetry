@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
@@ -56,9 +56,15 @@ const variants = {
 export default function PoemCarousel() {
   const t = useT();
   const { poems: allPoems, loading } = usePoemsContext();
-  const withOverlay = allPoems.filter((p) => p.overlay);
-  const featured = withOverlay.filter((p) => p.featured);
-  const CAROUSEL_POEMS = featured.length > 0 ? featured : withOverlay.slice(0, 5);
+  // Memoised because both effects below depend on it. Rebuilt every render, it was a new
+  // array each time, so listing it as a dependency would have restarted the autoplay timer
+  // on every render and the carousel would never have advanced — which is why it was
+  // omitted from the dependency lists instead.
+  const CAROUSEL_POEMS = useMemo(() => {
+    const withOverlay = allPoems.filter((p) => p.overlay);
+    const featured = withOverlay.filter((p) => p.featured);
+    return featured.length > 0 ? featured : withOverlay.slice(0, 5);
+  }, [allPoems]);
   const count = CAROUSEL_POEMS.length;
 
   // [current index, slide direction] packed together so one setState drives both
@@ -75,12 +81,17 @@ export default function PoemCarousel() {
   // Blocks paginate during an active animation so rapid swipes don't queue up
   const animatingRef = useRef(false);
 
-  const paginate = (dir: number) => {
-    if (animatingRef.current) return;
-    animatingRef.current = true;
-    setImageLoaded(false);
-    setSlide(([c]) => [(c + dir + count) % count, dir]);
-  };
+  // useCallback for the same reason: the autoplay effect calls it, so a fresh function
+  // each render would reset the timer continuously.
+  const paginate = useCallback(
+    (dir: number) => {
+      if (animatingRef.current) return;
+      animatingRef.current = true;
+      setImageLoaded(false);
+      setSlide(([c]) => [(c + dir + count) % count, dir]);
+    },
+    [count],
+  );
 
   // Preload adjacent slides so the image is cached before the user swipes to it
   useEffect(() => {
@@ -97,7 +108,7 @@ export default function PoemCarousel() {
       img.srcset = fullBleedSrcSet(next);
       img.src = optimizeUrl(next, FULL_BLEED_W);
     });
-  }, [current, count]);
+  }, [current, count, CAROUSEL_POEMS]);
 
   // Autoplay: delay proportional to line count so longer poems get more reading time
   useEffect(() => {
@@ -106,7 +117,7 @@ export default function PoemCarousel() {
     const lineCount = poem?.overlay ? poem.overlay.split('\n').length : 3;
     const timer = setTimeout(() => paginate(1), Math.max(3000, lineCount * 1000));
     return () => clearTimeout(timer);
-  }, [current, isHovered, count]);
+  }, [current, isHovered, count, CAROUSEL_POEMS, paginate]);
 
   const poem = CAROUSEL_POEMS[current];
 
@@ -200,6 +211,9 @@ export default function PoemCarousel() {
                           <span>
                             {poem.overlay.split('\n').map((line, i) => (
                               <span
+                                // Poem lines are positional and never reorder, and two of the poems repeat a
+                                // line, so keying by text would collide.
+                                // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
                                 key={i}
                                 className="carousel-overlay-line"
                                 style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}

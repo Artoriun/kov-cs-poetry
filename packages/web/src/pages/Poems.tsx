@@ -138,6 +138,10 @@ export default function Poems() {
   })();
 
   // Measure the grid's real column count (auto-fill resolves to actual tracks)
+  // `id` is listed deliberately —
+  // remeasuring when the route changes is the point, since the grid unmounts on a detail
+  // view and its columns must be read again on return.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the extra dependency is intentional
   useLayoutEffect(() => {
     const measure = () => {
       const g = gridRef.current;
@@ -200,6 +204,10 @@ export default function Poems() {
   }, [revealed, loading, poems, page, perPage]);
 
   // Reset all detail state when navigating to a different poem
+  // detailPoem is listed on purpose.
+  // The reset must also run once the poems finish loading on a hard refresh, not only when
+  // the id changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the extra dependency is intentional
   useLayoutEffect(() => {
     setDetailPages(null);
     setSlideHeights(null);
@@ -227,6 +235,11 @@ export default function Poems() {
   }, [id, detailPoem]);
 
   // Measure overlay lines and split into pages that fit the available viewport height
+  // detailPoem and detailLines are
+  // read but deliberately not listed. detailLines is rebuilt on every render, so listing it
+  // would re-run this on every render; the effect already guards on detailPages !== null and
+  // is re-triggered by clearing that.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: omitted on purpose; see above
   useLayoutEffect(() => {
     if (!id || !detailPoem || detailPages !== null) return;
     if (sourceSlides.length === 0) return;
@@ -396,6 +409,10 @@ export default function Poems() {
   }, [id, activePoemId]);
 
   // Keep the TOC indicator line in sync with the current page range
+  // activePoemId is listed on
+  // purpose — the indicator has to redraw when the highlighted poem changes, not only when
+  // the route does.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the extra dependency is intentional
   useEffect(() => {
     const ul = tocListRef.current;
     const line = tocLineRef.current;
@@ -458,6 +475,10 @@ export default function Poems() {
   // and prevent the address bar from showing/hiding (which causes the background image to resize).
   // detailPoem is included in deps so this re-runs after poems load on a hard refresh —
   // without it, poemDetailRef.current is null on the first run (div not yet in the DOM).
+  // first run after a hard refresh.
+  // detailPoem is the extra
+  // dependency described above — without it poemDetailRef.current is still null on the
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the extra dependency is intentional
   useEffect(() => {
     const el = poemDetailRef.current;
     if (!el) return;
@@ -469,6 +490,10 @@ export default function Poems() {
   }, [id, detailPoem]);
 
   // Auto-advance to the next poem page after enough reading time
+  // goToSlide is rebuilt each
+  // render, so listing it would restart the reading timer continuously and the page would
+  // never advance.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: omitted on purpose; see above
   useEffect(() => {
     if (!id || !detailPages) return;
     if (currentSlide === detailPages.length - 1) return;
@@ -660,6 +685,9 @@ export default function Poems() {
         <div className="detail-measure" aria-hidden="true">
           <p className="detail-overlay">
             {measureLines.map((line, i) => (
+              // Poem lines are positional and never reorder, and two of the poems repeat a
+              // line, so keying by text would collide.
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
               <span key={i} className="detail-overlay-line-revealed">
                 {line || ' '}
               </span>
@@ -724,6 +752,9 @@ export default function Poems() {
                 <p className="detail-overlay">
                   {currentPageLines.map((line, i) => (
                     <span
+                      // Poem lines are positional and never reorder, and two of the poems repeat a
+                      // line, so keying by text would collide.
+                      // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
                       key={i}
                       // Seen slides show immediately; new slides play the mask-wipe reveal
                       className={

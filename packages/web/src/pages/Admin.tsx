@@ -372,7 +372,15 @@ function PoemCard({
             <div className="admin-custom-slides">
               <span className="admin-field-label">{t.admin.customSlides}</span>
               {(edit.customSlides ?? []).map((slide, idx) => (
-                <div key={idx} className="admin-slide-row">
+                <div
+                  // customSlides is a plain string[] with no stable id, so there is nothing
+                  // better to key on. Slides can be removed, which is where index keys are
+                  // weakest — but the textarea is controlled, so its value follows the data.
+                  // Real ids would mean changing the shape stored in Firestore.
+                  // biome-ignore lint/suspicious/noArrayIndexKey: string[] has no stable id
+                  key={idx}
+                  className="admin-slide-row"
+                >
                   <span className="admin-slide-num">{idx + 1}</span>
                   <textarea
                     className="admin-overlay-textarea admin-slide-textarea"
