@@ -2,6 +2,7 @@ import type { Poem } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import { FULL_BLEED_W, fullBleedSrcSet, optimizeUrl } from '../lib/images';
 import { IS_PRERENDERED, IS_PRERENDERING } from '../lib/prerendered';
@@ -11,6 +12,12 @@ const DETAIL_LINE_STAGGER = 120; // ms between overlay lines
 const DETAIL_BTN_OFFSET = 400; // ms after last line starts before bottom button appears
 const SLIDE_RESIZE = 450; // ms — must match the height transition on .poem-detail.custom-slides
 const DETAIL_MS_PER_LINE = 1500; // ms of reading time per line before auto-advancing
+// Longest the reader will wait for the live poems before laying out the bundled copy.
+// Generous on purpose: the API answers in ~1.5s against a warm Firestore, and a cap that
+// fires first would race it and reintroduce the very reflow this is here to prevent. It is
+// a failsafe for an API that is asleep or gone, not the expected path — and prerendered
+// pages skip the wait entirely, so in production this only applies to the SPA fallback.
+const POEMS_WAIT_CAP = 4000;
 
 // Direction-aware variants for the poem detail carousel; dir 1=forward/down, -1=backward/up
 const slideVariants = {
@@ -69,6 +76,35 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   // beginning un-ready would render a different tree than the HTML holds and cost us
   // hydration. See lib/prerendered.ts.
   const [detailImgReady, setDetailImgReady] = useState(IS_PRERENDERED);
+
+  // Hold the measurement until the live poems arrive, so a poem edited in the admin portal
+  // is laid out once from its real text. Measuring the bundled copy first and correcting
+  // afterwards was visible: poem-23 is bundled as a 24-line slide and lives as an 11-line
+  // one, so the text was placed down a 1100px-tall slide and jumped up when the API landed.
+  //
+  // Prerendered pages start settled and skip the wait entirely: their markup already holds
+  // build-time-accurate text, so pausing would both delay the paint and render a different
+  // tree than the HTML holds.
+  //
+  // Capped rather than waiting on `loading` alone — apiGetPoems has no timeout and the API
+  // sleeps when idle, so an unbounded wait would hide the poem behind the loading prompt
+  // for the whole cold start. After the cap the bundled text is shown and corrected in
+  // place if it turns out to be stale.
+  const { loading: poemsLoading } = usePoemsContext();
+  const [poemsSettled, setPoemsSettled] = useState(IS_PRERENDERED);
+  useEffect(() => {
+    if (poemsSettled) return;
+    if (!poemsLoading) {
+      setPoemsSettled(true);
+      return;
+    }
+    const timer = setTimeout(() => setPoemsSettled(true), POEMS_WAIT_CAP);
+    return () => clearTimeout(timer);
+  }, [poemsLoading, poemsSettled]);
+
+  // Both the image and the text must be ready before the reader fades in, so the poem never
+  // appears mid-correction.
+  const ready = detailImgReady && poemsSettled;
   const poemDetailRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     startY: number;
@@ -97,6 +133,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   // biome-ignore lint/correctness/useExhaustiveDependencies: omitted on purpose; see above
   useLayoutEffect(() => {
     if (detailPages !== null) return;
+    if (!poemsSettled) return; // measure the live text, not the bundled placeholder
     if (sourceSlides.length === 0) return;
     // Skipped while the prerenderer is capturing. Pagination depends on the measured
     // viewport, so a page captured at 1280x900 splits differently than the same poem
@@ -216,7 +253,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
     } else {
       setDownBtnVisible(true);
     }
-  }, [detailPages, sourceSlides, usesCustomSlides]);
+  }, [detailPages, poemsSettled, sourceSlides, usesCustomSlides]);
 
   // Discard the current page breaks and let the measuring effect above run again.
   // `replayReveal` remounts the slide so its reveal animation runs from the top. That is
@@ -397,7 +434,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   return (
     <div
       ref={poemDetailRef}
-      className={`page poem-detail${detailImgReady ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
+      className={`page poem-detail${ready ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
       // A floor, not a fixed height: the measured copy can under-estimate (the webfont
       // may still be loading when it is measured, so the real text wraps onto more
       // rows). With a fixed height the extra rows overflowed and ran under the nav
@@ -448,7 +485,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
 
       {/* Cold-cache loading prompt; fades out as the image + text fade in */}
       <AnimatePresence>
-        {!detailImgReady && (
+        {!ready && (
           <motion.p
             key="detail-loading"
             className="loading-prompt detail-loading"
