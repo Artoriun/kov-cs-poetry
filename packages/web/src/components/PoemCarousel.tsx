@@ -124,8 +124,17 @@ export default function PoemCarousel() {
   return (
     <div
       className={`poem-carousel-wrapper${!loading && count > 0 ? ' carousel-loaded' : ''}${firstImageLoaded ? ' image-ready' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      // Pointer events gated on a real mouse, not onMouseEnter/onMouseLeave. A tap fires
+      // compatibility mouse events, so on a touch screen tapping an arrow or swiping set
+      // isHovered and never cleared it: the wrapper fills the whole viewport below the
+      // header, so there is nowhere to move off to and mouseleave never fires. Autoplay
+      // stopped for good. Hover-to-pause is a mouse affordance; touch has no hover.
+      onPointerEnter={(e) => {
+        if (e.pointerType === 'mouse') setIsHovered(true);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === 'mouse') setIsHovered(false);
+      }}
     >
       {/* Cold-cache loading prompt; fades out as the carousel fades in */}
       <AnimatePresence>
