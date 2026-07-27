@@ -68,14 +68,18 @@ render.yaml                     # API infrastructure as code
 e2e/                            # layout.spec.ts + API-stubbing fixtures
 scripts/
 ├── prerender.mjs               # static HTML per route + sitemap.xml + robots.txt
-└── check-budgets.mjs           # bundle budget + untransformed-image guard (CI)
+├── check-budgets.mjs           # bundle budget + untransformed-image guard (CI)
+└── hash-password.mjs           # prints an ADMIN_PASSWORD_HASH
 packages/
 ├── shared/src/index.ts         # Poem type, fallback data, per-route SEO metadata
 ├── api/src/                    # Express server (port 4000)
 │   ├── index.ts                # app + /health and /health/deps
 │   ├── loadEnv.ts              # .env resolved relative to the file, not the cwd
 │   ├── firebaseAdmin.ts
-│   ├── routes/                 # auth.ts, contact.ts, poems.ts
+│   ├── password.ts             # scrypt hash + plaintext fallback
+│   ├── rateLimit.ts            # per-IP fixed window
+│   ├── authState.ts            # login attempts + token epoch (Firestore)
+│   ├── routes/                 # auth.ts, contact.ts, poems.ts (+ *.test.ts)
 │   └── middleware/requireAuth.ts
 └── web/                        # Vite React app (port 3000)
     ├── public/favicon.svg
@@ -112,6 +116,7 @@ npm run test:e2e   # Playwright layout tests (3 viewports)
 npm run prerender     # static HTML per route (needs a fresh `npm run build` first)
 npm run check:budgets # gzip bundle budget + untransformed-image guard (CI)
 npm run hash-password # prints an ADMIN_PASSWORD_HASH for a password you type in
+npm run test:api      # API unit + route tests (Node's runner, via tsx)
 ```
 
 Vite proxies `/api` to the API in development. Linting/formatting use **[Biome](https://biomejs.dev)** (config in `biome.json`); type-checking is each package's `typecheck` script, orchestrated by Turbo.
@@ -135,6 +140,18 @@ paging, the TOC indicator failing to draw on a cold load.
 The API is stubbed from the shared fixtures and the poem images are stubbed with a 1×1 PNG.
 That keeps the suite deterministic and independent of the Render instance, which sleeps on
 the free tier — and it is why the assertions can be geometric without being flaky.
+
+`npm run test:api` covers the server separately, using Node's built-in runner through the
+`tsx` that is already a dependency — no test framework was added. It exercises the parts an
+attacker reaches first: mail-header injection through the contact form, the honeypot, the
+length caps and address validation, the per-IP limit, and the admin password (that the
+plaintext form still works, that the same password verifies against its hash, that the hash
+does not contain it, and that a stale plaintext cannot reopen access once a hash is set).
+
+The suite was checked by breaking each guard in turn — removing the newline check, disabling
+the honeypot, letting a stale plaintext win — and confirming exactly one test failed each
+time. Tests are excluded from the API's tsconfig so they never reach `dist`. The auth routes
+are not covered yet: they import Firestore, so testing them needs the client mocked.
 
 ---
 
