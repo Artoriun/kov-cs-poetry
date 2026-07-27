@@ -1249,8 +1249,19 @@ h3 {
   opacity: 0;
 }
 
-.poem-detail.image-ready .detail-img-anim {
+/* .is-painted is added when the <img> itself finishes decoding. Without it the fade ran
+   against an image that had no pixels yet on a prerendered page, where the reveal gate is
+   already open at first paint, and the background snapped in when they arrived. */
+.poem-detail.image-ready .detail-img-anim.is-painted {
   animation: detail-fade-in 0.6s ease both;
+}
+
+/* Nothing adds .is-painted without the runtime, so keep the prerendered background visible
+   for a scriptless client rather than leaving it transparent. */
+@media (scripting: none) {
+  .detail-img-anim {
+    opacity: 1;
+  }
 }
 
 .poem-detail:not(.image-ready) .detail-overlay-line {

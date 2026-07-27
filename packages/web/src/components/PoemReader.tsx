@@ -105,6 +105,37 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   // Both the image and the text must be ready before the reader fades in, so the poem never
   // appears mid-correction.
   const ready = detailImgReady && poemsSettled;
+
+  // The background fades on its own load rather than with the text.
+  //
+  // On a prerendered page detailImgReady starts true — it must, or the first client render
+  // would differ from the markup and cost us hydration — so the shared gate is already open
+  // when the reader mounts. The fade then ran to full opacity over an image with no pixels
+  // yet and the background snapped in when they arrived, ~840ms later on a throttled phone.
+  // The text still reveals immediately, which is the whole point of prerendering it; only
+  // the image now waits for itself.
+  //
+  // Skipped while the prerenderer captures, so the class is absent from both the markup and
+  // the client's first render and hydration still matches.
+  const bgRef = useRef<HTMLImageElement>(null);
+  const [bgPainted, setBgPainted] = useState(false);
+  useEffect(() => {
+    if (IS_PRERENDERING) return;
+    const el = bgRef.current;
+    if (!el) return;
+    // Already decoded (cached, or finished while the bundle booted) — no event is coming.
+    if (el.complete && el.naturalWidth > 0) {
+      setBgPainted(true);
+      return;
+    }
+    const done = () => setBgPainted(true);
+    el.addEventListener('load', done);
+    el.addEventListener('error', done); // a broken image must not leave the page blank
+    return () => {
+      el.removeEventListener('load', done);
+      el.removeEventListener('error', done);
+    };
+  }, []);
   const poemDetailRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     startY: number;
@@ -116,10 +147,19 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   // Preload the background; the "Loading…" prompt stays until it's cached, then the image +
   // text reveal together. Driven by a dedicated Image() (not the rendered <img>'s ref) so
   // readiness never flips true before the pixels are actually available.
+  //
+  // sizes and srcset must match the rendered <img> below, so the browser resolves the
+  // identical candidate and this waits on the file actually shown. Without them this asked
+  // for a fixed w_1600 while a phone displays w_1280 — the gate then tracked an image the
+  // device never renders, so a cached w_1600 opened the reveal over a w_1280 that was still
+  // downloading and the background popped in afterwards. Same reasoning as the carousel's
+  // preload; that one was corrected when srcset was introduced and this one was missed.
   useEffect(() => {
     const img = new Image();
     img.onload = () => setDetailImgReady(true);
     img.onerror = () => setDetailImgReady(true);
+    img.sizes = '100vw';
+    img.srcset = fullBleedSrcSet(poem.image);
     img.src = optimizeUrl(poem.image, FULL_BLEED_W);
     return () => {
       img.onload = null;
@@ -458,11 +498,12 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
       onTouchEnd={(e) => dragEnd(e.changedTouches[0].clientY)}
     >
       <img
+        ref={bgRef}
         src={optimizeUrl(poem.image, FULL_BLEED_W)}
         srcSet={fullBleedSrcSet(poem.image)}
         sizes="100vw"
         alt={poem.title}
-        className="detail-fixed-bg detail-img-anim"
+        className={`detail-fixed-bg detail-img-anim${bgPainted ? ' is-painted' : ''}`}
       />
 
       {/* Hidden copy of the whole poem that pagination measures. It lives outside
