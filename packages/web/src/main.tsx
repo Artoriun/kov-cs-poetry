@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import AppErrorFallback from './components/AppErrorFallback';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './i18n';
 import './styles/global.css';
@@ -20,7 +22,12 @@ const tree = (
     <LanguageProvider>
       <ThemeProvider>
         <BrowserRouter basename={baseUrl}>
-          <App />
+          {/* Inside the router so the fallback can link home, and inside the providers so
+              it can be translated. It renders no wrapper element, so hydration of the
+              prerendered markup is unaffected. */}
+          <ErrorBoundary fallback={(retry) => <AppErrorFallback retry={retry} />}>
+            <App />
+          </ErrorBoundary>
         </BrowserRouter>
       </ThemeProvider>
     </LanguageProvider>

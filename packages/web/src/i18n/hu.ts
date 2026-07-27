@@ -5,6 +5,34 @@ export const hu: Dict = {
   meta: {
     title: 'Kovács | KÖLTÉSZET',
   },
+  error: {
+    title: 'Hiba történt',
+    body: 'Ezt az oldalt nem sikerült megjeleníteni. A versek továbbra is elérhetők.',
+    retry: 'Újrapróbálom',
+    home: 'Vissza a főoldalra',
+  },
+  privacy: {
+    title: 'Adatkezelés',
+    updated: 'Utoljára frissítve: 2026. július',
+    collectTitle: 'Milyen adatokat gyűjtünk',
+    collectBody:
+      'Kizárólag azt, amit a kapcsolatfelvételi űrlapba ír: a nevét, e-mail-címét, a tárgyat és az üzenetet. Ezen kívül semmilyen adatot nem gyűjtünk Önről, és az oldalon nincs semmiféle analitika vagy nyomkövetés.',
+    useTitle: 'Mire használjuk',
+    useBody:
+      'Az üzenetet e-mailben továbbítjuk az oldal tulajdonosának, hogy elolvashassa és válaszolhasson rá. Másra nem használjuk, marketingcélra soha.',
+    sharingTitle: 'Ki láthatja még',
+    sharingBody:
+      'Az üzenet a Resend levélküldő szolgáltatáson keresztül jut el a tulajdonos postafiókjába. Az oldalt a GitHub Pages szolgálja ki, a kapcsolatfelvételi űrlapot egy Renderen futó szerver kezeli, a képeket pedig a Cloudinary — mint minden weboldal esetében, ezek a szolgáltatók látják, milyen IP-címről csatlakozik a böngészője. Adatait nem adjuk el és nem osztjuk meg mással.',
+    retentionTitle: 'Meddig őrizzük',
+    retentionBody:
+      'Az üzenet semmilyen adatbázisban nem tárolódik — kizárólag e-mailként létezik a tulajdonos postafiókjában, ameddig a válaszadáshoz szükséges. Az automatizált visszaélések ellen a szerver egy órán át emlékszik az űrlapot beküldő IP-címekre.',
+    cookiesTitle: 'Sütik',
+    cookiesBody:
+      'Nincsenek. A világos vagy sötét megjelenésre vonatkozó beállítását a saját böngészője jegyzi meg, és az soha nem hagyja el a készülékét.',
+    rightsTitle: 'Az Ön jogai',
+    rightsBody:
+      'Kérheti, hogy megtudja, milyen adatot őrzünk Önről, kérhet róla másolatot, és kérheti a törlését. Ehhez használja a kapcsolatfelvételi űrlapot, vagy válaszoljon bármelyik kapott e-mailre.',
+  },
   nav: {
     home: 'Főoldal',
     poems: 'Versek',

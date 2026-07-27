@@ -7,6 +7,7 @@ import { useRouteMeta } from './lib/useRouteMeta';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import Poems from './pages/Poems';
+import Privacy from './pages/Privacy';
 
 // Split out of the main bundle: the portal and its stylesheet are only ever used by the
 // site owner, but were being downloaded by every visitor. admin.css is imported solely by
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/poems" element={<Poems />} />
           <Route path="/poems/:id" element={<Poems />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Route>
       </Routes>
     </PoemsProvider>

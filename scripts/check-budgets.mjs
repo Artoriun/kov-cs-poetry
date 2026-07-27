@@ -21,8 +21,9 @@ const WEB = new URL('../packages/web/', import.meta.url).pathname;
 // importing the poems as a value rather than a type puts all 34 of them in the entry
 // chunk, +11.2KB gzipped. That buys a page that still renders when the API is down and
 // stops React blanking the prerendered HTML on mount, which is worth it on a site whose
-// content is the product. ~7KB of headroom left above the current 120.8KB.
-const BUDGET_GZIP = { '.js': true, '.css': true, initial: 128 * 1024 };
+// content is the product. Raised again for the privacy notice's copy, which lives in both
+// locale files; ~9KB of headroom above the current 127.1KB.
+const BUDGET_GZIP = { '.js': true, '.css': true, initial: 136 * 1024 };
 
 let failed = false;
 const fail = (msg) => {

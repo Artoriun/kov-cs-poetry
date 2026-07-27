@@ -1924,3 +1924,44 @@ html.dark-mode .header-login-btn:hover {
     padding: 8px 16px;
   }
 }
+
+/* ===== ERROR BOUNDARY FALLBACK ===== */
+/* Deliberately plain: it has to render even when whatever broke is layout-related. */
+.error-page {
+  text-align: center;
+}
+
+.error-body {
+  color: var(--text-light);
+  margin: 12px 0 28px;
+}
+
+.error-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ===== LEGAL PAGES ===== */
+.legal-page {
+  max-width: 720px;
+}
+
+.legal-page h2 {
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 28px 0 8px;
+}
+
+.legal-page p {
+  color: var(--text-light);
+  line-height: 1.8;
+}
+
+.legal-updated {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}

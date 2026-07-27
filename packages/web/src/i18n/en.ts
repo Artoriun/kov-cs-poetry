@@ -4,6 +4,34 @@ export const en = {
   meta: {
     title: 'Kovács | POETRY',
   },
+  error: {
+    title: 'Something went wrong',
+    body: 'This page could not be displayed. The poems are still there.',
+    retry: 'Try again',
+    home: 'Back to the home page',
+  },
+  privacy: {
+    title: 'Privacy',
+    updated: 'Last updated: July 2026',
+    collectTitle: 'What is collected',
+    collectBody:
+      'Only what you type into the contact form: your name, email address, subject and message. Nothing else about you is gathered, and there is no analytics or tracking of any kind on this site.',
+    useTitle: 'What it is used for',
+    useBody:
+      'Your message is emailed to the site owner so it can be read and answered. It is not used for anything else, and never for marketing.',
+    sharingTitle: 'Who else sees it',
+    sharingBody:
+      'The message passes through Resend, the email delivery service, on its way to the owner’s inbox. The site is hosted on GitHub Pages, the contact form is handled by a server on Render, and the images are served by Cloudinary — as with any website, these providers can see the IP address your browser connects from. Your details are not sold or shared with anyone else.',
+    retentionTitle: 'How long it is kept',
+    retentionBody:
+      'The message is not stored in any database — it exists only as an email in the owner’s inbox, kept for as long as it is useful to answer you. To limit automated abuse, the server briefly remembers the IP addresses that have submitted the form, for one hour.',
+    cookiesTitle: 'Cookies',
+    cookiesBody:
+      'None. Your light or dark mode preference is remembered by your own browser and never leaves your device.',
+    rightsTitle: 'Your rights',
+    rightsBody:
+      'You can ask what has been kept about you, request a copy, or ask for it to be deleted. Use the contact form, or reply to any email you have received.',
+  },
   nav: {
     home: 'Home',
     poems: 'Poems',

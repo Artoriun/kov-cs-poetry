@@ -106,7 +106,7 @@ if (patch) {
 
 // Titles and descriptions come from the shared helper the running app also uses, so the
 // prerendered <title> and the one useRouteMeta sets on navigation cannot drift apart.
-const paths = ['/', '/poems', '/contact', ...live.map((p) => `/poems/${p.id}`)];
+const paths = ['/', '/poems', '/contact', '/privacy', ...live.map((p) => `/poems/${p.id}`)];
 const routes = paths.map((path) => ({
   path,
   ...metaForRoute(path, live),

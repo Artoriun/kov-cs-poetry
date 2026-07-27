@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useT } from '../i18n';
 
 export default function Footer() {
@@ -14,6 +15,10 @@ export default function Footer() {
           >
             {t.footer.copyright}
           </a>
+          {' · '}
+          <Link className="footer-copyright-link" to="/privacy">
+            {t.privacy.title}
+          </Link>
         </p>
         <a href="#top" className="back-to-top">
           {t.footer.backToTop}

@@ -303,6 +303,13 @@ export function metaForRoute(
   if (clean === '/contact') {
     return { title: 'Kapcsolat | Kovács', description: 'Írjon üzenetet Kovácsnak.' };
   }
+  if (clean === '/privacy') {
+    return {
+      title: 'Adatkezelés | Kovács',
+      description:
+        'Milyen adatokat kezel ez az oldal, és mi történik a kapcsolatfelvételi űrlapon küldött üzenettel.',
+    };
+  }
   if (clean === '/admin') return { title: 'Admin | Kovács', description: '' };
   return { title: SITE_TITLE, description: SITE_DESCRIPTION };
 }

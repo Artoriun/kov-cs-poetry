@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import nodemailer from 'nodemailer';
+import { createRateLimiter } from '../rateLimit';
 
 export const contactRouter = Router();
 
@@ -11,25 +12,7 @@ const LIMITS = { name: 100, email: 200, subject: 150, message: 5000 };
 const HEADER_SAFE = /^[^\r\n]+$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// ponytail: in-memory, so the window resets on restart and is per-instance. Fine while
-// the API is a single Render container; move to Redis or a provider-side limit if it ever
-// scales out. It exists to blunt a script, not to be airtight.
-const WINDOW_MS = 60 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, number[]>();
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= MAX_PER_WINDOW) {
-    hits.set(ip, recent);
-    return true;
-  }
-  recent.push(now);
-  hits.set(ip, recent);
-  if (hits.size > 5000) hits.clear(); // crude guard against unbounded growth
-  return false;
-}
+const rateLimited = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5 });
 
 // Render's free tier blocks outbound traffic on ports 25, 465 and 587, so SMTP cannot work
 // there at all — connections are dropped, surfacing as ETIMEDOUT at the CONN stage. Resend
