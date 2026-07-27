@@ -18,6 +18,8 @@
     "prerender": "node scripts/prerender.mjs",
     "hash-password": "node scripts/hash-password.mjs",
     "test:api": "node --import tsx --test \"packages/api/src/**/*.test.ts\"",
+    "test:unit": "node --import tsx --test \"packages/web/src/**/*.test.ts\" \"packages/shared/src/**/*.test.ts\"",
+    "test": "npm run test:api && npm run test:unit",
     "build-icons": "node scripts/build-icons.mjs",
     "backup-poems": "node scripts/backup-poems.mjs"
   },

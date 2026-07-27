@@ -48,6 +48,9 @@ jobs:
       - name: API tests
         run: npm run test:api
 
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Build
         run: npm run build
 

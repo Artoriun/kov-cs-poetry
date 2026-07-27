@@ -1,6 +1,7 @@
 import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { apiGetPoems } from '../lib/api';
+import { mergePoemPatch, type PoemPatch } from '../lib/poemPatch';
 
 // Initial state is the bundled poems rather than an empty array. Starting empty meant
 // React blanked the prerendered HTML on mount and only repainted once the API answered,
@@ -14,20 +15,14 @@ import { apiGetPoems } from '../lib/api';
 // whole collection instead would duplicate 25KB of text that is already in this bundle.
 declare global {
   interface Window {
-    __POEMS_PATCH__?: { order: string[]; changed: Poem[] };
+    __POEMS_PATCH__?: PoemPatch;
   }
 }
 
-function seedPoems(): Poem[] {
-  const bundled = POEMS.filter((p) => !p.deleted);
-  const patch = typeof window !== 'undefined' ? window.__POEMS_PATCH__ : undefined;
-  if (!patch) return bundled;
-  const byId = new Map(bundled.map((p) => [p.id, p]));
-  for (const p of patch.changed) byId.set(p.id, p);
-  return patch.order.map((id) => byId.get(id)).filter((p): p is Poem => Boolean(p) && !p?.deleted);
-}
-
-const SEED = seedPoems();
+const SEED = mergePoemPatch(
+  POEMS,
+  typeof window !== 'undefined' ? window.__POEMS_PATCH__ : undefined,
+);
 
 interface PoemsContextValue {
   poems: Poem[];
