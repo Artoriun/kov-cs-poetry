@@ -1915,6 +1915,18 @@ html.dark-mode .header-login-btn:hover {
     height: auto;
   }
 
+  /* A measured poem needs the two screens above only while it is being measured — that
+     height is what decides how many lines fit a page. Once the pages exist the reserve has
+     done its job, and keeping it left whatever the page did not fill sitting between the
+     last line and the button: 240px on a Pixel 8a, because the even-spread rule puts 9 of
+     poem-30's 17 lines on a page that had room for 11. Releasing it here rather than in the
+     rule above is deliberate — before pagination the box must stay a fixed, known height or
+     it would size to its content while its content is being sized to it. */
+  .poem-detail.is-paginated {
+    height: auto;
+    min-height: calc(100svh - var(--header-height, 72px));
+  }
+
   .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {
     min-height: 0;
   }

@@ -474,7 +474,10 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   return (
     <div
       ref={poemDetailRef}
-      className={`page poem-detail${ready ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}`}
+      // is-paginated marks that the text has been measured, so the landscape stylesheet can
+      // release the second screen it reserved for measuring. See the rule for why it cannot
+      // be released before pagination has run.
+      className={`page poem-detail${ready ? ' image-ready' : ''}${usesCustomSlides ? ' custom-slides' : ''}${detailPages && !usesCustomSlides ? ' is-paginated' : ''}`}
       // A floor, not a fixed height: the measured copy can under-estimate (the webfont
       // may still be loading when it is measured, so the real text wraps onto more
       // rows). With a fixed height the extra rows overflowed and ran under the nav
