@@ -894,6 +894,11 @@ h3 {
 
 .poem-card-img-wrap {
   overflow: hidden;
+  /* Matches .admin-grid-card. Only the image is rounded: the highlight is a ::before glow
+     sitting behind .poem-card at inset -3px, and it is deliberately square — rounding that
+     too was tried before and removed. Keeping the radius on this wrapper leaves the two
+     independent, so the sharp outline still reads as an outline. */
+  border-radius: 4px;
 }
 
 .poem-card img {
