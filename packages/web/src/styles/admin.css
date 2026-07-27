@@ -104,7 +104,8 @@ html.dark-mode {
 .admin-poem-card {
   border: 1px solid var(--border-color);
   background: var(--admin-card-bg);
-  border-radius: 6px;
+  /* Same 4px as the poem and admin grid cards — cards are rounder than controls. */
+  border-radius: 4px;
   padding: 24px;
   display: grid;
   grid-template-columns: 140px 1fr;
@@ -279,7 +280,8 @@ html.dark-mode .admin-delete-btn:hover {
   position: relative;
   width: 140px;
   height: 100px;
-  border-radius: 2px;
+  /* An image container, so it follows the cards at 4px rather than the controls. */
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -339,6 +341,7 @@ html.dark-mode .admin-delete-btn:hover {
 
 .admin-overlay-textarea,
 .admin-title-input {
+  border-radius: var(--control-radius);
   width: 100%;
   padding: 10px 12px;
   background: var(--bg-primary, #fff);
@@ -383,6 +386,8 @@ html.dark-mode .admin-delete-btn:hover {
   align-items: center;
   gap: 8px;
   padding: 9px 20px;
+  /* A label wrapping a hidden file input, but it looks and behaves like a button. */
+  border-radius: var(--control-radius);
   border: 1px solid var(--text-secondary);
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -420,6 +425,7 @@ html.dark-mode .admin-delete-btn:hover {
 
 .admin-btn {
   padding: 9px 20px;
+  border-radius: var(--control-radius);
   font-family: inherit;
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -495,6 +501,7 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 }
 
 .admin-password-wrap .admin-input {
+  border-radius: var(--control-radius);
   padding-right: 60px;
 }
 
@@ -673,7 +680,7 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 .admin-mode-toggle {
   display: flex;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   overflow: hidden;
 }
 
@@ -880,6 +887,10 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   border: 1px solid var(--border-color);
   padding: 0;
   margin: 0;
+  /* Radius on the group, not the two buttons: overflow clips the active fill to the
+     rounded corners, so the pair still reads as a single control. */
+  border-radius: var(--control-radius);
+  overflow: hidden;
 }
 
 /* Labels the group for screen readers without showing a caption */

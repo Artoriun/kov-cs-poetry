@@ -1,3 +1,12 @@
+/* Corner radius for every rectangular control — buttons, inputs, textareas and the
+   segmented toggles. Deliberately smaller than the 4px on the poem and admin grid cards:
+   at control size 4px reads as soft rather than squared, and the point is to take the edge
+   off rather than to round them. Circular controls — the carousel arrows, the reader's
+   scroll buttons, the admin add/delete badges — keep their own 50%. */
+:root {
+  --control-radius: 2px;
+}
+
 /* ===== LIGHT MODE (DEFAULT) ===== */
 :root {
   /* f_auto,q_auto here for the same reason optimizeUrl() exists for poem images — these
