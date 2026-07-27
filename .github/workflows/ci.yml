@@ -146,10 +146,6 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      # Still needed for /admin and any unknown path, which are not prerendered.
-      - name: Copy index.html to 404.html for SPA routing
-        run: cp packages/web/dist/index.html packages/web/dist/404.html
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

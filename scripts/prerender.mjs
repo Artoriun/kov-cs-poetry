@@ -281,6 +281,15 @@ for (const route of routes) {
   written++;
 }
 
+// ---- SPA fallback -----------------------------------------------------------
+// Pages answers any unknown path with 404.html. It has to be the untouched build shell,
+// never a prerendered page: CI used to copy index.html here after this script ran, so the
+// fallback carried the home page's markup and its data-prerendered flag. The client then
+// tried to hydrate a home page into whatever the router actually matched — NotFound — and
+// React threw #418 and gave up on the markup. An empty shell simply client-renders, which
+// is right for a route that by definition has nothing prerendered.
+writeFileSync(join(DIST, '404.html'), template);
+
 // ---- sitemap + robots -------------------------------------------------------
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(

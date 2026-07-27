@@ -6,6 +6,7 @@ import { LanguageProvider } from './i18n';
 import { useRouteMeta } from './lib/useRouteMeta';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
+import NotFound from './pages/NotFound';
 import Poems from './pages/Poems';
 import Privacy from './pages/Privacy';
 
@@ -62,6 +63,9 @@ export default function App() {
           <Route path="/poems/:id" element={<Poems />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
+          {/* Anything else. Rendered inside Layout so the header and footer stay,
+              leaving the visitor somewhere to go rather than on a bare page. */}
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </PoemsProvider>

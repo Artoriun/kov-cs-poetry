@@ -563,7 +563,7 @@ export default function Poems() {
         </div>
       ) : (
         <div className="page">
-          <p>Poem not found.</p>
+          <p>{t.poems.notFound}</p>
         </div>
       );
     const renderPages = detailPages ?? [detailLines];

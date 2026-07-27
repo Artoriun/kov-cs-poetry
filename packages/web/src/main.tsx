@@ -1,3 +1,4 @@
+import { MotionConfig } from 'motion/react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -19,18 +20,23 @@ if ('scrollRestoration' in history) {
 
 const tree = (
   <React.StrictMode>
-    <LanguageProvider>
-      <ThemeProvider>
-        <BrowserRouter basename={baseUrl}>
-          {/* Inside the router so the fallback can link home, and inside the providers so
-              it can be translated. It renders no wrapper element, so hydration of the
-              prerendered markup is unaffected. */}
-          <ErrorBoundary fallback={(retry) => <AppErrorFallback retry={retry} />}>
-            <App />
-          </ErrorBoundary>
-        </BrowserRouter>
-      </ThemeProvider>
-    </LanguageProvider>
+    {/* reducedMotion="user" makes every Motion animation respect the OS setting: transform
+        and opacity tweens are skipped and the element jumps to its end state. The CSS
+        keyframes are handled separately by a prefers-reduced-motion block in global.css. */}
+    <MotionConfig reducedMotion="user">
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrowserRouter basename={baseUrl}>
+            {/* Inside the router so the fallback can link home, and inside the providers so
+                it can be translated. It renders no wrapper element, so hydration of the
+                prerendered markup is unaffected. */}
+            <ErrorBoundary fallback={(retry) => <AppErrorFallback retry={retry} />}>
+              <App />
+            </ErrorBoundary>
+          </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
+    </MotionConfig>
   </React.StrictMode>
 );
 

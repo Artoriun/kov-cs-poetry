@@ -11,6 +11,12 @@ export const hu: Dict = {
     retry: 'Újrapróbálom',
     home: 'Vissza a főoldalra',
   },
+  notFound: {
+    title: 'A lap nem található',
+    body: 'Ez a cím nem vezet sehová. Elképzelhető, hogy elgépelés történt, vagy az oldal átkerült máshová.',
+    poems: 'Versek böngészése',
+    home: 'Vissza a főoldalra',
+  },
   privacy: {
     title: 'Adatkezelés',
     updated: 'Utoljára frissítve: 2026. július',
@@ -60,6 +66,7 @@ export const hu: Dict = {
     back: '← Versek',
     more: 'Több vers',
     loading: 'Betöltés…',
+    notFound: 'A vers nem található.',
   },
   theme: {
     toDark: 'Váltás sötét módra',

@@ -10,6 +10,12 @@ export const en = {
     retry: 'Try again',
     home: 'Back to the home page',
   },
+  notFound: {
+    title: 'Page not found',
+    body: 'This address does not lead anywhere. It may have been mistyped, or the page may have moved.',
+    poems: 'Browse the poems',
+    home: 'Back to the home page',
+  },
   privacy: {
     title: 'Privacy',
     updated: 'Last updated: July 2026',
@@ -59,6 +65,7 @@ export const en = {
     back: '← Poems',
     more: 'More Poems',
     loading: 'Loading…',
+    notFound: 'Poem not found.',
   },
   theme: {
     toDark: 'Switch to dark mode',

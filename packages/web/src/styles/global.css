@@ -1965,3 +1965,29 @@ html.dark-mode .header-login-btn:hover {
   font-size: 13px;
   color: var(--text-tertiary);
 }
+
+/* ===== REDUCED MOTION ===== */
+/* WCAG 2.3.3. This site is built on movement — mask wipes, staggered reveals, sliding
+   carousels — which is exactly the kind of thing that causes trouble for people with
+   vestibular disorders.
+
+   Durations are collapsed to a hair rather than set to `none`. Many of these animations
+   begin at opacity 0 and rely on their fill mode to end visible; `animation: none` would
+   strip that and leave the poems invisible. A 0.01ms animation still runs, still fires its
+   end events, and still lands on the final keyframe — it simply does so imperceptibly.
+   Motion's own animations are handled by MotionConfig reducedMotion="user" in main.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
