@@ -1921,10 +1921,15 @@ html.dark-mode .header-login-btn:hover {
      last line and the button: 240px on a Pixel 8a, because the even-spread rule puts 9 of
      poem-30's 17 lines on a page that had room for 11. Releasing it here rather than in the
      rule above is deliberate — before pagination the box must stay a fixed, known height or
-     it would size to its content while its content is being sized to it. */
+     it would size to its content while its content is being sized to it.
+
+     --slide-h is the tallest page, published by the reader once it has measured. Every page
+     is held at that height so the box does not resize as slides swap: the nav buttons are
+     positioned against this box, and the one pinned to its bottom jumped the moment the
+     incoming slide mounted, after the transition had already finished. */
   .poem-detail.is-paginated {
     height: auto;
-    min-height: calc(100svh - var(--header-height, 72px));
+    min-height: max(var(--slide-h, 0px), calc(100svh - var(--header-height, 72px)));
   }
 
   .poem-detail.custom-slides .detail-image-container:has(.detail-overlay) {

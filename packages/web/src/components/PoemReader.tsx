@@ -1,6 +1,6 @@
 import type { Poem } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
@@ -250,6 +250,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
     // the viewport. Pages never span two source slides, so hand-authored breaks survive
     // while an over-long one is subdivided instead of overflowing off-screen.
     const pages: string[][] = [];
+    const pageHeights: number[] = [];
     let idx = 0;
     for (const slide of sourceSlides) {
       const heights = slide.map((_, k) => spans[idx + k]?.getBoundingClientRect().height ?? 0);
@@ -283,10 +284,23 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
           i += 1;
         }
         pages.push(current);
+        pageHeights.push(Math.ceil(h + containerPadV + overlayPadV));
       }
     }
-    if (pages.length === 0) pages.push([]);
+    if (pages.length === 0) {
+      pages.push([]);
+      pageHeights.push(0);
+    }
     setDetailPages(pages);
+    // One height for every page, not each page's own. The pages differ by a line or two —
+    // the even-spread above balances them rather than filling each to capacity — and in
+    // landscape the box is sized to its content, so a per-page height made the box change
+    // size on every slide. The buttons are positioned against that box, so the one pinned
+    // to its bottom jumped the moment the incoming slide mounted, after the transition had
+    // finished. Holding the tallest page's height keeps them still; it costs the shorter
+    // pages a couple of dozen pixels of slack.
+    const tallest = Math.max(...pageHeights, 0);
+    setSlideHeights(pages.map(() => tallest));
     if (pages.length === 1) {
       setBackBtnVisible(true);
       setDownBtnVisible(false);
@@ -482,11 +496,20 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
       // may still be loading when it is measured, so the real text wraps onto more
       // rows). With a fixed height the extra rows overflowed and ran under the nav
       // button; as a floor the box just grows. max() keeps the CSS one-viewport floor.
+      //
+      // Custom slides floor the box directly, in every orientation, as they always have.
+      // A measured poem only publishes the height as a variable: portrait gives it a fixed
+      // one-screen box that its pages are measured to fit, so applying a floor there could
+      // only change a layout that is already correct. The landscape rule is the sole reader.
       style={
         slideHeights
-          ? {
-              minHeight: `max(${slideHeights[currentSlide]}px, calc(100svh - var(--header-height, 72px)))`,
-            }
+          ? ({
+              ...(usesCustomSlides
+                ? {
+                    minHeight: `max(${slideHeights[currentSlide]}px, calc(100svh - var(--header-height, 72px)))`,
+                  }
+                : { '--slide-h': `${slideHeights[currentSlide]}px` }),
+            } as CSSProperties)
           : undefined
       }
       onMouseDown={(e) => dragStart(e.clientY)}
