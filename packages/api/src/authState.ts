@@ -1,5 +1,3 @@
-import { db } from './firebaseAdmin';
-
 /**
  * Login state that has to outlive the process.
  *
@@ -8,14 +6,45 @@ import { db } from './firebaseAdmin';
  * attacker had to wait out was minutes, not the quarter hour it claimed. Firestore is
  * already a dependency and login volume is tiny, so the cost is negligible.
  *
- * Both functions fail open. If Firestore is unreachable the owner must still be able to
- * log in and fix things; a lockout that triggers precisely when the database is down is
- * worse than the brute-force window it closes. The in-memory limiter still applies in that
- * case, so failing open is not the same as no limit.
+ * Every read fails open. If Firestore is unreachable the owner must still be able to log in
+ * and fix things; a lockout that triggers precisely when the database is down is worse than
+ * the brute-force window it closes. The in-memory limiter in auth.ts still applies, so
+ * failing open is not the same as no limit.
  */
 
-const ATTEMPTS = db.collection('authAttempts');
-const CONFIG = db.collection('config').doc('authEpoch');
+/** The slice of the Firestore API this module uses. Narrow on purpose: it is the whole
+ *  surface a stand-in has to implement. */
+export interface AuthStore {
+  collection(name: string): {
+    doc(id: string): {
+      get(): Promise<{ exists: boolean; data(): Record<string, unknown> | undefined }>;
+      set(value: Record<string, unknown>): Promise<unknown>;
+      delete(): Promise<unknown>;
+    };
+  };
+}
+
+let store: AuthStore | null = null;
+
+/**
+ * Imported on first use rather than at module load. `firebaseAdmin` calls initializeApp at
+ * import time and throws outright when the service-account variables are missing, which
+ * made every module that touches auth impossible to load — including in tests. Deferring it
+ * also means a misconfigured environment surfaces on the first request instead of taking
+ * the whole process down at startup.
+ */
+async function getStore(): Promise<AuthStore> {
+  if (!store) {
+    const { db } = await import('./firebaseAdmin');
+    store = db as unknown as AuthStore;
+  }
+  return store;
+}
+
+/** Test seam: pass a stand-in, or null to fall back to Firestore. */
+export function setAuthStore(s: AuthStore | null): void {
+  store = s;
+}
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
@@ -31,12 +60,11 @@ export interface AttemptState {
 
 export async function recordAttempt(ip: string): Promise<AttemptState> {
   try {
-    const ref = ATTEMPTS.doc(keyFor(ip));
+    const ref = (await getStore()).collection('authAttempts').doc(keyFor(ip));
     const snap = await ref.get();
     const now = Date.now();
-    const times: number[] = (snap.exists ? (snap.data()?.times ?? []) : []).filter(
-      (t: number) => now - t < WINDOW_MS,
-    );
+    const previous = (snap.exists ? ((snap.data()?.times as number[]) ?? []) : []) as number[];
+    const times = previous.filter((t) => now - t < WINDOW_MS);
     if (times.length >= MAX_ATTEMPTS) {
       await ref.set({ times, updated: now });
       return { blocked: true, recentFailures: times.length };
@@ -53,7 +81,7 @@ export async function recordAttempt(ip: string): Promise<AttemptState> {
 /** Called after a correct password, so one success clears the record. */
 export async function clearAttempts(ip: string): Promise<void> {
   try {
-    await ATTEMPTS.doc(keyFor(ip)).delete();
+    await (await getStore()).collection('authAttempts').doc(keyFor(ip)).delete();
   } catch {
     // Nothing to do: the entries expire on their own with the window.
   }
@@ -65,11 +93,16 @@ export async function clearAttempts(ip: string): Promise<void> {
 const EPOCH_TTL_MS = 60 * 1000;
 let cached: { value: number; at: number } | null = null;
 
+/** Test seam: drops the cached epoch so a stand-in is consulted immediately. */
+export function resetEpochCache(): void {
+  cached = null;
+}
+
 export async function currentEpoch(): Promise<number> {
   if (cached && Date.now() - cached.at < EPOCH_TTL_MS) return cached.value;
   try {
-    const snap = await CONFIG.get();
-    const value = snap.exists ? (snap.data()?.value ?? 0) : 0;
+    const snap = await (await getStore()).collection('config').doc('authEpoch').get();
+    const value = snap.exists ? ((snap.data()?.value as number) ?? 0) : 0;
     cached = { value, at: Date.now() };
     return value;
   } catch {
@@ -87,7 +120,7 @@ export async function currentEpoch(): Promise<number> {
  */
 export async function revokeAllTokens(): Promise<number> {
   const value = Date.now();
-  await CONFIG.set({ value });
+  await (await getStore()).collection('config').doc('authEpoch').set({ value });
   cached = { value, at: Date.now() };
   return value;
 }

@@ -148,10 +148,18 @@ length caps and address validation, the per-IP limit, and the admin password (th
 plaintext form still works, that the same password verifies against its hash, that the hash
 does not contain it, and that a stale plaintext cannot reopen access once a hash is set).
 
+The auth routes are covered too — login, the per-IP limit, the escalating delay after a
+failure, and `requireAuth` refusing a token that is expired, signed with another key,
+missing the `admin` claim, forged with `alg:none`, or issued before the last `revoke-all`.
+`authState` resolves Firestore on first use rather than at import, so tests can substitute
+an in-memory stand-in; that also means a misconfigured environment surfaces on the first
+request instead of taking the process down at startup.
+
 The suite was checked by breaking each guard in turn — removing the newline check, disabling
-the honeypot, letting a stale plaintext win — and confirming exactly one test failed each
-time. Tests are excluded from the API's tsconfig so they never reach `dist`. The auth routes
-are not covered yet: they import Firestore, so testing them needs the client mocked.
+the honeypot, letting a stale plaintext win, dropping the epoch check, dropping the admin
+claim, removing the backoff — and confirming the expected tests failed each time, with 46/46
+on restore. Tests and their helpers are excluded from the API's tsconfig, so neither reaches
+`dist`.
 
 ---
 
