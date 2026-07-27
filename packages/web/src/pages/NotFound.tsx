@@ -14,8 +14,12 @@ export default function NotFound() {
       <h1>{t.notFound.title}</h1>
       <p className="error-body">{t.notFound.body}</p>
       <div className="error-actions">
-        <Link to="/poems">{t.notFound.poems}</Link>
-        <Link to="/">{t.notFound.home}</Link>
+        <Link className="btn-submit btn-link" to="/poems">
+          {t.notFound.poems}
+        </Link>
+        <Link className="btn-submit btn-link" to="/">
+          {t.notFound.home}
+        </Link>
       </div>
     </div>
   );

@@ -12,10 +12,12 @@ export default function AppErrorFallback({ retry }: { retry: () => void }) {
       <h1>{t.error.title}</h1>
       <p className="error-body">{t.error.body}</p>
       <div className="error-actions">
-        <button type="button" className="btn-submit" onClick={retry}>
+        <button type="button" className="btn-submit btn-link" onClick={retry}>
           {t.error.retry}
         </button>
-        <Link to="/">{t.error.home}</Link>
+        <Link className="btn-submit btn-link" to="/">
+          {t.error.home}
+        </Link>
       </div>
     </div>
   );

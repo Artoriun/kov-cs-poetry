@@ -1925,6 +1925,22 @@ html.dark-mode .header-login-btn:hover {
   }
 }
 
+/* Buttons that are links, on the error and not-found pages. .btn-submit is block-level and
+   full width because it was written for the contact form; these sit in a centred column and
+   should size to their own text instead. text-decoration is reset because the base `a` rule
+   does not apply it, but a browser default would. */
+.btn-link {
+  width: auto;
+  min-width: 220px;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 0;
+  /* An <a> inherits the body's line-height and a <button> does not, so without this the
+     two sit 5px apart in height — visible on the error page, where a retry button and a
+     link home are stacked together. */
+  line-height: normal;
+}
+
 /* ===== ERROR BOUNDARY FALLBACK ===== */
 /* Deliberately plain: it has to render even when whatever broke is layout-related. */
 .error-page {
