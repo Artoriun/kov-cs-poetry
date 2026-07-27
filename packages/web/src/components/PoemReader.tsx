@@ -569,6 +569,9 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
       <button
         type="button"
         className={`detail-scroll-up-btn${upBtnVisible ? '' : ' is-hidden'}`}
+        // The only content is an aria-hidden SVG, so without this the button reaches a
+        // screen reader unnamed. Lighthouse scores the detail page 93 for it.
+        aria-label={t.poems.prevPage}
         onClick={() => goToSlide(currentSlide - 1, -1)}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -653,6 +656,7 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
       <button
         type="button"
         className={`detail-scroll-down-btn${isLast || !downBtnVisible ? ' is-hidden' : ''}`}
+        aria-label={t.poems.nextPage}
         onClick={() => goToSlide(currentSlide + 1, 1)}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">

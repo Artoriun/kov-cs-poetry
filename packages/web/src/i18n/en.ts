@@ -66,6 +66,8 @@ export const en = {
     more: 'More Poems',
     loading: 'Loading…',
     notFound: 'Poem not found.',
+    prevPage: 'Previous page of the poem',
+    nextPage: 'Next page of the poem',
   },
   theme: {
     toDark: 'Switch to dark mode',

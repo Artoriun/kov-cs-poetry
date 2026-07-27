@@ -67,6 +67,8 @@ export const hu: Dict = {
     more: 'Több vers',
     loading: 'Betöltés…',
     notFound: 'A vers nem található.',
+    prevPage: 'A vers előző oldala',
+    nextPage: 'A vers következő oldala',
   },
   theme: {
     toDark: 'Váltás sötét módra',
