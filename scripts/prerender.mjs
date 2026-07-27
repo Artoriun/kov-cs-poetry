@@ -121,11 +121,10 @@ const esc = (s) =>
  *  crawlers at a hop instead of at the page. */
 const canonical = (path) => `${SITE}${path === '/' ? '/' : `${path}/`}`;
 
-// No <link rel="preload"> for the hero image: measured at 176ms either way over three
-// throttled runs. Prerendering already puts the <img> in the markup, so the browser's
-// preload scanner finds it in the first bytes of HTML — as early as an explicit hint
-// could. Lighthouse agrees from the other direction: "Preload Largest Contentful Paint
-// image" is not applicable here because the LCP element is text, not an image.
+// No <link rel="preload"> for the carousel slide image: measured at 176ms either way over
+// three throttled runs. Prerendering already puts the <img> in the markup, so the
+// browser's preload scanner finds it in the first bytes of HTML — as early as an explicit
+// hint could.
 
 /** Per-route head. Deliberately no <meta name="keywords">: ignored by every major engine
  *  since 2009. The indexable signal is the poem text now sitting in the body. */
