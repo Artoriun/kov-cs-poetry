@@ -47,6 +47,9 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   }, [customSlidesKey, poem.overlay]);
   const measureLines = sourceSlides.flat();
   const usesCustomSlides = customSlidesKey !== '';
+  // Identifies the text pagination was measured against, so a later edit can be noticed.
+  const contentKey = customSlidesKey || poem.overlay || '';
+  const paginatedForRef = useRef(contentKey);
 
   const [detailPages, setDetailPages] = useState<string[][] | null>(null);
   // Height each custom slide needs, so switching slides animates the poem (and the footer
@@ -215,27 +218,48 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
     }
   }, [detailPages, sourceSlides, usesCustomSlides]);
 
+  // Discard the current page breaks and let the measuring effect above run again.
+  const repaginate = () => {
+    setDetailPages(null);
+    setSlideHeights(null); // line heights change with the orientation
+    setCurrentSlide(0); // page count changes, so the old index may not exist
+    setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
+    setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
+    setUpBtnVisible(false);
+    setDownBtnVisible(true);
+    setBackBtnVisible(false);
+  };
+
+  // The first render uses the poem bundled into the JS; the API copy arrives a moment
+  // later and replaces it. For a poem edited in the admin portal the two differ, and
+  // pagination had already run against the bundled text — so the old page breaks were
+  // left over the new lines. poem-23 showed this plainly: bundled as 2 slides of 24 and
+  // 26 lines, live as 3 of 11, 10 and 3, and the reader rendered the bundled breaks over
+  // the live text, putting all 24 live lines on slide one.
+  // Seeded with the mount-time content so this does not fire on mount, where the
+  // measuring effect has it in hand already.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: repaginate is stable in effect; see above
+  useEffect(() => {
+    if (paginatedForRef.current === contentKey) return;
+    paginatedForRef.current = contentKey;
+    repaginate();
+  }, [contentKey]);
+
   // Rotating changes the slide height (portrait is one viewport, landscape two) and the
-  // container padding, but the effect above only runs once per poem — so the split made
-  // for the old orientation overflowed. Clearing detailPages re-runs it.
+  // container padding, but the measuring effect only runs once per poem — so the split
+  // made for the old orientation overflowed.
   // Deliberately matchMedia and not a resize listener: Android fires resize whenever the
   // URL bar collapses during a scroll, which would re-paginate constantly mid-read.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: repaginate is stable in effect; see above
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape)');
-    const repaginate = () => {
-      setDetailPages(null);
-      setSlideHeights(null); // line heights change with the orientation
-      setCurrentSlide(0); // page count changes, so the old index may not exist
-      setLayoutGen((g) => g + 1); // remount the slide so the reveal replays from the top
-      setSeenSlides(new Set<number>()); // empty => lines animate instead of showing instantly
-      setUpBtnVisible(false);
-      setDownBtnVisible(true);
-      setBackBtnVisible(false);
+    const onRotate = () => {
+      repaginate();
       // Rotating can leave the reader part-way down a slide that no longer exists
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    mq.addEventListener('change', repaginate);
-    return () => mq.removeEventListener('change', repaginate);
+    mq.addEventListener('change', onRotate);
+    return () => mq.removeEventListener('change', onRotate);
   }, []);
 
   useEffect(() => {
