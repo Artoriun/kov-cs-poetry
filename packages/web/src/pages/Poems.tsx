@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
-import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
+import { FULL_BLEED_W, fullBleedSrcSet, optimizeUrl } from '../lib/images';
 import { IS_PRERENDERED, IS_PRERENDERING } from '../lib/prerendered';
 
 const PER_PAGE = 9;
@@ -646,6 +646,8 @@ export default function Poems() {
       >
         <img
           src={optimizeUrl(detailPoem.image, FULL_BLEED_W)}
+          srcSet={fullBleedSrcSet(detailPoem.image)}
+          sizes="100vw"
           alt={detailPoem.title}
           className="detail-fixed-bg detail-img-anim"
         />

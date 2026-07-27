@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
-import { FULL_BLEED_W, optimizeUrl } from '../lib/images';
+import { FULL_BLEED_W, fullBleedSrcSet, optimizeUrl } from '../lib/images';
 import { IS_PRERENDERED } from '../lib/prerendered';
 import '../styles/global.css';
 
@@ -86,9 +86,16 @@ export default function PoemCarousel() {
   useEffect(() => {
     if (count === 0) return;
     [(current + 1) % count, (current - 1 + count) % count].forEach((i) => {
-      const img = new Image();
       const next = CAROUSEL_POEMS[i]?.image;
-      img.src = next ? optimizeUrl(next, FULL_BLEED_W) : '';
+      if (!next) return;
+      const img = new Image();
+      // Same srcset and sizes as the rendered slide, so the browser resolves the identical
+      // candidate and the warm entry is the one actually requested on swipe. Preloading a
+      // fixed w_1600 instead cost a phone two 213KB downloads it would never display, and
+      // still missed: the visible <img> asks for w_1280 there.
+      img.sizes = '100vw';
+      img.srcset = fullBleedSrcSet(next);
+      img.src = optimizeUrl(next, FULL_BLEED_W);
     });
   }, [current, count]);
 
@@ -173,6 +180,11 @@ export default function PoemCarousel() {
                     <div className="carousel-image-container">
                       <img
                         src={optimizeUrl(poem.image, FULL_BLEED_W)}
+                        srcSet={fullBleedSrcSet(poem.image)}
+                        // The slide spans the viewport, so the browser needs the full width
+                        // to choose from srcSet; without this it assumes 100vw anyway but
+                        // only after layout, which is later than the preload scanner runs.
+                        sizes="100vw"
                         alt={poem.title}
                         draggable={false}
                         onLoad={() => {

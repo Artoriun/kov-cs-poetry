@@ -31,7 +31,7 @@ const fail = (msg) => {
 };
 
 // ---- 1. raw poem image URLs -------------------------------------------------
-const SAFE = /optimizeUrl\(|gridThumb\(|imagePreview|PLACEHOLDER_IMAGE/;
+const SAFE = /optimizeUrl\(|fullBleedSrcSet\(|gridThumb\(|imagePreview|PLACEHOLDER_IMAGE/;
 const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = join(dir, e.name);
@@ -44,8 +44,8 @@ for (const file of walk(join(WEB, 'src'))) {
   readFileSync(file, 'utf8')
     .split('\n')
     .forEach((line, i) => {
-      // an image URL flowing into a <img src> or Image().src
-      if (!/(src=\{|\.src\s*=)/.test(line)) return;
+      // an image URL flowing into a <img src>, a srcSet, or Image().src
+      if (!/(\bsrc=\{|srcSet=\{|\.src\s*=)/.test(line)) return;
       if (!/\.image\b/.test(line)) return;
       scanned++;
       if (!SAFE.test(line)) {
