@@ -35,16 +35,24 @@ authRouter.post('/login', (req, res) => {
 
   const ip = req.ip ?? 'unknown';
   if (loginLimited(ip)) {
+    // Logged so a sustained attempt is visible in Render's logs. Without this there is no
+    // trace at all that anyone tried, which is the difference between noticing an attack
+    // and finding out from its consequences.
+    console.warn(`[auth] login rate limit hit from ${ip}`);
     res.status(429).json({ error: 'Too many attempts. Try again later.' });
     return;
   }
 
   const { password } = req.body as { password?: string };
   if (!password || !secretsMatch(password, expected)) {
+    console.warn(`[auth] failed login from ${ip}`);
     res.status(401).json({ error: 'Invalid credentials' });
     return;
   }
 
-  const token = jwt.sign({ admin: true }, secret, { expiresIn: '7d' });
+  // Seven days is generous for a token that cannot be revoked individually. The lever if
+  // one ever leaks is to change JWT_SECRET on Render, which invalidates every issued token
+  // at once — worth knowing before it is needed.
+  const token = jwt.sign({ admin: true }, secret, { algorithm: 'HS256', expiresIn: '7d' });
   res.json({ token });
 });
