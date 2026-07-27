@@ -12,3 +12,4 @@ packages/api/scripts/
 /playwright-report
 /blob-report
 /playwright/.cache
+backups/

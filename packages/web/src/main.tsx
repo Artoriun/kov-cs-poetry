@@ -7,9 +7,13 @@ import AppErrorFallback from './components/AppErrorFallback';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './i18n';
+import { installGlobalErrorReporting } from './lib/reportError';
 import './styles/global.css';
 
 const baseUrl = import.meta.env.PROD ? '/kov-cs-poetry' : '/';
+
+// Installed before anything renders, so an error thrown during startup is still reported.
+installGlobalErrorReporting();
 
 // Browsers restore the previous scroll offset on reload, so a refresh resumed part-way
 // down the page instead of at the top. Opt out and land at the top every time.

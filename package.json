@@ -17,7 +17,9 @@
     "check:budgets": "node scripts/check-budgets.mjs",
     "prerender": "node scripts/prerender.mjs",
     "hash-password": "node scripts/hash-password.mjs",
-    "test:api": "node --import tsx --test \"packages/api/src/**/*.test.ts\""
+    "test:api": "node --import tsx --test \"packages/api/src/**/*.test.ts\"",
+    "build-icons": "node scripts/build-icons.mjs",
+    "backup-poems": "node scripts/backup-poems.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",

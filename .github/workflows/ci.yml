@@ -149,6 +149,21 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
+      # The poems visitors see are Firestore overrides merged over the bundled fallback, and
+      # that fallback drifts as soon as anything is edited in the portal. Kept as an
+      # artifact rather than committed, so the workflow needs no write access to the repo.
+      - name: Back up the live poems
+        run: npm run backup-poems
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Upload the backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: poems-backup
+          path: backups/
+          retention-days: 90
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

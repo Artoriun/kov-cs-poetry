@@ -4,6 +4,7 @@ import express from 'express';
 import { db } from './firebaseAdmin';
 import { usingPlaintextPassword } from './password';
 import { authRouter } from './routes/auth';
+import { clientErrorsRouter } from './routes/clientErrors';
 import { contactRouter } from './routes/contact';
 import { poemsRouter } from './routes/poems';
 
@@ -80,6 +81,7 @@ app.get('/health/deps', async (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/client-errors', clientErrorsRouter);
 app.use('/api/poems', poemsRouter);
 
 app.listen(PORT, () => {

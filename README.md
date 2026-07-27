@@ -57,6 +57,8 @@ e2e/                            # layout.spec.ts + API-stubbing fixtures
 scripts/
 ├── prerender.mjs               # static HTML per route + sitemap.xml + robots.txt
 ├── check-budgets.mjs           # bundle budget + untransformed-image guard
+├── backup-poems.mjs            # snapshot the live poems
+├── build-icons.mjs             # PNG icons from favicon.svg
 └── hash-password.mjs           # prints an ADMIN_PASSWORD_HASH
 packages/
 ├── shared/src/index.ts         # Poem type, fallback data, per-route SEO metadata
@@ -98,6 +100,8 @@ npm run test:e2e      # Playwright layout tests
 npm run prerender     # static HTML per route (needs a fresh build first)
 npm run check:budgets # bundle budget + untransformed-image guard
 npm run hash-password # prints an ADMIN_PASSWORD_HASH
+npm run backup-poems  # writes the live poems to backups/ (--check to compare only)
+npm run build-icons   # rasterises the PNG icons from favicon.svg
 ```
 
 Vite proxies `/api` to the API in development.
@@ -126,6 +130,8 @@ is installed. They cover:
   the escalating delay after a failure, and a success clearing the record.
 - **`requireAuth`** — tokens that are expired, signed with another key, missing the `admin`
   claim, forged with `alg:none`, or issued before the last `revoke-all`.
+- **Client-error endpoint** — truncation, newline collapsing, per-IP capping and its
+  refusal to report a failed report.
 
 `authState` resolves Firestore on first use rather than at import, so tests substitute an
 in-memory stand-in. Tests and their helpers are excluded from the API's tsconfig and never
@@ -184,6 +190,7 @@ both locale files and use `t.<key>`.
 | `GET /api/poems` | Falls back to the bundled poems if Firestore is unreachable. |
 | `POST /api/contact` | Validates and length-caps every field, rejects newlines in those reaching mail headers, drops honeypot submissions, 5/hour per IP. Returns 503 if no mail transport is configured. |
 | `POST /api/auth/login` | 10 attempts per 15 minutes per IP, recorded in Firestore so the window survives restarts, with an in-memory limiter as backup. Failures are delayed progressively and logged. Constant-time password comparison. |
+| `POST /api/client-errors` | Records a browser error in the server log. Anonymous, so the message and stack are truncated, newlines collapsed, and reports capped per IP. Always answers 204 — a page that is already broken should not be told its report failed. |
 | `POST /api/auth/revoke-all` | Signs out every session. Tokens carry an epoch that `requireAuth` checks. Requires a valid token. |
 
 ---
@@ -257,6 +264,16 @@ If you cannot log in at all, change `JWT_SECRET` on Render — same effect, but 
 the API. If repeated wrong passwords lock you out, the record is a document under the
 `authAttempts` collection keyed by IP; delete it or wait 15 minutes.
 
+**Backups.** The poems visitors see are Firestore overrides merged over the bundled
+fallback, and that fallback drifts as soon as anything is edited in the portal — so losing
+the Firestore project would quietly roll the site back to older text. The weekly rebuild
+runs `npm run backup-poems` and keeps the result as a build artifact for 90 days
+(Actions → the run → Artifacts). Run it locally any time; `--check` reports drift without
+writing.
+
+**Errors.** Render's log is the record. The error boundary and the global handlers post to
+`/api/client-errors`, which logs with a `[client]` prefix.
+
 **If the site shows no poems**, the API is unreachable. Visitors still see the bundled poems
 and the prerendered pages; what is missing is anything edited since the last deploy. Check
 `/health` and `/health/deps`.
@@ -286,6 +303,13 @@ To add a fallback poem, append to `POEMS`:
 `overlay` is newline-separated text shown over the image. Two optional Firestore-only fields
 drive the custom-slides reader layout, written only by the admin portal: `customSlides`
 (`string[]`) and `customSlidesEnabled` (`boolean`).
+
+---
+
+## Licence
+
+The software is MIT. The poems, their text and the photographs are **not** — they remain
+their author's and are included only so the site can be built. See `LICENSE`.
 
 ---
 

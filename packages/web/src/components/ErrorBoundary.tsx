@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../lib/reportError';
 
 interface Props {
   children: ReactNode;
@@ -27,9 +28,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Kept on the console rather than swallowed: there is no error-reporting service wired
-    // up yet, so this is the only record of what happened.
     console.error('[ErrorBoundary]', error, info.componentStack);
+    // Also sent to the API, which logs it server-side. The console alone is only ever read
+    // by whoever happens to have devtools open, which is nobody.
+    reportError(error, info.componentStack ?? undefined);
   }
 
   render() {
