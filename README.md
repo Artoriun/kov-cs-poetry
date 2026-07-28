@@ -6,8 +6,8 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
-Lighthouse on the deployed site (mobile): **97** performance, **100** accessibility,
-**100** best practices, **100** SEO — LCP 2.5s, no blocking time, no layout shift.
+Lighthouse on the deployed site (mobile): **92** performance, **100** accessibility,
+**100** best practices, **100** SEO — no blocking time, no layout shift.
 
 ![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
 
@@ -118,7 +118,7 @@ Vite proxies `/api` to the API in development.
 ## Testing
 
 **Layout tests** (`npm run test:e2e`) run in Playwright across three viewports — desktop,
-Pixel 8a portrait and landscape — because the regressions this project suffers are layout
+mobile portrait and landscape — because the regressions this project suffers are layout
 ones at a particular size rather than engine differences. They assert on horizontal
 overflow, content rendering past the footer, scroll position after a reload, poem text
 clearing the navigation button, slide pagination keeping every line, and the table-of-
