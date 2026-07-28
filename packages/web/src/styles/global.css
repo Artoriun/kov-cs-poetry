@@ -455,6 +455,26 @@ h3 {
   animation: poem-fade-in var(--carousel-fade-duration) ease both;
 }
 
+/* On a prerendered page the slide is already in the markup, so there is nothing to wait for
+   and the reveal above only delays content the browser could paint immediately.
+   It also cost the page its Largest Contentful Paint entirely. Everything the home page
+   paints lives inside .carousel-inner, and Chrome will not accept a zero-opacity element as
+   an LCP candidate: it skips the element when it paints and never reconsiders it. So
+   whenever the image finished decoding before this 600ms fade had lifted, no element on the
+   page ever qualified and Lighthouse reported NO_LCP with a null performance score rather
+   than a low one. On production that was a coin toss, because the CDN is fast enough that
+   the image usually won the race; on a slow local server the fade always finished first,
+   which is why it reproduced only against the deployed site.
+   The fade still runs where it means something — a cold load that really is waiting on the
+   first image, which is every non-prerendered entry to the page. */
+html[data-prerendered] .carousel-inner {
+  opacity: 1;
+}
+
+html[data-prerendered] .poem-carousel-wrapper.carousel-loaded.image-ready .carousel-inner {
+  animation: none;
+}
+
 .carousel-section-label {
   position: absolute;
   top: 20px;
