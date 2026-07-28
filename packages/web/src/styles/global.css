@@ -1190,6 +1190,19 @@ h3 {
   min-height: 0;
 }
 
+/* Until pagination has run the slide holds the whole poem: the prerenderer deliberately
+   leaves it unpaginated so a crawler gets every line, and the client renders the same thing
+   for one frame. The container centres its content, so when pagination cut poem-23 from 24
+   lines to 11 the block shrank from 747px to 476px and everything inside it moved — 0.27 of
+   layout shift under Lighthouse's throttling, where the work lands after first paint.
+   Clipping the unpaginated text to the height a page will occupy makes both states the same
+   size, so pagination changes which lines are shown rather than where they sit. The lines
+   beyond the cut stay in the DOM and are still read by crawlers. */
+.poem-detail.is-unpaginated .detail-overlay {
+  max-height: 100%;
+  overflow: hidden;
+}
+
 /* Off-screen measuring copy of the full poem. Must match the real overlay's width so
    lines wrap identically; visibility:hidden keeps it laid out (and therefore measurable)
    while absolute positioning keeps it out of the visible flow. */
