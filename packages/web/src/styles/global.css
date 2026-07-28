@@ -1275,7 +1275,11 @@ h3 {
   /* margin-right auto only: the line hugs its text and sits at the left edge. With
      `margin: 0 auto` each line was centred individually, which text-align cannot undo. */
   margin: 0 auto 0 0;
-  opacity: 0;
+  /* No opacity:0 here, deliberately. The mask below already hides the line completely at
+     0% width, so an opacity of zero only duplicated it — and Chrome refuses to treat a
+     zero-opacity element as a Largest Contentful Paint candidate. With every line of the
+     poem starting transparent, nothing on the page qualified and Lighthouse reported
+     NO_LCP, which nulls the performance score outright. The wipe is unchanged. */
   -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
   mask-image: linear-gradient(to right, black 75%, transparent 100%);
   -webkit-mask-repeat: no-repeat;
@@ -1287,12 +1291,10 @@ h3 {
 
 @keyframes detail-line-reveal {
   from {
-    opacity: 0;
     -webkit-mask-size: 0% 100%;
     mask-size: 0% 100%;
   }
   to {
-    opacity: 1;
     -webkit-mask-size: 130% 100%;
     mask-size: 130% 100%;
   }
