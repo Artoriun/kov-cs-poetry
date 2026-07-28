@@ -6,9 +6,6 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
-Lighthouse on the deployed site (mobile): **92** performance, **100** accessibility,
-**100** best practices, **100** SEO — no blocking time, no layout shift.
-
 ![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
 
 ![The home page carousel](docs/screenshot-home.jpg)
