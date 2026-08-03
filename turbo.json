@@ -2,8 +2,12 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "dev": { "cache": false, "persistent": true },
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"], "env": ["VITE_API_URL"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": ["VITE_API_URL", "VITE_CF_BEACON_TOKEN"]
+    },
     "typecheck": {}
   },
-  "globalEnv": ["SITE_URL"]
+  "globalEnv": ["SITE_URL", "LH_PORT"]
 }

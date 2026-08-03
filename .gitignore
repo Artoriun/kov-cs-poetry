@@ -13,3 +13,6 @@ packages/api/scripts/
 /blob-report
 /playwright/.cache
 backups/
+
+# Lighthouse reports written by scripts/check-lighthouse.mjs
+lighthouse-*.json
