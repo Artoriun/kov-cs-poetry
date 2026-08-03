@@ -6,6 +6,10 @@ Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vit
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
+![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
+
+![The home page carousel](docs/screenshot-home.jpg)
+
 ### Lighthouse
 
 Measured against the live deploy above, not a local build — the same audit CI runs against
@@ -16,10 +20,6 @@ Mobile — LCP 2.7s, CLS 0, TBT 0ms
 
 <img src="docs/lighthouse-desktop.png" alt="Lighthouse desktop: Performance 100, Accessibility 100, Best Practices 100, SEO 100" width="480"><br>
 Desktop — LCP 0.6s, CLS 0.004, TBT 0ms
-
-![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
-
-![The home page carousel](docs/screenshot-home.jpg)
 
 ---
 
