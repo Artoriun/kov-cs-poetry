@@ -202,6 +202,10 @@ await page.route('**/api/poems', (r) =>
 await page.route('**res.cloudinary.com/**', (r) =>
   r.fulfill({ status: 200, contentType: 'image/png', body: PIXEL }),
 );
+// Stubbed rather than left to hit the real endpoint: unstubbed, every route on every build
+// would fire a real Cloudflare Web Analytics beacon, polluting live visitor counts with
+// prerender traffic.
+await page.route('**static.cloudflareinsights.com/**', (r) => r.fulfill({ status: 204 }));
 
 // Captured before anything is written. Output must be built from this rather than from
 // the live DOM: the preview server serves out of the same dist we are writing into, so
