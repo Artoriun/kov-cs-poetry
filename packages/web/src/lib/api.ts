@@ -3,6 +3,20 @@ import type { Poem } from '@gedichtenv2/shared';
 // ponytail: coerce http→https so auth header isn't stripped on Render's 301 redirect
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https://');
 
+/**
+ * Whether there is an API to talk to at all.
+ *
+ * Running this as a plain static site is a supported choice — the poems are in the bundle
+ * and the prerendered HTML, so the site is complete without a backend. In that case
+ * VITE_API_URL is unset and a fetch would resolve against the static host, which can only
+ * ever 404: handled fine in JS, but still logged by the browser as a failed request, which
+ * is both noise in the console and a Lighthouse best-practices failure.
+ *
+ * Dev is exempt: there VITE_API_URL is normally unset because Vite proxies /api to the
+ * local server instead.
+ */
+export const HAS_API = import.meta.env.DEV || BASE !== '';
+
 const getToken = () => localStorage.getItem('admin_token');
 
 function handleUnauthorized() {
