@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:budgets": "node scripts/check-budgets.mjs",
+    "check:lighthouse": "node scripts/check-lighthouse.mjs",
     "prerender": "node scripts/prerender.mjs",
     "hash-password": "node scripts/hash-password.mjs",
     "test:api": "node --import tsx --test \"packages/api/src/**/*.test.ts\"",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
     "@playwright/test": "^1.62.0",
+    "lighthouse": "^12.8.2",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },

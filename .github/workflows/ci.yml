@@ -74,11 +74,45 @@ jobs:
 
       # Only Chromium: these are layout assertions against the one engine the site is
       # actually verified on, not a cross-browser matrix.
+      #
+      # Cached on the resolved version rather than reinstalled every run: the browser
+      # binaries alone are ~300MB, downloaded from Playwright's own CDN and normally fast,
+      # but a cache hit skips that entirely. The OS-level libraries `--with-deps` also
+      # installs live outside this cache path (they're apt packages, not files under
+      # ~/.cache/ms-playwright) and so still run on every job regardless of cache-hit — on a
+      # cache hit `install-deps` covers just those, without re-fetching the browser itself.
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium's OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run layout tests
         run: npm run test:e2e
+
+      # Accessibility, SEO and best-practices against the built, prerendered output.
+      # continue-on-error until it has been seen green on a runner: it is a recent addition
+      # and a gate nobody has watched pass yet should not be able to block a deploy on its
+      # own say-so.
+      - name: Build and prerender for audit
+        run: npm run build && npm run prerender
+
+      - name: Lighthouse
+        continue-on-error: true
+        run: npm run check:lighthouse
 
       # Surfaced on the run page so a failure can be read without digging into the raw log
       - name: Summarise failures
@@ -137,12 +171,33 @@ jobs:
         run: npx turbo run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_CF_BEACON_TOKEN: ${{ vars.VITE_CF_BEACON_TOKEN }}
 
       # Needs a browser: the prerenderer boots the built app and writes each route's DOM to
       # its own index.html, so Pages serves real HTML at a 200 instead of falling back to
       # 404.html. Also emits sitemap.xml and robots.txt from the same poem data.
+      #
+      # Cached the same way as the e2e job's install — see the comment there. This job runs
+      # on its own separate runner, so it cannot reuse that job's cache entry directly, but
+      # it writes to and reads from the same keyed cache across runs.
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium's OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       # Same secret the build uses: the prerenderer reads the live API so poems edited in
       # the admin portal reach the static HTML, falling back to the bundled poems (loudly)
