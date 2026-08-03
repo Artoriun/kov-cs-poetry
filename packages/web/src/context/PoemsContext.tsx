@@ -1,6 +1,6 @@
 import { POEMS, type Poem } from '@gedichtenv2/shared';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { apiGetPoems } from '../lib/api';
+import { apiGetPoems, HAS_API } from '../lib/api';
 import { mergePoemPatch, type PoemPatch } from '../lib/poemPatch';
 
 // Initial state is the bundled poems rather than an empty array. Starting empty meant
@@ -50,6 +50,12 @@ export function PoemsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Skip the request entirely rather than let it 404: a plain static deploy has no
+    // VITE_API_URL and never will, so this would otherwise fire on every single page load.
+    if (!HAS_API) {
+      setLoading(false);
+      return;
+    }
     refreshPoems().finally(() => setLoading(false));
   }, [refreshPoems]);
 
