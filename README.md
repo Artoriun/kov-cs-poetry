@@ -1,13 +1,21 @@
 # Kovács — Modern Poetry Portfolio
 
-Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Every route is prerendered to static HTML and hydrated, so the poems are indexable without JavaScript. CI gates every deploy on lint, typecheck, API tests, layout tests and a bundle budget.
+Bilingual (Hungarian/English) poetry portfolio: **React**, **TypeScript**, **Vite** and **Motion** in a **TurboRepo** monorepo, with an **Express** + **Firestore** admin portal. Every route is prerendered to static HTML and hydrated, so the poems are indexable without JavaScript. CI gates every deploy on lint, typecheck, API tests, unit tests, layout tests and a bundle budget.
 
 [![CI](https://github.com/Artoriun/kov-cs-poetry/actions/workflows/ci.yml/badge.svg)](https://github.com/Artoriun/kov-cs-poetry/actions/workflows/ci.yml)
 
 **Live demo:** https://artoriun.github.io/kov-cs-poetry/
 
-Lighthouse on the deployed site (mobile): **92** performance, **100** accessibility,
-**100** best practices, **100** SEO — no blocking time, no layout shift.
+### Lighthouse
+
+Measured against the live deploy above, not a local build — the same audit CI runs against
+every push, gating accessibility, best-practices and SEO at 100.
+
+<img src="docs/lighthouse-mobile.png" alt="Lighthouse mobile: Performance 95, Accessibility 100, Best Practices 100, SEO 100" width="480"><br>
+Mobile — LCP 2.7s, CLS 0, TBT 0ms
+
+<img src="docs/lighthouse-desktop.png" alt="Lighthouse desktop: Performance 100, Accessibility 100, Best Practices 100, SEO 100" width="480"><br>
+Desktop — LCP 0.6s, CLS 0.004, TBT 0ms
 
 ![The poems grid, with the table of contents and the reader's flush-left poem text](docs/screenshot-poems.jpg)
 
@@ -25,6 +33,7 @@ Lighthouse on the deployed site (mobile): **92** performance, **100** accessibil
 - Light/dark mode, fully responsive, WCAG AA contrast, honours `prefers-reduced-motion`
 - Prerendered pages carry their own title, description, canonical and structured data
 - Images sized per device via Cloudinary; the body font is self-hosted
+- Optional Cloudflare Web Analytics — cookie-less, no consent banner, one token away. Unset, and no analytics script is injected at all: not even a stub request
 - Error and not-found pages instead of a blank document; `/privacy` covers the contact form
 
 **Admin portal (`/admin`)** — password login + JWT auth
@@ -64,6 +73,7 @@ e2e/                            # layout.spec.ts + API-stubbing fixtures
 scripts/
 ├── prerender.mjs               # static HTML per route + sitemap.xml + robots.txt
 ├── check-budgets.mjs           # bundle budget + untransformed-image guard
+├── check-lighthouse.mjs        # a11y/SEO/best-practices thresholds on the built output
 ├── backup-poems.mjs            # snapshot the live poems
 ├── build-icons.mjs             # PNG icons from favicon.svg
 └── hash-password.mjs           # prints an ADMIN_PASSWORD_HASH
@@ -77,7 +87,7 @@ packages/
 │   ├── rateLimit.ts            # per-IP fixed window
 │   ├── authState.ts            # login attempts + token epoch (Firestore)
 │   ├── testing/                # in-memory Firestore stand-in (not built)
-│   ├── routes/                 # auth.ts, contact.ts, poems.ts (+ *.test.ts)
+│   ├── routes/                 # auth.ts, contact.ts, poems.ts, clientErrors.ts (+ *.test.ts)
 │   └── middleware/requireAuth.ts
 └── web/                        # Vite React app (port 3000)
     └── src/
@@ -86,7 +96,7 @@ packages/
         ├── assets/fonts/       # self-hosted Esteban (OFL)
         ├── context/            # PoemsContext, ThemeContext
         ├── i18n/               # en.ts, hu.ts, LanguageProvider
-        ├── lib/                # api, images (Cloudinary + srcset), prerendered, useRouteMeta
+        ├── lib/                # api, analytics, images (Cloudinary + srcset), prerendered, useRouteMeta
         ├── components/         # Header, PoemCarousel, ErrorBoundary, …
         ├── pages/              # Home, Poems, Admin, Contact, Privacy, NotFound
         └── styles/             # global.css, themes.css, admin.css
@@ -97,18 +107,20 @@ packages/
 ## Quick Start
 
 ```bash
-npm install           # install dependencies
-npm run dev           # web (:3000) + API (:4000)
-npm run build         # production build
-npm run typecheck     # tsc across all packages
-npm run check         # Biome lint + format verification
-npm run test:api      # API unit + route tests
-npm run test:e2e      # Playwright layout tests
-npm run prerender     # static HTML per route (needs a fresh build first)
-npm run check:budgets # bundle budget + untransformed-image guard
-npm run hash-password # prints an ADMIN_PASSWORD_HASH
-npm run backup-poems  # writes the live poems to backups/ (--check to compare only)
-npm run build-icons   # rasterises the PNG icons from favicon.svg
+npm install               # install dependencies
+npm run dev               # web (:3000) + API (:4000)
+npm run build             # production build
+npm run typecheck         # tsc across all packages
+npm run check             # Biome lint + format verification
+npm run test:api          # API route tests
+npm run test:unit         # web + shared unit tests
+npm run test:e2e          # Playwright layout tests
+npm run prerender         # static HTML per route (needs a fresh build first)
+npm run check:budgets     # bundle budget + untransformed-image guard
+npm run check:lighthouse  # a11y/SEO/best-practices on the built output
+npm run hash-password     # prints an ADMIN_PASSWORD_HASH
+npm run backup-poems      # writes the live poems to backups/ (--check to compare only)
+npm run build-icons       # rasterises the PNG icons from favicon.svg
 ```
 
 Vite proxies `/api` to the API in development.
@@ -143,6 +155,19 @@ is installed. They cover:
 `authState` resolves Firestore on first use rather than at import, so tests substitute an
 in-memory stand-in. Tests and their helpers are excluded from the API's tsconfig and never
 reach `dist`.
+
+**Unit tests** (`npm run test:unit`) cover the Cloudinary URL builder (`optimizeUrl`,
+`fullBleedSrcSet`), the hydration patch merge (`mergePoemPatch`), and the per-route SEO
+metadata (`describePoem`, `metaForRoute`).
+
+**Lighthouse audit** (`npm run check:lighthouse`) runs against the built, prerendered
+output — accessibility, SEO and best-practices are gated at 100; performance is measured and
+printed but never gated, since a shared CI runner's timings vary by more than the thing
+being measured. It serves `dist` itself, mounted at the site's GitHub Pages base, so the
+audit sees the same URLs Pages will, and points Lighthouse's Chrome launcher at Playwright's
+own Chromium rather than provisioning a second browser. In CI this step is
+`continue-on-error`: a gate nobody has watched pass yet should not be able to block a deploy
+on its own say-so.
 
 ---
 
@@ -195,6 +220,11 @@ both locale files and use `t.<key>`.
 | `GET /health` | Liveness only, deliberately shallow — Render's health check points here. |
 | `GET /health/deps` | Reads Firestore, returns 503 on failure. Cached 30s. For uptime monitoring. |
 | `GET /api/poems` | Falls back to the bundled poems if Firestore is unreachable. |
+| `POST /api/poems` | Creates a blank poem with placeholder text and image. Requires auth. |
+| `PUT /api/poems/:id` | Edits title, overlay text, image, featured/deleted flags, and the custom-slides fields. Merges, so editing one field cannot blank the others. Requires auth. |
+| `PUT /api/poems/order` | Writes the display order as a Firestore doc, read back by `GET /api/poems`. Requires auth. |
+| `DELETE /api/poems/:id` | Hard delete. For a bundled poem this only removes the override, so it reverts to `POEMS`; a Firestore-only poem is removed outright. Requires auth. |
+| `POST /api/poems/:id/image` | Uploads to Cloudinary. 10 MB cap, memory storage — Render's filesystem is ephemeral. Requires auth. |
 | `POST /api/contact` | Validates and length-caps every field, rejects newlines in those reaching mail headers, drops honeypot submissions, 5/hour per IP. Returns 503 if no mail transport is configured. |
 | `POST /api/auth/login` | 10 attempts per 15 minutes per IP, recorded in Firestore so the window survives restarts, with an in-memory limiter as backup. Failures are delayed progressively and logged. Constant-time password comparison. |
 | `POST /api/client-errors` | Records a browser error in the server log. Anonymous, so the message and stack are truncated, newlines collapsed, and reports capped per IP. Always answers 204 — a page that is already broken should not be told its report failed. |
@@ -205,6 +235,7 @@ both locale files and use `t.<key>`.
 ## Deployment
 
 - **Frontend → GitHub Pages** via `.github/workflows/ci.yml` on push to `main`. The deploy job runs `needs: [verify, e2e]`, so nothing publishes unless every check passes.
+- **Fast, on purpose.** Both jobs that need a browser cache `~/.cache/ms-playwright`, keyed on the installed Playwright version, so a normal run skips re-downloading ~300MB of Chromium binaries rather than fetching them fresh on every push.
 - **Rebuilt weekly** (cron, Mondays 04:00 UTC) and on demand via `workflow_dispatch`. Prerendered HTML is a snapshot, so admin edits are live for visitors immediately but reach crawlers only on a rebuild. `schedule` must stay in the deploy job's `if:`, or the weekly run builds and tests without deploying.
 - **Pages-specific.** Vite builds with `--base=/kov-cs-poetry/` and the router takes a matching `basename`. The prerenderer writes `404.html` from the *untouched* build shell, which Pages serves for `/admin` and unknown paths — it must not be a copy of the prerendered `index.html`, or the client tries to hydrate the home page into whatever the router matched. The generated `robots.txt` is inert on a project page, since crawlers read it from the domain root. On a host serving from a domain root, drop the base path and `robots.txt` starts working.
 - **Node 22 is required** (`.nvmrc`). The API imports raw TypeScript from `packages/shared`, which only loads on a runtime that strips types.
@@ -249,7 +280,15 @@ CONTACT_TO=pjcr.dekeijzer@gmail.com   # optional; this is the default
 
 For Gmail, `SMTP_PASS` must be an [App Password](https://myaccount.google.com/apppasswords) with 2-Step Verification enabled. The same variables are declared in `render.yaml`.
 
-For the Pages build, set `VITE_API_URL` as a repository secret. Without it the frontend falls back to relative `/api` paths.
+For the Pages build, set `VITE_API_URL` as a repository secret. Without it the frontend
+skips the poems fetch rather than firing a request against its own static host that can
+only 404 — see `HAS_API` in `packages/web/src/lib/api.ts`.
+
+**Analytics is opt-in.** Add a site at [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/)
+(the "JS snippet" setup works for a GitHub Pages site, no domain migration needed) and copy
+the token it gives you into `VITE_CF_BEACON_TOKEN`, set as a repository *variable* — it is
+not a secret, since it ends up sitting in the page source either way. Leave it unset and no
+analytics script is injected at all, not even a stub request.
 
 ---
 
