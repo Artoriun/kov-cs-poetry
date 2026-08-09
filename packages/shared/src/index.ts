@@ -1,5 +1,6 @@
 import { stripPageBreaks } from './pageBreaks';
 
+export * from './overlayEdit';
 export * from './pageBreaks';
 
 export interface Poem {
