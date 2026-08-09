@@ -184,6 +184,56 @@ describe('requireAuth', () => {
   });
 });
 
+describe('POST /api/auth/refresh', () => {
+  const refresh = (token?: string) =>
+    fetch(`${base}/api/auth/refresh`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+  test('requires a valid token of its own', async () => {
+    assert.equal((await refresh()).status, 401);
+    assert.equal((await refresh('not-a-jwt')).status, 401);
+    assert.equal(
+      (await refresh(jwt.sign({ admin: true }, 'other-secret'))).status,
+      401,
+      'refreshing must not be a way around the signature check',
+    );
+  });
+
+  test('extends a live session', async () => {
+    const { token } = (await (await login(PASSWORD)).json()) as { token: string };
+    const before = (jwt.decode(token) as { exp: number }).exp;
+    // The expiry is whole seconds, so a same-second refresh returns a byte-identical token
+    // and proves nothing. Waiting a beat is what makes the comparison meaningful.
+    await new Promise((r) => setTimeout(r, 1100));
+
+    const res = await refresh(token);
+    assert.equal(res.status, 200);
+    const { token: fresh } = (await res.json()) as { token: string };
+    const payload = jwt.verify(fresh, SECRET) as { admin: boolean; exp: number };
+    assert.equal(payload.admin, true);
+    assert.ok(payload.exp > before, 'the new token should outlive the old one');
+    assert.equal((await getProtected(fresh)).status, 200);
+  });
+
+  test('an expired token cannot be refreshed back to life', async () => {
+    const dead = jwt.sign({ admin: true, epoch: 0 }, SECRET, {
+      algorithm: 'HS256',
+      expiresIn: -10,
+    });
+    assert.equal((await refresh(dead)).status, 401);
+  });
+
+  test('a revoked session cannot refresh its way back in', async () => {
+    // The point of revoke-all is that it is final. Carrying the old token's epoch across a
+    // refresh would quietly undo it for whoever holds the token.
+    const { token } = (await (await login(PASSWORD)).json()) as { token: string };
+    await revokeAllTokens();
+    assert.equal((await refresh(token)).status, 401);
+  });
+});
+
 describe('POST /api/auth/revoke-all', () => {
   test('requires a valid token of its own', async () => {
     const res = await fetch(`${base}/api/auth/revoke-all`, { method: 'POST' });

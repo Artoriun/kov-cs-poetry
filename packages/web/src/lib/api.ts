@@ -1,4 +1,5 @@
 import type { Poem } from '@gedichtenv2/shared';
+import { readToken, secondsLeft, signalSessionExpired, storeToken } from './token';
 
 // ponytail: coerce http→https so auth header isn't stripped on Render's 301 redirect
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https://');
@@ -17,11 +18,48 @@ const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/^http:\/\//, 'https:/
  */
 export const HAS_API = import.meta.env.DEV || BASE !== '';
 
-const getToken = () => localStorage.getItem('admin_token');
+const handleUnauthorized = signalSessionExpired;
 
-function handleUnauthorized() {
-  localStorage.removeItem('admin_token');
-  window.location.reload();
+/**
+ * Authorization header for an admin call, or an immediate sign-out if the token is already
+ * dead.
+ *
+ * Checking here is what makes the session end when it actually ends: the expiry used to be
+ * read only when the portal mounted, so an already-dead token was still sent and the admin
+ * only found out when the action failed.
+ */
+function authHeader(): { Authorization: string } {
+  const token = readToken();
+  if (!token) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
+  return { Authorization: `Bearer ${token}` };
+}
+
+/** Below this, a refresh is worth a request; above it, the token has plenty of life left. */
+const REFRESH_WHEN_UNDER_SECONDS = 3 * 24 * 60 * 60;
+
+/**
+ * Extends the session while the portal is in use, so an admin who logs in every few days
+ * never meets the 7-day expiry at all. Silent by design: a failed refresh leaves the current
+ * token in place, and if that token is genuinely dead the next real call will say so.
+ */
+export async function apiRefreshToken(): Promise<void> {
+  const token = readToken();
+  if (!token || secondsLeft(token) > REFRESH_WHEN_UNDER_SECONDS) return;
+  try {
+    const res = await fetch(`${BASE}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const { token: fresh } = (await res.json()) as { token: string };
+    storeToken(fresh);
+  } catch {
+    // Offline or the API is asleep. Nothing to do — the existing token is still the best
+    // one we have.
+  }
 }
 
 export async function apiLogin(password: string): Promise<string> {
@@ -75,7 +113,7 @@ export async function apiSendContact(msg: ContactMessage): Promise<void> {
 export async function apiAddPoem(): Promise<Poem> {
   const res = await fetch(`${BASE}/api/poems`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
   });
   if (res.status === 401) {
     handleUnauthorized();
@@ -99,7 +137,7 @@ export async function apiUpdatePoem(
 ): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: JSON.stringify(data),
   });
   if (res.status === 401) {
@@ -114,7 +152,7 @@ export async function apiUploadImage(id: string, file: File): Promise<string> {
   form.append('image', file);
   const res = await fetch(`${BASE}/api/poems/${id}/image`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: authHeader(),
     body: form,
   });
   if (res.status === 401) {
@@ -129,7 +167,7 @@ export async function apiUploadImage(id: string, file: File): Promise<string> {
 export async function apiUpdateOrder(ids: string[]): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/order`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: JSON.stringify({ ids }),
   });
   if (res.status === 401) {
@@ -142,7 +180,7 @@ export async function apiUpdateOrder(ids: string[]): Promise<void> {
 export async function apiResetPoem(id: string): Promise<void> {
   const res = await fetch(`${BASE}/api/poems/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: authHeader(),
   });
   if (res.status === 401) {
     handleUnauthorized();

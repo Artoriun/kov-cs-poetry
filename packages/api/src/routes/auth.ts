@@ -62,6 +62,24 @@ authRouter.post('/login', async (req, res) => {
   res.json({ token });
 });
 
+/**
+ * Trades a still-valid token for a fresh one, so an admin who keeps using the portal is
+ * never cut off at the 7-day wall mid-edit. `requireAuth` has already checked the signature,
+ * the expiry and the epoch, so reaching here is proof enough to mint a replacement.
+ */
+authRouter.post('/refresh', requireAuth, async (_req, res) => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    res.status(503).json({ error: 'Authentication is not configured' });
+    return;
+  }
+  // Re-read rather than copying the old token's epoch: a revoke-all between issue and
+  // refresh must not be undone by handing back a token stamped with the superseded value.
+  const epoch = await currentEpoch();
+  const token = jwt.sign({ admin: true, epoch }, secret, { algorithm: 'HS256', expiresIn: '7d' });
+  res.json({ token });
+});
+
 /** Signs out every session, including any token that has been copied elsewhere. */
 authRouter.post('/revoke-all', requireAuth, async (_req, res) => {
   const epoch = await revokeAllTokens();

@@ -6,7 +6,15 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
-import { apiAddPoem, apiLogin, apiUpdateOrder, apiUpdatePoem, apiUploadImage } from '../lib/api';
+import {
+  apiAddPoem,
+  apiLogin,
+  apiRefreshToken,
+  apiUpdateOrder,
+  apiUpdatePoem,
+  apiUploadImage,
+} from '../lib/api';
+import { clearToken, readToken, SESSION_EXPIRED_EVENT, storeToken } from '../lib/token';
 
 const PLACEHOLDER_IMAGE =
   'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png';
@@ -121,7 +129,14 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 // ── Login ────────────────────────────────────────────────────────────────────
 
-function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
+function LoginPage({
+  onLogin,
+  expired = false,
+}: {
+  onLogin: (token: string) => void;
+  /** Arrived here from a session that ran out, rather than from a plain visit to /admin. */
+  expired?: boolean;
+}) {
   const t = useT();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -155,6 +170,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
           <h1>Admin</h1>
+          {expired && <p className="admin-login-notice">{t.admin.sessionExpired}</p>}
           <div>
             <label className="admin-field-label" htmlFor="admin-password">
               {t.admin.password}
@@ -940,7 +956,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               </div>
               {mode === 'list' && (
                 <div className="admin-add-row">
-                  <button type="button" className="admin-add-btn" onClick={handleAddPoem}>
+                  {/* The visible label is the sibling span, so without this the button
+                      announces itself as "+" and nothing else. */}
+                  <button
+                    type="button"
+                    className="admin-add-btn"
+                    onClick={handleAddPoem}
+                    aria-label={t.admin.addPoem}
+                  >
                     +
                   </button>
                   <span className="admin-add-label">{t.admin.addPoem}</span>
@@ -1227,24 +1250,16 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 // ── Admin entry point ─────────────────────────────────────────────────────────
 
+/**
+ * How often the open portal considers renewing its token. Well under the three days of
+ * headroom `apiRefreshToken` waits for, so a tab left open overnight is still covered, and
+ * the call is a no-op on all but the last few days of a session.
+ */
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(() => {
-    const t = localStorage.getItem('admin_token');
-    if (!t) return null;
-    try {
-      const { exp } = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as {
-        exp: number;
-      };
-      if (Date.now() / 1000 > exp) {
-        localStorage.removeItem('admin_token');
-        return null;
-      }
-    } catch {
-      localStorage.removeItem('admin_token');
-      return null;
-    }
-    return t;
-  });
+  const [token, setToken] = useState<string | null>(readToken);
+  const [expired, setExpired] = useState(false);
   const { refreshPoems } = usePoemsContext();
 
   useEffect(() => {
@@ -1253,16 +1268,36 @@ export default function Admin() {
     };
   }, [refreshPoems]);
 
+  // A 401, or a token that ran out while this tab sat open. Both used to reload the page
+  // out from under whatever was being edited; now the login form comes back with a reason.
+  useEffect(() => {
+    const onExpired = () => {
+      setToken(null);
+      setExpired(true);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    void apiRefreshToken();
+    const id = setInterval(() => void apiRefreshToken(), REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [token]);
+
   const handleLogin = (t: string) => {
-    localStorage.setItem('admin_token', t);
+    storeToken(t);
+    setExpired(false);
     setToken(t);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
+    clearToken();
+    setExpired(false);
     setToken(null);
   };
 
-  if (!token) return <LoginPage onLogin={handleLogin} />;
+  if (!token) return <LoginPage onLogin={handleLogin} expired={expired} />;
   return <Dashboard onLogout={handleLogout} />;
 }
