@@ -92,6 +92,7 @@ export const en = {
     show: 'Show',
     hide: 'Hide',
     incorrectPassword: 'Incorrect password.',
+    sessionExpired: 'Your session has ended. Log in again to continue.',
     loggingIn: 'Logging in…',
     logIn: 'Log in',
     loadingPoems: 'Loading…',

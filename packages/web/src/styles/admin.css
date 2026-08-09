@@ -51,6 +51,18 @@ html.dark-mode {
   color: #e05a5a;
 }
 
+/* Not styled as an error: the session ending is normal, and the admin has done nothing
+   wrong. It just explains why the login form is here.
+
+   A named colour rather than `opacity`, which would have dimmed the text by an amount no
+   contrast check can account for. --text-secondary on this card (--card-bg is never
+   defined, so --bg-secondary always applies) is 6.8:1 in light and 5.6:1 in dark. */
+.admin-login-notice {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 /* ── Dashboard header ── */
 
 .admin-header {

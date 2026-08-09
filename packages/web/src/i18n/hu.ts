@@ -93,6 +93,7 @@ export const hu: Dict = {
     show: 'Megjelenítés',
     hide: 'Elrejtés',
     incorrectPassword: 'Helytelen jelszó.',
+    sessionExpired: 'A munkamenet lejárt. A folytatáshoz jelentkezz be újra.',
     loggingIn: 'Bejelentkezés…',
     logIn: 'Bejelentkezés',
     loadingPoems: 'Betöltés…',
