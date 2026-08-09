@@ -40,7 +40,9 @@ Desktop — LCP 0.6s, CLS 0.004, TBT 0ms
 - Create, edit, delete and drag-to-reorder poems; changes persist to Firestore and appear site-wide immediately
 - **List** view (edit cards) and **Order** view (drag-to-reorder grid, touch supported)
 - Feature poems for the home carousel; upload images to Cloudinary
-- **Custom Slides** — manually split a poem into reader pages, pre-filled from a layout measurement
+- **Page breaks** — type `\n` in the poem text to continue on a new page over the same background
+- **Custom Slides** — manually split a poem into reader pages, pre-filled from the page breaks above, or from a layout measurement when there are none
+- Sessions renew while the portal is in use and end with an explanation rather than a silent reload
 - Runs in English by default, with an EN/HU switch affecting the portal only
 
 ---
@@ -149,6 +151,8 @@ is installed. They cover:
   the escalating delay after a failure, and a success clearing the record.
 - **`requireAuth`** — tokens that are expired, signed with another key, missing the `admin`
   claim, forged with `alg:none`, or issued before the last `revoke-all`.
+- **Token refresh** — that it needs a valid token of its own, that it extends a live session,
+  and that neither an expired nor a revoked token can refresh its way back in.
 - **Client-error endpoint** — truncation, newline collapsing, per-IP capping and its
   refusal to report a failed report.
 
@@ -157,8 +161,15 @@ in-memory stand-in. Tests and their helpers are excluded from the API's tsconfig
 reach `dist`.
 
 **Unit tests** (`npm run test:unit`) cover the Cloudinary URL builder (`optimizeUrl`,
-`fullBleedSrcSet`), the hydration patch merge (`mergePoemPatch`), and the per-route SEO
-metadata (`describePoem`, `metaForRoute`).
+`fullBleedSrcSet`), the hydration patch merge (`mergePoemPatch`), the per-route SEO metadata
+(`describePoem`, `metaForRoute`), the admin session token (expiry, and that a dead one is
+cleared rather than sent), and the page-break marks — how a poem splits on them, that none
+survives into anything a reader sees, and the rules tying them to the Custom Slides editor.
+
+Note the runner's one constraint: `@gedichtenv2/shared` resolves as CommonJS here, so a test
+under `packages/web` cannot import a *value* from it — only types, which are erased. Pure
+logic that needs both belongs in `packages/shared`, which is why `overlayEdit` lives there
+rather than beside the component that calls it.
 
 **Lighthouse audit** (`npm run check:lighthouse`) runs against the built, prerendered
 output — accessibility, SEO and best-practices are gated at 100; performance is measured and
@@ -228,6 +239,7 @@ both locale files and use `t.<key>`.
 | `POST /api/contact` | Validates and length-caps every field, rejects newlines in those reaching mail headers, drops honeypot submissions, 5/hour per IP. Returns 503 if no mail transport is configured. |
 | `POST /api/auth/login` | 10 attempts per 15 minutes per IP, recorded in Firestore so the window survives restarts, with an in-memory limiter as backup. Failures are delayed progressively and logged. Constant-time password comparison. |
 | `POST /api/client-errors` | Records a browser error in the server log. Anonymous, so the message and stack are truncated, newlines collapsed, and reports capped per IP. Always answers 204 — a page that is already broken should not be told its report failed. |
+| `POST /api/auth/refresh` | Trades a live token for a fresh one, so an admin who keeps using the portal is never cut off mid-edit. Re-reads the epoch rather than copying the caller's, so a refresh cannot undo a `revoke-all`. Requires a valid token. |
 | `POST /api/auth/revoke-all` | Signs out every session. Tokens carry an epoch that `requireAuth` checks. Requires a valid token. |
 
 ---
@@ -349,6 +361,26 @@ To add a fallback poem, append to `POEMS`:
 `overlay` is newline-separated text shown over the image. Two optional Firestore-only fields
 drive the custom-slides reader layout, written only by the admin portal: `customSlides`
 (`string[]`) and `customSlidesEnabled` (`boolean`).
+
+### Page breaks
+
+Typing the two characters `\n` in a poem's text marks where it should carry on to a new page
+over the same background. It is a plain part of `overlay`, so it needs no schema change and no
+migration — a poem without one is a single section, exactly as before.
+
+The reader treats each section as a break it will never merge across, and still subdivides one
+further if it is too tall for the viewport, so a break can be added without any risk of the
+text running off a phone screen. Custom Slides render verbatim instead, which is what a poem
+gets once it has marks, since typing one turns them on.
+
+Marks are stripped everywhere the poem is shown whole rather than paged — the grid, the
+carousel, the meta description, the JSON-LD — by `stripPageBreaks` in
+`packages/shared/src/pageBreaks.ts`. Anything new that renders `overlay` directly needs the
+same treatment, or the marker shows up as literal text.
+
+In the portal the marks and the Custom Slides editor stay in step: the first mark opens the
+editor on the split, later edits re-split it, and deleting the last mark closes it again. The
+rules live in `packages/shared/src/overlayEdit.ts` with the reasoning for each.
 
 ---
 
