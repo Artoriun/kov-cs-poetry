@@ -110,6 +110,10 @@ export const en = {
     chooseImage: 'Choose image',
     titleLabel: 'Title',
     poemText: 'Poem text',
+    // Takes the marker rather than spelling it out, so the hint cannot go stale if it changes.
+    pageBreakHint: (marker: string) =>
+      `Type ${marker} to continue on a new page from that point, over the same background.`,
+    pageBreakHintCustomSlides: 'With Custom Slides on, each slide below is already its own page.',
     customSlides: 'Custom Slides',
     original: 'Original',
     save: 'Save',

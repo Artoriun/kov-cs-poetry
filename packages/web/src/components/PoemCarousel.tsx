@@ -1,3 +1,4 @@
+import { stripPageBreaks } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -114,7 +115,7 @@ export default function PoemCarousel() {
   useEffect(() => {
     if (isHovered || count === 0) return;
     const poem = CAROUSEL_POEMS[current];
-    const lineCount = poem?.overlay ? poem.overlay.split('\n').length : 3;
+    const lineCount = poem?.overlay ? stripPageBreaks(poem.overlay).split('\n').length : 3;
     const timer = setTimeout(() => paginate(1), Math.max(3000, lineCount * 1000));
     return () => clearTimeout(timer);
   }, [current, isHovered, count, CAROUSEL_POEMS, paginate]);
@@ -218,18 +219,22 @@ export default function PoemCarousel() {
                       {poem.overlay && (
                         <span className="carousel-overlay">
                           <span>
-                            {poem.overlay.split('\n').map((line, i) => (
-                              <span
-                                // Poem lines are positional and never reorder, and two of the poems repeat a
-                                // line, so keying by text would collide.
-                                // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
-                                key={i}
-                                className="carousel-overlay-line"
-                                style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
-                              >
-                                {line || ' '}
-                              </span>
-                            ))}
+                            {/* Stripped: the carousel shows the poem whole, so a page-break
+                                marker would read as a stray line of text. */}
+                            {stripPageBreaks(poem.overlay)
+                              .split('\n')
+                              .map((line, i) => (
+                                <span
+                                  // Poem lines are positional and never reorder, and two of the poems repeat a
+                                  // line, so keying by text would collide.
+                                  // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
+                                  key={i}
+                                  className="carousel-overlay-line"
+                                  style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
+                                >
+                                  {line || ' '}
+                                </span>
+                              ))}
                           </span>
                         </span>
                       )}

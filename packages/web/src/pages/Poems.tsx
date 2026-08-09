@@ -1,3 +1,4 @@
+import { stripPageBreaks } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -479,7 +480,9 @@ export default function Poems() {
                         <div className="poem-card-img-wrap">
                           <img src={optimizeUrl(poem.image)} alt={poem.title} loading="eager" />
                         </div>
-                        {poem.overlay && <span className="poem-overlay">{poem.overlay}</span>}
+                        {poem.overlay && (
+                          <span className="poem-overlay">{stripPageBreaks(poem.overlay)}</span>
+                        )}
                       </Link>
                     </motion.div>
                   ))}

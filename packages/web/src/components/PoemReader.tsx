@@ -1,4 +1,4 @@
-import type { Poem } from '@gedichtenv2/shared';
+import { type Poem, splitPages, stripPageBreaks } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -40,17 +40,24 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
   const t = useT();
   const navigate = useNavigate();
 
-  const detailLines = useMemo(() => (poem.overlay ? poem.overlay.split('\n') : []), [poem.overlay]);
+  // Stripped of page-break markers: this is the flat copy used for measuring and for the
+  // prerendered first paint, where the whole poem is emitted as one block.
+  const detailLines = useMemo(
+    () => (poem.overlay ? stripPageBreaks(poem.overlay).split('\n') : []),
+    [poem.overlay],
+  );
   // The author's intended breaks: custom slides if the poem defines them, otherwise the
-  // whole poem as one block. Each is a hard break that pagination never merges across —
-  // it only subdivides one further when it doesn't fit the current viewport.
+  // overlay split on the page-break markers typed into it — a single section when there are
+  // none, which is every poem that predates the feature. Each is a hard break that
+  // pagination never merges across; it only subdivides one further when it doesn't fit the
+  // current viewport.
   // Flattened to a primitive so useMemo gets a stable key. A NUL separator is used
   // because slide text legitimately contains both spaces and newlines.
   const customSlidesKey =
     poem.customSlidesEnabled && poem.customSlides?.length ? poem.customSlides.join('\u0000') : '';
   const sourceSlides: string[][] = useMemo(() => {
     if (customSlidesKey) return customSlidesKey.split('\u0000').map((s) => s.split('\n'));
-    return poem.overlay ? [poem.overlay.split('\n')] : [];
+    return poem.overlay ? splitPages(poem.overlay).map((page) => page.split('\n')) : [];
   }, [customSlidesKey, poem.overlay]);
   const measureLines = sourceSlides.flat();
   const usesCustomSlides = customSlidesKey !== '';

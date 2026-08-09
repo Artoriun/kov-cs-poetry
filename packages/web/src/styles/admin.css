@@ -351,6 +351,14 @@ html.dark-mode .admin-delete-btn:hover {
   display: block;
 }
 
+/* --text-secondary rather than a dimmed --text-primary: this is the one place the page-break
+   marker is documented, so it has to stay legible. 6.8:1 light, 5.6:1 dark. */
+.admin-field-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+}
+
 .admin-overlay-textarea,
 .admin-title-input {
   border-radius: var(--control-radius);

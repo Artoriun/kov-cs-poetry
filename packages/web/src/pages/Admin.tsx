@@ -1,4 +1,4 @@
-import type { Poem } from '@gedichtenv2/shared';
+import { PAGE_BREAK, type Poem, stripPageBreaks } from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import AdminLangToggle from '../components/AdminLangToggle';
@@ -320,7 +320,11 @@ function PoemCard({
               className="admin-poem-thumb"
               loading="eager"
             />
-            {edit.overlay && <div className="admin-poem-thumb-overlay">{edit.overlay}</div>}
+            {/* Stripped so the preview shows what a visitor sees, not the marker. The
+                textarea below keeps it — that is where it is edited. */}
+            {edit.overlay && (
+              <div className="admin-poem-thumb-overlay">{stripPageBreaks(edit.overlay)}</div>
+            )}
           </div>
           <label className="admin-file-label">
             {t.admin.chooseImage}
@@ -382,6 +386,14 @@ function PoemCard({
                 }
               }}
             />
+            {/* Says the marker out loud, since nothing else in the UI would reveal it. Muted
+                while Custom Slides is open: there the overlay is not what gets read, so the
+                marker would do nothing and the hint would be a lie. */}
+            <p className="admin-field-hint">
+              {edit.customSlidesOpen
+                ? t.admin.pageBreakHintCustomSlides
+                : t.admin.pageBreakHint(PAGE_BREAK)}
+            </p>
           </div>
 
           {edit.customSlidesOpen && (

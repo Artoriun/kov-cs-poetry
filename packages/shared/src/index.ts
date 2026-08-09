@@ -1,3 +1,7 @@
+import { stripPageBreaks } from './pageBreaks';
+
+export * from './pageBreaks';
+
 export interface Poem {
   id: string;
   title: string;
@@ -281,7 +285,10 @@ export const SITE_DESCRIPTION = 'Kovács verseinek gyűjteménye.';
 
 /** First ~155 characters of the poem, roughly what a search result displays. */
 export function describePoem(poem: Poem): string {
-  const text = (poem.overlay ?? '').replace(/\s+/g, ' ').trim();
+  // Stripped, or a poem broken across pages would advertise a literal `\n` in search results.
+  const text = stripPageBreaks(poem.overlay ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!text) return `${poem.title} — vers Kovács gyűjteményéből.`;
   return text.length <= 155 ? text : `${text.slice(0, 152).trimEnd()}…`;
 }
