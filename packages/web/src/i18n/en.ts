@@ -114,6 +114,8 @@ export const en = {
     pageBreakHint: (marker: string) =>
       `Type ${marker} to continue on a new page from that point, over the same background.`,
     pageBreakHintCustomSlides: 'With Custom Slides on, each slide below is already its own page.',
+    pageBreakHintCustomSlidesLinked: (marker: string) =>
+      `The slides below follow the ${marker} marks in this text — edit it and they update.`,
     customSlides: 'Custom Slides',
     original: 'Original',
     save: 'Save',
