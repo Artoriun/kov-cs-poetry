@@ -54,3 +54,15 @@ export function stripPageBreaks(overlay: string): string {
 export function hasPageBreak(overlay: string): boolean {
   return overlay.includes(PAGE_BREAK);
 }
+
+/**
+ * Whether the text still carries a mark, or the remains of one.
+ *
+ * Deleting `\n` takes two keystrokes, and in between the text holds a lone `\`. Nothing
+ * splits there — it is not a page break — but it is not "the author has removed the break"
+ * either. Anything that reacts to a break disappearing has to wait for this to go false, or
+ * it fires one keystroke early, halfway through the deletion.
+ */
+export function hasPageBreakFragment(overlay: string): boolean {
+  return overlay.includes(PAGE_BREAK[0]);
+}
