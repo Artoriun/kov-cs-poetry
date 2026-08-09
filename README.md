@@ -169,7 +169,8 @@ survives into anything a reader sees, and the rules tying them to the Custom Sli
 Note the runner's one constraint: `@gedichtenv2/shared` resolves as CommonJS here, so a test
 under `packages/web` cannot import a *value* from it — only types, which are erased. Pure
 logic that needs both belongs in `packages/shared`, which is why `overlayEdit` lives there
-rather than beside the component that calls it.
+rather than beside the component that calls it. That package is deliberately one module — see
+the comment above `PAGE_BREAK` for the resolution constraint that forces it.
 
 **Lighthouse audit** (`npm run check:lighthouse`) runs against the built, prerendered
 output — accessibility, SEO and best-practices are gated at 100; performance is measured and
@@ -375,12 +376,12 @@ gets once it has marks, since typing one turns them on.
 
 Marks are stripped everywhere the poem is shown whole rather than paged — the grid, the
 carousel, the meta description, the JSON-LD — by `stripPageBreaks` in
-`packages/shared/src/pageBreaks.ts`. Anything new that renders `overlay` directly needs the
+`packages/shared/src/index.ts`. Anything new that renders `overlay` directly needs the
 same treatment, or the marker shows up as literal text.
 
 In the portal the marks and the Custom Slides editor stay in step: the first mark opens the
 editor on the split, later edits re-split it, and deleting the last mark closes it again. The
-rules live in `packages/shared/src/overlayEdit.ts` with the reasoning for each.
+rules live in `overlayEdit`, in that same file, with the reasoning for each.
 
 ---
 
