@@ -49,6 +49,40 @@ describe('overlayEdit', () => {
     });
   });
 
+  test('deleting the last mark closes and clears the slides', () => {
+    const patch = overlayEdit(state(`one${PAGE_BREAK}two`, true), 'one two');
+    assert.equal(patch.customSlidesOpen, false);
+    assert.equal(patch.customSlidesEnabled, false);
+    assert.equal(patch.customSlides, null);
+  });
+
+  test('half-deleting a mark does nothing — the backslash is still there', () => {
+    // Deleting `\n` takes two keystrokes. Closing on the first would pull the editor away
+    // mid-deletion, so a lone `\` counts as the mark still being present even though it
+    // breaks nothing.
+    const patch = overlayEdit(state(`one${PAGE_BREAK}two`, true), 'one\\two');
+    assert.deepEqual(patch, { overlay: 'one\\two' });
+  });
+
+  test('finishing that deletion then closes the slides', () => {
+    const patch = overlayEdit(state('one\\two', true), 'one two');
+    assert.equal(patch.customSlidesOpen, false);
+  });
+
+  test('one mark of several going does not close anything', () => {
+    const patch = overlayEdit(state(`a${PAGE_BREAK}b${PAGE_BREAK}c`, true), `a${PAGE_BREAK}b c`);
+    assert.equal(patch.customSlidesOpen, undefined, 'should stay open');
+    assert.deepEqual(patch.customSlides, ['a', 'b c']);
+  });
+
+  test('slides that never had a mark are never closed by an edit', () => {
+    // The two poems that ship with Custom Slides on and no marks. Closing on "no mark
+    // present" rather than on the transition would delete their slides on any keystroke.
+    assert.deepEqual(overlayEdit(state('one\ntwo', true), 'one\ntwo three'), {
+      overlay: 'one\ntwo three',
+    });
+  });
+
   test('no mark survives into the slides it produces', () => {
     const patch = overlayEdit(state('', false), `a${PAGE_BREAK}b${PAGE_BREAK}c`);
     for (const slide of patch.customSlides ?? []) {
