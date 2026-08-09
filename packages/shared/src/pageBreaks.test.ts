@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { describePoem } from './index';
-import { hasPageBreak, PAGE_BREAK, splitPages, stripPageBreaks } from './pageBreaks';
+import { describePoem, hasPageBreak, PAGE_BREAK, splitPages, stripPageBreaks } from './index';
 
 /**
  * Author-placed page breaks.

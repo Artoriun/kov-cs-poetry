@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { overlayEdit } from './overlayEdit';
-import { PAGE_BREAK } from './pageBreaks';
+import { overlayEdit, PAGE_BREAK } from './index';
 
 /** The admin's edit state, as far as this decision is concerned. */
 const state = (overlay: string, customSlidesOpen = false) => ({ overlay, customSlidesOpen });
