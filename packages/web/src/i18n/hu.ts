@@ -114,6 +114,8 @@ export const hu: Dict = {
     pageBreakHint: (marker: string) =>
       `Írj ${marker} jelet oda, ahonnan a vers új oldalon folytatódjon, ugyanazon a háttéren.`,
     pageBreakHintCustomSlides: 'Egyéni diák esetén minden lenti dia már külön oldal.',
+    pageBreakHintCustomSlidesLinked: (marker: string) =>
+      `A lenti diák a szövegben lévő ${marker} jeleket követik — ha itt szerkeszted, azonnal frissülnek.`,
     customSlides: 'Egyéni diák',
     original: 'Eredeti',
     save: 'Mentés',

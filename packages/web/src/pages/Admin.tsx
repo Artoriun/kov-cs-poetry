@@ -1,4 +1,10 @@
-import { PAGE_BREAK, type Poem, stripPageBreaks } from '@gedichtenv2/shared';
+import {
+  hasPageBreak,
+  PAGE_BREAK,
+  type Poem,
+  splitPages,
+  stripPageBreaks,
+} from '@gedichtenv2/shared';
 import { AnimatePresence, motion } from 'motion/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import AdminLangToggle from '../components/AdminLangToggle';
@@ -354,7 +360,21 @@ function PoemCard({
             <textarea
               className="admin-overlay-textarea"
               value={edit.overlay}
-              onChange={(e) => onChange({ overlay: e.target.value })}
+              onChange={(e) => {
+                const overlay = e.target.value;
+                // With the slides open they are a view of the marker split, so a marker typed
+                // up here lands in them straight away.
+                //
+                // Only when the poem actually carries a marker. Without one, splitPages
+                // returns the whole poem as a single page, which would collapse slides that
+                // were authored by hand — and those predate this feature, so fixing a typo in
+                // the text must not silently throw them away.
+                onChange(
+                  edit.customSlidesOpen && hasPageBreak(overlay)
+                    ? { overlay, customSlides: splitPages(overlay) }
+                    : { overlay },
+                );
+              }}
               onTouchStart={() => {
                 const s = tapRef.current;
                 if (s.timer) clearTimeout(s.timer);
@@ -386,13 +406,15 @@ function PoemCard({
                 }
               }}
             />
-            {/* Says the marker out loud, since nothing else in the UI would reveal it. Muted
-                while Custom Slides is open: there the overlay is not what gets read, so the
-                marker would do nothing and the hint would be a lie. */}
+            {/* Says the marker out loud, since nothing else in the UI would reveal it. Which
+                of the three applies depends on what the marker is currently doing: paging the
+                reader, driving the slides below, or nothing at all. */}
             <p className="admin-field-hint">
-              {edit.customSlidesOpen
-                ? t.admin.pageBreakHintCustomSlides
-                : t.admin.pageBreakHint(PAGE_BREAK)}
+              {!edit.customSlidesOpen
+                ? t.admin.pageBreakHint(PAGE_BREAK)
+                : hasPageBreak(edit.overlay || '')
+                  ? t.admin.pageBreakHintCustomSlidesLinked(PAGE_BREAK)
+                  : t.admin.pageBreakHintCustomSlides}
             </p>
           </div>
 
@@ -456,7 +478,14 @@ function PoemCard({
                 if (edit.customSlidesOpen) {
                   setPendingRestoreOriginal(true);
                 } else {
-                  const slides = computeAutoSplit(edit.overlay || '');
+                  // The author's own marks beat a height-based guess: if the poem says where
+                  // it breaks, open the slides on exactly those pages. computeAutoSplit is
+                  // still the answer for a poem with no marks, which is every poem that has
+                  // never been given any.
+                  const overlay = edit.overlay || '';
+                  const slides = hasPageBreak(overlay)
+                    ? splitPages(overlay)
+                    : computeAutoSplit(overlay);
                   onChange({
                     customSlidesOpen: true,
                     customSlidesEnabled: true,
