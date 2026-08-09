@@ -1,5 +1,6 @@
 import {
   hasPageBreak,
+  overlayEdit,
   PAGE_BREAK,
   type Poem,
   splitPages,
@@ -360,21 +361,7 @@ function PoemCard({
             <textarea
               className="admin-overlay-textarea"
               value={edit.overlay}
-              onChange={(e) => {
-                const overlay = e.target.value;
-                // With the slides open they are a view of the marker split, so a marker typed
-                // up here lands in them straight away.
-                //
-                // Only when the poem actually carries a marker. Without one, splitPages
-                // returns the whole poem as a single page, which would collapse slides that
-                // were authored by hand — and those predate this feature, so fixing a typo in
-                // the text must not silently throw them away.
-                onChange(
-                  edit.customSlidesOpen && hasPageBreak(overlay)
-                    ? { overlay, customSlides: splitPages(overlay) }
-                    : { overlay },
-                );
-              }}
+              onChange={(e) => onChange(overlayEdit(edit, e.target.value))}
               onTouchStart={() => {
                 const s = tapRef.current;
                 if (s.timer) clearTimeout(s.timer);
