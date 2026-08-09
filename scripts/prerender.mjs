@@ -21,7 +21,7 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { metaForRoute, POEMS } from '@gedichtenv2/shared';
+import { metaForRoute, POEMS, stripPageBreaks } from '@gedichtenv2/shared';
 import { chromium } from '@playwright/test';
 
 const SITE = process.env.SITE_URL ?? 'https://artoriun.github.io/kov-cs-poetry';
@@ -158,7 +158,8 @@ function head(route) {
         author: { '@type': 'Person', name: 'Kovács' },
         url,
         image: route.poem.image,
-        text: route.poem.overlay ?? '',
+        // Stripped: structured data is the poem as a reader gets it, not as it is authored.
+        text: stripPageBreaks(route.poem.overlay ?? ''),
       })}</script>`,
     );
   }
@@ -256,7 +257,12 @@ for (const route of routes) {
   if (route.poem) {
     // Stronger than a length check: the page must contain this poem's own opening, so a
     // route rendering the wrong poem (or just the chrome) is caught too.
-    const opening = (route.poem.overlay ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    // Stripped before comparing, or a poem whose author put a page break in its opening
+    // lines would look absent from its own page and fail this check.
+    const opening = stripPageBreaks(route.poem.overlay ?? '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 40);
     if (opening && !visible.includes(opening)) {
       console.error(`✗ ${route.path} does not contain its own poem text`);
       failures++;

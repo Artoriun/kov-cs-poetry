@@ -111,6 +111,9 @@ export const hu: Dict = {
     chooseImage: 'Kép kiválasztása',
     titleLabel: 'Cím',
     poemText: 'Vers szövege',
+    pageBreakHint: (marker: string) =>
+      `Írj ${marker} jelet oda, ahonnan a vers új oldalon folytatódjon, ugyanazon a háttéren.`,
+    pageBreakHintCustomSlides: 'Egyéni diák esetén minden lenti dia már külön oldal.',
     customSlides: 'Egyéni diák',
     original: 'Eredeti',
     save: 'Mentés',
