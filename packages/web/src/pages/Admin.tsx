@@ -850,11 +850,36 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   };
 
+  /**
+   * "Restore original": undo the custom layout entirely.
+   *
+   * That now means the page-break marks as well as the slides. The marks are what the
+   * layout *is* — leaving them in the text would close the editor while the reader went on
+   * splitting the poem exactly where it had been splitting it, which is not a restore by any
+   * reading of the word, and the confirmation promises the poem reverts to its auto-split
+   * layout.
+   *
+   * The field is stripped from whatever is currently in it, so the author keeps any unsaved
+   * wording. What is *sent* is stripped from the saved poem instead, and only when the saved
+   * poem actually carries a mark: pressing Restore should undo the layout on the server, not
+   * quietly commit edits the author has not saved yet.
+   */
   const handleCancelCustomSlides = async (id: string) => {
-    patchEdit(id, { customSlidesOpen: false, customSlidesEnabled: false });
+    const edit = edits[id];
+    patchEdit(id, {
+      customSlidesOpen: false,
+      customSlidesEnabled: false,
+      customSlides: null,
+      ...(edit ? { overlay: stripPageBreaks(edit.overlay) } : {}),
+    });
+
     if (!draftIds.has(id)) {
+      const saved = orderedPoems.find((p) => p.id === id)?.overlay ?? '';
       try {
-        await apiUpdatePoem(id, { customSlidesEnabled: false });
+        await apiUpdatePoem(id, {
+          customSlidesEnabled: false,
+          ...(hasPageBreak(saved) ? { overlay: stripPageBreaks(saved) } : {}),
+        });
         await refreshPoems();
       } catch {
         /* silent */

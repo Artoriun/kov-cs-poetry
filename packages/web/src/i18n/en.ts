@@ -133,7 +133,7 @@ export const en = {
     cancel: 'Cancel',
     restoreOriginal: 'Restore original?',
     restoreOriginalBody:
-      'The poem will revert to its auto-split layout. Your custom slides will be discarded.',
+      'The poem will revert to its auto-split layout. Your custom slides and any \\n page breaks in the text will be removed.',
     restore: 'Restore',
     deleteSlide: 'Delete slide',
     deleteSlideBody: 'Are you sure you want to delete this slide?',
