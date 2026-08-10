@@ -24,7 +24,8 @@
     "build-icons": "node scripts/build-icons.mjs",
     "backup-poems": "node scripts/backup-poems.mjs",
     "test:e2e:dist": "E2E_TARGET=dist playwright test e2e/dist.spec.ts --project=desktop",
-    "check:parity": "node scripts/check-parity.mjs"
+    "check:parity": "node scripts/check-parity.mjs",
+    "ci": "node scripts/ci-local.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
