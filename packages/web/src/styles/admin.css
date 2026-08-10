@@ -539,12 +539,17 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
+  /* No `opacity` here. It used to be 0.7, which dimmed --text-secondary to an effective
+     #767676 on the input's #252525 — 3.37:1, under AA for small text, and invisible to any
+     review that looks at the token rather than the rendered pixel. Undimmed it measures
+     5.4:1 in dark and 7.5:1 in light. Hover changes colour instead, so the affordance
+     survives without touching contrast. */
+  transition: color 0.15s ease;
 }
 
-.admin-password-toggle:hover {
-  opacity: 1;
+.admin-password-toggle:hover,
+.admin-password-toggle:focus-visible {
+  color: var(--text-hover);
 }
 
 .admin-input {

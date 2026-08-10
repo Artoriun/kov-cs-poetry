@@ -100,7 +100,7 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Run layout tests
+      - name: Run layout, touch and accessibility tests
         run: npm run test:e2e
 
       # Accessibility, SEO and best-practices against the built, prerendered output.
@@ -109,6 +109,13 @@ jobs:
       # own say-so.
       - name: Build and prerender for audit
         run: npm run build && npm run prerender
+
+      # The same suite again, against what Pages will actually serve: prerendered HTML under
+      # the project base path. Reuses the build above rather than adding a job. This is the
+      # only run that can see a hydration mismatch, a missing SPA fallback, or a link that
+      # resolves outside the base — the dev server has none of those things.
+      - name: Run the suite against the built output
+        run: npm run test:e2e:dist
 
       - name: Lighthouse
         continue-on-error: true

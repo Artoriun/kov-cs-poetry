@@ -22,9 +22,11 @@
     "test:unit": "node --import tsx --test \"packages/web/src/**/*.test.ts\" \"packages/shared/src/**/*.test.ts\"",
     "test": "npm run test:api && npm run test:unit",
     "build-icons": "node scripts/build-icons.mjs",
-    "backup-poems": "node scripts/backup-poems.mjs"
+    "backup-poems": "node scripts/backup-poems.mjs",
+    "test:e2e:dist": "E2E_TARGET=dist playwright test --project=desktop"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@biomejs/biome": "2.5.5",
     "@playwright/test": "^1.62.0",
     "lighthouse": "^12.8.2",

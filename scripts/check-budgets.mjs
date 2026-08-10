@@ -69,7 +69,8 @@ try {
 // Budget the initial payload — the entry chunks every visitor downloads — rather than
 // each file. Per-file budgets get weaker every time a route is split out: the numbers all
 // drop, nothing fails, and a lazy chunk could grow unnoticed. Route chunks (Admin) are
-// deliberately not budgeted; they cost only the person who opens that route.
+// deliberately not budgeted against the initial payload; they cost only the person who opens
+// that route. They do get a ceiling of their own — see LAZY_MAX_GZIP.
 const kb = (n) => `${(n / 1024).toFixed(1)}KB`;
 const entry = readdirSync(assets).filter((n) => n.startsWith('index-'));
 const lazy = readdirSync(assets).filter((n) => !n.startsWith('index-') && BUDGET_GZIP[extname(n)]);
@@ -87,10 +88,24 @@ if (initial > BUDGET_GZIP.initial) {
 } else {
   console.log(`✓ initial payload: ${kb(initial)} gzipped (budget ${kb(BUDGET_GZIP.initial)})`);
 }
+/**
+ * A ceiling on any single lazy chunk, so one becoming large is a decision someone makes on
+ * purpose rather than something nobody sees. These were previously printed and explicitly
+ * "not budgeted", which is fine right up until a route quietly pulls in a viewer library —
+ * Qalor shipped 1.54MB of PDF viewer on a modal click that way, and nothing said a word.
+ *
+ * Deliberately loose: the largest lazy chunk here is a few KB, so this is a tripwire for an
+ * order-of-magnitude change, not a budget anyone has to keep shaving.
+ */
+const LAZY_MAX_GZIP = 50 * 1024;
+
 for (const name of lazy) {
-  console.log(
-    `  lazy  ${name}: ${kb(gzipSync(readFileSync(join(assets, name))).length)} gzipped (not budgeted)`,
-  );
+  const size = gzipSync(readFileSync(join(assets, name))).length;
+  if (size > LAZY_MAX_GZIP) {
+    fail(`lazy chunk ${name} is ${kb(size)} gzipped, over the ${kb(LAZY_MAX_GZIP)} ceiling`);
+  } else {
+    console.log(`  lazy  ${name}: ${kb(size)} gzipped (ceiling ${kb(LAZY_MAX_GZIP)})`);
+  }
 }
 
 process.exit(failed ? 1 : 0);

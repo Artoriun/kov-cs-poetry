@@ -3,7 +3,7 @@
  * Runs Lighthouse against the built, prerendered output and fails the build on a
  * regression.
  *
- * Only accessibility, SEO and best-practices are gated. Those three are deterministic —
+ * Only accessibility, SEO, best-practices and CLS are gated. Those are deterministic —
  * they inspect the markup, not the clock — so a threshold on them means what it says.
  * Performance is measured and printed but never gated: a shared CI runner's timings vary
  * by more than the thing being measured, and a gate that fails randomly gets disabled
@@ -14,12 +14,11 @@
  * GitHub Pages base so the audit sees the same URLs Pages will.
  */
 import { execFile } from 'node:child_process';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, normalize } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createGzip } from 'node:zlib';
 import { chromium } from '@playwright/test';
+import { createStaticServer, listen } from './lib/static-server.mjs';
 
 /**
  * Not execFileSync: that blocks the whole event loop until the child exits, but the child
@@ -51,86 +50,23 @@ const ROUTES = ['', 'poems/'];
 
 const THRESHOLDS = { accessibility: 100, seo: 100, 'best-practices': 100 };
 
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.svg': 'image/svg+xml',
-  '.woff2': 'font/woff2',
-  '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json',
-  '.xml': 'application/xml',
-  '.txt': 'text/plain',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.webp': 'image/webp',
-};
+/**
+ * CLS is gated even though performance as a whole is not, because it measures layout rather
+ * than the clock: it does not drift with a shared runner's timing the way LCP does, so a
+ * threshold on it means what it says. 0.05 is well inside Google's 0.1 "good" band and well
+ * above the 0 this site currently scores.
+ */
+const MAX_CLS = 0.05;
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('✗ no build to audit — run `npm run build && npm run prerender` first');
   process.exit(1);
 }
 
-// GitHub Pages gzips every text response; a plain static server serving dist untouched
-// does not, so the performance number (unlike the three gated categories, which only
-// inspect markup) would be measuring an asset transfer no visitor actually gets — a real
-// cost under Lighthouse's simulated mobile throttle. Binary types are already compressed,
-// so left alone.
-const COMPRESSIBLE = new Set([
-  '.html',
-  '.js',
-  '.css',
-  '.svg',
-  '.json',
-  '.webmanifest',
-  '.xml',
-  '.txt',
-]);
-
-const server = createServer((req, res) => {
-  const url = new URL(req.url, 'http://localhost');
-  let path = decodeURIComponent(url.pathname);
-  if (!path.startsWith(BASE)) {
-    res.writeHead(404).end('not found');
-    return;
-  }
-  path = path.slice(BASE.length);
-  // normalize collapses any ../ before it can escape DIST.
-  let file = join(DIST, normalize(`/${path}`));
-  if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
-  if (!existsSync(file)) {
-    // Same fallback GitHub Pages uses, so an unexpected 404 in the audit is a real one.
-    res.writeHead(404, { 'Content-Type': 'text/html' });
-    createReadStream(join(DIST, '404.html')).pipe(res);
-    return;
-  }
-  const gzip =
-    COMPRESSIBLE.has(extname(file)) && (req.headers['accept-encoding'] ?? '').includes('gzip');
-  res.writeHead(200, {
-    'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream',
-    // Pages serves hashed assets with a real lifetime; without this the audit reports a
-    // caching problem that only exists in this script.
-    'Cache-Control': 'public, max-age=600',
-    ...(gzip ? { 'Content-Encoding': 'gzip' } : {}),
-  });
-  const stream = createReadStream(file);
-  if (gzip) stream.pipe(createGzip()).pipe(res);
-  else stream.pipe(res);
-});
-
-// Refuse to audit whatever else happens to be on this port. Silently auditing the wrong
-// server produces a plausible-looking report, which is worse than not running at all.
-await new Promise((resolve, reject) => {
-  server.once('error', (err) =>
-    reject(
-      err.code === 'EADDRINUSE'
-        ? new Error(`port ${PORT} is already in use — free it, or set LH_PORT`)
-        : err,
-    ),
-  );
-  server.listen(PORT, resolve);
-}).catch((err) => {
-  console.error(`✗ ${err.message}`);
+const server = createStaticServer({ dist: DIST, basePath: BASE });
+// Refuses to audit whatever else happens to be on this port — see listen().
+await listen(server, PORT).catch((err) => {
+  console.error(`✗ ${err.message} (set LH_PORT)`);
   process.exit(1);
 });
 
@@ -166,8 +102,14 @@ try {
     console.log(
       `    performance ${score('performance')}  (not gated)  ` +
         `LCP ${report.audits['largest-contentful-paint'].displayValue}  ` +
-        `CLS ${report.audits['cumulative-layout-shift'].displayValue}`,
+        `CLS ${report.audits['cumulative-layout-shift'].displayValue} (max ${MAX_CLS})`,
     );
+
+    const cls = report.audits['cumulative-layout-shift'].numericValue ?? 0;
+    if (cls > MAX_CLS) {
+      console.log(`    ✗ cumulative-layout-shift ${cls.toFixed(3)} (max ${MAX_CLS})`);
+      failed = true;
+    }
 
     for (const [id, min] of Object.entries(THRESHOLDS)) {
       const actual = score(id);

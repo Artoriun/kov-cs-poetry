@@ -1,5 +1,5 @@
 import { POEMS } from '@gedichtenv2/shared';
-import { test as base } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 
 // 1x1 transparent PNG — the poem images are sized entirely by CSS (object-fit: cover), so
 // a stub lays out identically while removing every Cloudinary round-trip.
@@ -8,7 +8,34 @@ const PIXEL = Buffer.from(
   'base64',
 );
 
-export const test = base.extend({
+/**
+ * `failOnPageError` fails a test if the page threw an uncaught error, even when every
+ * assertion passed.
+ *
+ * Added because that gap shipped a real bug in a sibling repo: five handlers read
+ * `e.currentTarget` inside a `setTimeout`, which React has already cleared by then, so every
+ * tap on the logo threw `Cannot read properties of null` and left the element stuck
+ * mid-animation. The whole suite stayed green — nothing was watching the console. A thrown
+ * error is about the cheapest signal a browser gives that something is wrong, and it was
+ * going straight to the floor.
+ *
+ * `auto: true` so every spec importing `test` from here gets it, with no per-test opt-in to
+ * forget.
+ */
+// `void` is Playwright's own type for a fixture that provides no value, which is what an
+// auto fixture like this one is.
+// biome-ignore lint/suspicious/noConfusingVoidType: idiomatic for a valueless Playwright fixture
+export const test = base.extend<{ failOnPageError: void }>({
+  failOnPageError: [
+    async ({ page }, use) => {
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      await use();
+      expect(errors, 'uncaught error(s) on the page').toEqual([]);
+    },
+    { auto: true },
+  ],
+
   page: async ({ page }, use) => {
     // The app has no offline fallback — a failed fetch renders nothing — so serve the
     // shared fixtures. Also keeps the suite off the Render instance, which sleeps.
