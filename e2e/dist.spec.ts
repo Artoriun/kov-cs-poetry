@@ -8,6 +8,10 @@ import { expect, test } from './fixtures';
  * no base path and no 404.html, so a link that resolves outside the site, a route that only
  * works because Pages falls back, or markup that never hydrates all pass a green suite.
  *
+ * Only this file runs against dist (see the `test:e2e:dist` script). The rest of the suite
+ * targets the dev server, where the API and images are stubbed and layout is deterministic;
+ * pointed at dist it fails for reasons that have nothing to do with the build.
+ *
  * **Paths below are relative on purpose.** `baseURL` already carries the base path, and a
  * leading slash discards it — which is both the mistake being tested for and the reason a
  * sibling repo's dist run had to be abandoned: `page.goto('/about')` silently navigated
