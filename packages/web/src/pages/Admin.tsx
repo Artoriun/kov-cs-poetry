@@ -851,34 +851,42 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   /**
-   * "Restore original": undo the custom layout entirely.
+   * "Restore original": put the poem's text back to the last saved version, without the
+   * custom layout.
    *
-   * That now means the page-break marks as well as the slides. The marks are what the
-   * layout *is* — leaving them in the text would close the editor while the reader went on
-   * splitting the poem exactly where it had been splitting it, which is not a restore by any
-   * reading of the word, and the confirmation promises the poem reverts to its auto-split
-   * layout.
+   * A true revert, not a tidy-up. An earlier version stripped the marks out of whatever was
+   * currently in the field, which preserved unsaved wording — type "lol", press Restore, and
+   * "lol" survived. That is not what the button says: the poem is restored to its original,
+   * and anything typed since the last save is part of what is being undone.
    *
-   * The field is stripped from whatever is currently in it, so the author keeps any unsaved
-   * wording. What is *sent* is stripped from the saved poem instead, and only when the saved
-   * poem actually carries a mark: pressing Restore should undo the layout on the server, not
-   * quietly commit edits the author has not saved yet.
+   * The marks go with it, because the marks *are* the layout. Leaving them would close the
+   * editor while the reader carried on splitting the poem in exactly the same places.
+   *
+   * Only the poem text. Title and image are edited by their own controls and have nothing to
+   * do with the layout this button undoes.
+   *
+   * A draft has never been saved, so there is no original to go back to; its text is left
+   * alone and only the marks come out.
    */
   const handleCancelCustomSlides = async (id: string) => {
-    const edit = edits[id];
+    const isDraft = draftIds.has(id);
+    const saved = orderedPoems.find((p) => p.id === id)?.overlay ?? '';
+    const restored = isDraft ? stripPageBreaks(edits[id]?.overlay ?? '') : stripPageBreaks(saved);
+
     patchEdit(id, {
       customSlidesOpen: false,
       customSlidesEnabled: false,
       customSlides: null,
-      ...(edit ? { overlay: stripPageBreaks(edit.overlay) } : {}),
+      overlay: restored,
     });
 
-    if (!draftIds.has(id)) {
-      const saved = orderedPoems.find((p) => p.id === id)?.overlay ?? '';
+    if (!isDraft) {
       try {
         await apiUpdatePoem(id, {
           customSlidesEnabled: false,
-          ...(hasPageBreak(saved) ? { overlay: stripPageBreaks(saved) } : {}),
+          // Only when the saved poem carries a mark. Otherwise the saved text is already the
+          // original and there is nothing to write.
+          ...(hasPageBreak(saved) ? { overlay: restored } : {}),
         });
         await refreshPoems();
       } catch {

@@ -133,7 +133,7 @@ export const hu: Dict = {
     cancel: 'Mégse',
     restoreOriginal: 'Visszaállítja az eredetit?',
     restoreOriginalBody:
-      'A vers visszaáll az automatikusan tördelt elrendezésre. Az egyéni diák és a szövegben lévő \\n oldaltörések eltűnnek.',
+      'A vers szövege visszaáll a legutóbb mentett változatra: az egyéni diák, a \\n oldaltörések és a szöveg nem mentett módosításai elvesznek.',
     restore: 'Visszaállítás',
     deleteSlide: 'Dia törlése',
     deleteSlideBody: 'Biztosan törli ezt a diát?',
