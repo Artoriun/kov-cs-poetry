@@ -319,6 +319,76 @@ writeFileSync(
   `User-agent: *\nAllow: /\nDisallow: /kov-cs-poetry/admin\n\nSitemap: ${SITE}/sitemap.xml\n`,
 );
 
+// ---- first paint vs hydrated ------------------------------------------------
+/**
+ * The prerendered markup must not commit to a layout the client will disagree with.
+ *
+ * The existing checks catch a hydration *error*; this catches a hydration that succeeds and
+ * still moves. React silently patches mismatched styles, so a page can hydrate "cleanly"
+ * while the visitor watches the title jump — which is exactly what happened in a sibling
+ * repo, where a JS-measured breakpoint painted a desktop heading and snapped to the mobile
+ * one, costing 0.033 CLS and showing up in no test.
+ *
+ * Deliberately narrow: only the <h1>'s own typography and box, at a phone viewport, comparing
+ * JS-disabled (what actually paints first) against hydrated. A whole-page diff would trip
+ * over the reader's pagination, which legitimately differs — prerendering emits the entire
+ * poem and the client then splits it to fit, by design.
+ */
+const PARITY_VIEWPORT = { width: 412, height: 915 };
+
+/**
+ * One route per distinct layout, not all 38.
+ *
+ * The first version checked every route and added minutes to the build for no extra
+ * information: the poem routes share one component and one stylesheet, so poem 2 through 34
+ * can only fail in a way poem 1 already has. What matters is covering each *kind* of page.
+ */
+const PARITY_ROUTES = [
+  routes.find((r) => r.path === '/'),
+  routes.find((r) => r.path === '/poems'),
+  routes.find((r) => r.poem),
+  routes.find((r) => r.path === '/contact'),
+].filter(Boolean);
+
+async function measureH1(url, javaScriptEnabled) {
+  const ctx = await browser.newContext({ viewport: PARITY_VIEWPORT, javaScriptEnabled });
+  const p = await ctx.newPage();
+  // `load`, not `networkidle`: the images are Cloudinary-hosted and the poem text is already
+  // in the markup, so waiting for the network to go quiet costs seconds per route and tells
+  // us nothing about the heading's typography.
+  await p.goto(url, { waitUntil: 'load' });
+  if (javaScriptEnabled) await p.waitForTimeout(500); // let hydration commit
+  const measured = await p
+    .locator('h1')
+    .first()
+    .evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const box = el.getBoundingClientRect();
+      return {
+        fontSize: cs.fontSize,
+        fontWeight: cs.fontWeight,
+        width: Math.round(box.width),
+      };
+    })
+    .catch(() => null);
+  await ctx.close();
+  return measured;
+}
+
+for (const route of PARITY_ROUTES) {
+  const url = `${origin}${BASE}${route.path.replace(/^\//, '')}`;
+  const [first, hydrated] = await Promise.all([measureH1(url, false), measureH1(url, true)]);
+  if (!first || !hydrated) continue; // a route with no h1 has nothing to disagree about
+  for (const key of ['fontSize', 'fontWeight', 'width']) {
+    if (first[key] !== hydrated[key]) {
+      console.error(
+        `✗ ${route.path} h1 ${key} changes on hydration: ${first[key]} → ${hydrated[key]}`,
+      );
+      failures++;
+    }
+  }
+}
+
 await browser.close();
 stop();
 if (failures) {
