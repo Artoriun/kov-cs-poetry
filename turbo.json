@@ -1,7 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "dev": { "cache": false, "persistent": true },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
@@ -9,5 +12,5 @@
     },
     "typecheck": {}
   },
-  "globalEnv": ["SITE_URL", "LH_PORT"]
+  "globalEnv": ["E2E_TARGET", "LH_PORT", "SITE_URL", "WEB_PORT"]
 }
