@@ -41,7 +41,7 @@ Desktop — LCP 0.6s, CLS 0.004, TBT 0ms
 - **List** view (edit cards) and **Order** view (drag-to-reorder grid, touch supported)
 - Feature poems for the home carousel; upload images to Cloudinary
 - **Page breaks** — type `\n` in the poem text to continue on a new page over the same background
-- **Custom Slides** — manually split a poem into reader pages, pre-filled from the page breaks above, or from a layout measurement when there are none
+- **Custom Slides** — manually split a poem into reader pages, pre-filled from the page breaks above, or from a layout measurement when there are none; **Restore original** reverts the text to its last saved version and removes the breaks
 - Sessions renew while the portal is in use and end with an explanation rather than a silent reload
 - Runs in English by default, with an EN/HU switch affecting the portal only
 
@@ -131,13 +131,48 @@ Vite proxies `/api` to the API in development.
 
 ## Testing
 
-**Layout tests** (`npm run test:e2e`) run in Playwright across three viewports — desktop,
-mobile portrait and landscape — because the regressions this project suffers are layout
-ones at a particular size rather than engine differences. They assert on horizontal
-overflow, content rendering past the footer, scroll position after a reload, poem text
-clearing the navigation button, slide pagination keeping every line, and the table-of-
-contents indicator drawing on a cold load. The API and images are stubbed, so the suite is
-deterministic and needs no network.
+Everything below runs in one command:
+
+```bash
+npm run ci            # the pipeline, in CI's order
+npm run ci -- --list  # what it would run, without running it
+```
+
+The step list is read from `.github/workflows/ci.yml` rather than duplicated, so adding a CI
+step adds it here too. Lighthouse is skipped locally, where its numbers mean little. This
+exists because "I ran the tests" and "CI ran the tests" were once different commands with
+different results, and the difference blocked a deploy.
+
+**Layout tests** (`npm run test:e2e`) run in Playwright across four projects — desktop,
+mobile portrait, mobile landscape, and one with real touch — because the regressions this
+project suffers are layout ones at a particular size rather than engine differences. They
+assert on horizontal overflow, content rendering past the footer, scroll position after a
+reload, poem text clearing the navigation button, slide pagination keeping every line, and
+the table-of-contents indicator drawing on a cold load. The API and images are stubbed, so
+the suite is deterministic and needs no network.
+
+The touch project matters more than it sounds. The other three are Desktop Chrome resized to
+a phone: `pointer: fine`, no touch events, no drag-then-tap. Two touch-only bugs shipped past
+a green suite in a sibling project for exactly that reason.
+
+**Accessibility** (part of `test:e2e`) sweeps every page with axe at each viewport, in both
+themes, and fails naming the rule and the element. Lighthouse audits one page at one width;
+this is where a viewport- or theme-specific violation lives. It found a real one on its first
+run: the admin password toggle dimmed with `opacity`, which no token-level review catches
+because the token is fine and the rendered pixel is not. Animations are settled before
+sampling — axe reads the colour actually on screen, and mid-fade that is a value neither
+state has.
+
+**The built output** (`npm run test:e2e:dist`) runs `e2e/dist.spec.ts` against `dist`, served
+at the GitHub Pages base path. Only that spec: the rest of the suite assumes the dev server's
+stubbed API and root base, and pointed at `dist` it fails for reasons that say nothing about
+the build. What `dist` uniquely proves is the base path, the SPA fallback being the plain
+shell, and the markup carrying the poem without JavaScript.
+
+**First paint vs hydrated** (`npm run check:parity`) loads one route per layout twice — once
+with JavaScript disabled, once hydrated — and fails if the `<h1>` changes size, weight or
+width between them. The prerenderer's own gate only catches hydration *errors*; this catches
+a hydration that succeeds and still moves, which throws nothing and costs real CLS.
 
 **API tests** (`npm run test:api`) use Node's built-in runner via `tsx`; no test framework
 is installed. They cover:
@@ -381,7 +416,21 @@ same treatment, or the marker shows up as literal text.
 
 In the portal the marks and the Custom Slides editor stay in step: the first mark opens the
 editor on the split, later edits re-split it, and deleting the last mark closes it again. The
-rules live in `overlayEdit`, in that same file, with the reasoning for each.
+rules live in `overlayEdit`, in that same file, with the reasoning for each. Two of them are
+worth knowing about:
+
+- Opening and closing both key off a *transition*, never off the current text. Opening
+  whenever a mark is merely present would make the editor impossible to close — the next
+  keystroke would reopen it — and closing whenever none is present would tear down the slides
+  of every poem that never had one.
+- Deleting `\n` takes two keystrokes, and in between the text holds a lone `\`. Closing waits
+  for that to go too, or the editor disappears while the author is still mid-deletion.
+
+**Restore original** undoes the whole layout: it puts the poem text back to the last saved
+version, marks and all, and discards unsaved edits to that text. It writes the stripped text
+to the API only when the saved poem actually carries a mark — otherwise the saved text is
+already the original and there is nothing to write, and pressing the button should not commit
+work the author has not saved. Title and image have their own controls and are left alone.
 
 ---
 
