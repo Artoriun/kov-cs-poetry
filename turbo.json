@@ -12,5 +12,5 @@
     },
     "typecheck": {}
   },
-  "globalEnv": ["E2E_TARGET", "LH_PORT", "SITE_URL", "WEB_PORT"]
+  "globalEnv": ["E2E_TARGET", "LH_PORT", "PARITY_PORT", "SITE_URL", "WEB_PORT"]
 }

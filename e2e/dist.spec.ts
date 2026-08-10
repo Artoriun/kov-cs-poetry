@@ -45,7 +45,12 @@ test('a poem is readable with JavaScript disabled', async ({ browser }) => {
   const p = await ctx.newPage();
   await p.goto(`http://localhost:3260${BASE_PATH}poems/poem-1`);
   await expect(p.locator('h1')).toBeVisible();
-  expect((await p.locator('.detail-overlay').first().innerText()).trim().length).toBeGreaterThan(0);
+  // textContent, not innerText: the reveal animation starts the lines at opacity 0 and a
+  // class added by JS brings them in, so innerText is empty here by design. What prerendering
+  // has to guarantee is that the words are in the markup — which is what a crawler reads, and
+  // what the prerenderer's own self-check asserts.
+  const text = await p.locator('.detail-overlay').first().textContent();
+  expect((text ?? '').trim().length).toBeGreaterThan(0);
   await ctx.close();
 });
 
@@ -63,6 +68,9 @@ test('no link or asset escapes the base path', async ({ page }) => {
           // Only root-absolute values can escape; relative ones resolve against the current
           // directory and protocol-absolute ones are deliberate off-site links.
           if (!value?.startsWith('/')) return;
+          // `/kov-cs-poetry` without the trailing slash is the site root, not an escape —
+          // the header's home link renders exactly that.
+          if (value === base.slice(0, -1)) return;
           if (!value.startsWith(base)) bad.push(`${what}: ${value}`);
         };
         for (const a of document.querySelectorAll('a[href]')) {

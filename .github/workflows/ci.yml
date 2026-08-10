@@ -114,6 +114,12 @@ jobs:
       # the project base path. Reuses the build above rather than adding a job. This is the
       # only run that can see a hydration mismatch, a missing SPA fallback, or a link that
       # resolves outside the base — the dev server has none of those things.
+      # Catches a hydration that succeeds and still moves — the prerendered heading being a
+      # different size from the hydrated one. The existing hydration check only sees React
+      # errors, and this class throws none.
+      - name: First paint vs hydrated
+        run: npm run check:parity
+
       - name: Run the suite against the built output
         run: npm run test:e2e:dist
 
