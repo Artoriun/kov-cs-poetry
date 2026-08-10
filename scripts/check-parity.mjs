@@ -31,7 +31,7 @@ const VIEWPORT = { width: 412, height: 915 };
 
 // One route per distinct layout, not all 38: the poem routes share a component and a
 // stylesheet, so poem 2 can only fail in a way poem 1 already has.
-const ROUTES = ['poems/', 'poems/poem-1', 'contact'];
+const ROUTES = ['', 'poems/', 'poems/poem-1', 'contact'];
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('✗ no build to check — run `npm run build && npm run prerender` first');
