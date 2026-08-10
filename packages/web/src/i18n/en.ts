@@ -10,6 +10,9 @@ export const en = {
     retry: 'Try again',
     home: 'Back to the home page',
   },
+  home: {
+    heading: 'Poems by Kovács',
+  },
   notFound: {
     title: 'Page not found',
     body: 'This address does not lead anywhere. It may have been mistyped, or the page may have moved.',

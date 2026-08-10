@@ -11,6 +11,9 @@ export const hu: Dict = {
     retry: 'Újrapróbálom',
     home: 'Vissza a főoldalra',
   },
+  home: {
+    heading: 'Kovács versei',
+  },
   notFound: {
     title: 'A lap nem található',
     body: 'Ez a cím nem vezet sehová. Elképzelhető, hogy elgépelés történt, vagy az oldal átkerült máshová.',
