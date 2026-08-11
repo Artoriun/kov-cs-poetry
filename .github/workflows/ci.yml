@@ -94,11 +94,30 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            sleep $((attempt * 15))
+          done
+          echo "::error::npx playwright install --with-deps chromium failed three times"
+          exit 1
 
       - name: Install Chromium's OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        # Retried: this is the only step that reaches out to Ubuntu's apt mirrors, and it
+        # runs on every cache hit — so a transient mirror failure fails the whole job for a
+        # reason that has nothing to do with the code. It has already done so once, with
+        # `Installation process exited with code: 100`, and passed unchanged on a re-run.
+        # Three attempts with a growing pause; still fatal if apt is genuinely broken.
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            sleep $((attempt * 15))
+          done
+          echo "::error::npx playwright install-deps chromium failed three times"
+          exit 1
 
       - name: Run layout, touch and accessibility tests
         run: npm run test:e2e
@@ -206,11 +225,30 @@ jobs:
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            sleep $((attempt * 15))
+          done
+          echo "::error::npx playwright install --with-deps chromium failed three times"
+          exit 1
 
       - name: Install Chromium's OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        # Retried: this is the only step that reaches out to Ubuntu's apt mirrors, and it
+        # runs on every cache hit — so a transient mirror failure fails the whole job for a
+        # reason that has nothing to do with the code. It has already done so once, with
+        # `Installation process exited with code: 100`, and passed unchanged on a re-run.
+        # Three attempts with a growing pause; still fatal if apt is genuinely broken.
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            sleep $((attempt * 15))
+          done
+          echo "::error::npx playwright install-deps chromium failed three times"
+          exit 1
 
       # Same secret the build uses: the prerenderer reads the live API so poems edited in
       # the admin portal reach the static HTML, falling back to the bundled poems (loudly)
