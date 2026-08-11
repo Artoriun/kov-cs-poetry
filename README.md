@@ -45,6 +45,21 @@ Desktop — LCP 0.6s, CLS 0.004, TBT 0ms
 - Sessions renew while the portal is in use and end with an explanation rather than a silent reload
 - Runs in English by default, with an EN/HU switch affecting the portal only
 
+The portal has two views. **List** is where a poem is written: the image preview sits beside
+the fields that produce it, so the effect of a line break, a longer title or a new photograph
+is visible without leaving the page — which matters here, because the text is laid over the
+image rather than beside it. **Order** is the same poems as cards, each showing its own image
+and opening lines, dragged into the sequence readers meet them in; the toggle on each card
+decides which appear in the home carousel.
+
+Edits save to Firestore and are live for visitors immediately. The prerendered HTML that
+crawlers read is a build-time snapshot, so it catches up on the next deploy — weekly by cron,
+or on demand.
+
+![The portal's List view — a poem's image, title and text side by side, with the page-break hint under the text field and the Save, Custom Slides and Unfeature controls beneath it](docs/screenshot-admin-list.jpg)
+
+![The portal's Order view — every poem as a card of its own image and opening lines, each with a feature toggle, dragged to set the running order](docs/screenshot-admin-order.jpg)
+
 ---
 
 ## Tech Stack
