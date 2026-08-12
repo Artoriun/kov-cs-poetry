@@ -139,4 +139,5 @@ Firestore and take precedence at runtime.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+All rights reserved — see [LICENSE](LICENSE). The source is published to be read, not reused:
+this is client work, and the poems and photographs belong to their author.
