@@ -66,6 +66,7 @@ and the portal is simply unreachable.
 npm run build            # production build
 npm run prerender        # static HTML per route, sitemap and robots
 npm run ci               # everything CI runs, in order
+npm run test             # API and unit tests
 npm run test:e2e         # Playwright, four viewport and touch profiles
 npm run check:lighthouse # accessibility / SEO / best-practices gate
 npm run hash-password    # prints an ADMIN_PASSWORD_HASH
