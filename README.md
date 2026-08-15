@@ -120,9 +120,6 @@ layout tests across four viewport and touch profiles, an axe accessibility sweep
 themes, a gzipped bundle budget, a first-paint-versus-hydrated check, and Lighthouse against
 the built output.
 
-Poems and images are stubbed in the layout tests, so the suite is deterministic and needs no
-network.
-
 ---
 
 ## Deployment
