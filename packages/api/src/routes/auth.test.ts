@@ -226,11 +226,32 @@ describe('POST /api/auth/refresh', () => {
   });
 
   test('a revoked session cannot refresh its way back in', async () => {
-    // The point of revoke-all is that it is final. Carrying the old token's epoch across a
-    // refresh would quietly undo it for whoever holds the token.
+    // Enforced by requireAuth, which refuses anything predating the current epoch before this
+    // route runs. Pinned here anyway: refresh is the one authenticated route whose job is to
+    // hand back a new credential, so "revoked stays revoked" has to hold here too.
     const { token } = (await (await login(PASSWORD)).json()) as { token: string };
     await revokeAllTokens();
     assert.equal((await refresh(token)).status, 401);
+  });
+
+  test('the replacement inherits the presented epoch, so a revoke still kills it', async () => {
+    // Deterministic stand-in for a race that is otherwise untestable: the real sequence is
+    // requireAuth passing, a revoke-all landing, then this route signing. Re-reading the
+    // current epoch there would stamp the replacement with the post-revoke value and hand
+    // back a session that outlives the revoke.
+    //
+    // A token whose epoch is *ahead* of the current one still passes requireAuth (the check
+    // is "not older than"), and it is the only way to tell the two implementations apart from
+    // outside: inheriting yields 9, re-reading yields 0.
+    const ahead = jwt.sign({ admin: true, epoch: 9 }, SECRET, {
+      algorithm: 'HS256',
+      expiresIn: '7d',
+    });
+    const res = await refresh(ahead);
+    assert.equal(res.status, 200);
+    const { token: fresh } = (await res.json()) as { token: string };
+    const { epoch } = jwt.verify(fresh, SECRET) as { epoch: number };
+    assert.equal(epoch, 9, 'refresh must inherit the presented epoch, not re-read the current');
   });
 });
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { clearAttempts, currentEpoch, recordAttempt, revokeAllTokens } from '../authState';
-import { requireAuth } from '../middleware/requireAuth';
+import { type AuthedRequest, requireAuth } from '../middleware/requireAuth';
 import { adminPasswordConfigured, verifyAdminPassword } from '../password';
 import { createRateLimiter } from '../rateLimit';
 
@@ -67,15 +67,18 @@ authRouter.post('/login', async (req, res) => {
  * never cut off at the 7-day wall mid-edit. `requireAuth` has already checked the signature,
  * the expiry and the epoch, so reaching here is proof enough to mint a replacement.
  */
-authRouter.post('/refresh', requireAuth, async (_req, res) => {
+authRouter.post('/refresh', requireAuth, async (req, res) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     res.status(503).json({ error: 'Authentication is not configured' });
     return;
   }
-  // Re-read rather than copying the old token's epoch: a revoke-all between issue and
-  // refresh must not be undone by handing back a token stamped with the superseded value.
-  const epoch = await currentEpoch();
+  // The presented token's epoch, not the current one. A revoke-all landing between
+  // requireAuth's check and this line would otherwise be undone: re-reading would stamp the
+  // replacement with the new epoch, and the session that should have died to the revoke would
+  // carry on. Inheriting means the replacement is exactly as revocable as the token it
+  // replaces.
+  const epoch = (req as AuthedRequest).adminEpoch ?? 0;
   const token = jwt.sign({ admin: true, epoch }, secret, { algorithm: 'HS256', expiresIn: '7d' });
   res.json({ token });
 });

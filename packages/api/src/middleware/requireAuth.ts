@@ -2,6 +2,18 @@ import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { currentEpoch } from '../authState';
 
+/**
+ * A request that has been through `requireAuth`, carrying the epoch of the token it presented.
+ *
+ * Exposed so `/auth/refresh` can stamp the replacement with the *presented* epoch rather than
+ * re-reading the current one. Re-reading loses a race: if a revoke-all lands between the check
+ * below and the handler signing, the fresh token would be stamped with the new epoch and
+ * outlive the revoke it should have died to.
+ */
+export interface AuthedRequest extends Request {
+  adminEpoch?: number;
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;
   if (!auth) {
@@ -38,6 +50,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       res.status(401).json({ error: 'jwt-revoked' });
       return;
     }
+    (req as AuthedRequest).adminEpoch = payload.epoch ?? 0;
     next();
   } catch (err) {
     // The reason stays in the server log rather than the response. Returning it told the
