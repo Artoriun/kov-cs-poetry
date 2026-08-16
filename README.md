@@ -106,6 +106,9 @@ build-time snapshot and catches up on the next deploy — weekly by cron, or on 
 
 ### Page breaks
 
+Pages are filled with whole stanzas, so most poems need no markers at all: the reader breaks
+between stanzas and only splits one when that stanza alone is taller than the viewport.
+
 Typing `\n` in a poem's text marks where it continues on a new page over the same background.
 It is part of the poem text, so it needs no schema change, and a poem without one is a single
 page. The reader never merges across a break, and still subdivides one further if it is too

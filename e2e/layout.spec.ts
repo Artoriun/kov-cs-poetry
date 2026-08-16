@@ -1,4 +1,13 @@
-import { CUSTOM_SLIDE_POEM, expect, MEASURED_POEM, PAGES, settled, test } from './fixtures';
+import { POEMS, stripPageBreaks } from '@gedichtenv2/shared';
+import {
+  CUSTOM_SLIDE_POEM,
+  expect,
+  MEASURED_POEM,
+  PAGES,
+  STANZA_POEM,
+  settled,
+  test,
+} from './fixtures';
 
 // Each test here corresponds to a regression that actually shipped at some point.
 
@@ -105,6 +114,70 @@ test.describe('poem detail', () => {
     if (counts.length > 1) {
       expect(Math.min(...counts), `slide line counts: ${counts.join(', ')}`).toBeGreaterThan(2);
     }
+  });
+
+  test('a stanza is never split across a page turn', async ({ page }) => {
+    // The reader used to divide a poem by line count alone, which is blind to where a stanza
+    // ends. On a tall window Phaäton came out as three pages of twelve and stranded the last
+    // line of its seven-line stanza at the top of page two, on its own.
+    //
+    // Asserted against the stanzas the poem is actually written in, so it holds for whatever
+    // the viewport turns out to fit rather than pinning one page count.
+    const poem = POEMS.find((p) => p.id === STANZA_POEM);
+    const stanzas = stripPageBreaks(poem?.overlay ?? '')
+      .split(/\n\s*\n/)
+      .map((s) =>
+        s
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean),
+      );
+    const tallest = Math.max(...stanzas.map((s) => s.length));
+
+    await page.goto(`/poems/${STANZA_POEM}`);
+    await settled(page);
+
+    const rendered: string[][] = [];
+    for (let i = 0; i < 12; i++) {
+      rendered.push(
+        await page.evaluate(() =>
+          [...document.querySelectorAll('.detail-slide .detail-overlay span')]
+            .map((e) => (e.textContent ?? '').trim())
+            .filter(Boolean),
+        ),
+      );
+      const advanced = await page.evaluate(() => {
+        const b = document.querySelector<HTMLElement>('.detail-scroll-down-btn');
+        if (!b || b.className.includes('is-hidden')) return false;
+        b.click();
+        return true;
+      });
+      if (!advanced) break;
+      await page.waitForTimeout(1400);
+    }
+
+    // Every page must be a whole number of consecutive stanzas. The exception is a stanza
+    // too tall for one page, which has to be broken somewhere — none of this poem's are, at
+    // any viewport the suite runs, so any split here is the regression.
+    let at = 0;
+    for (const [i, pageLines] of rendered.entries()) {
+      let consumed = 0;
+      while (consumed < pageLines.length && at < stanzas.length) {
+        const stanza = stanzas[at];
+        const slice = pageLines.slice(consumed, consumed + stanza.length);
+        expect(
+          slice,
+          `page ${i + 1} of ${STANZA_POEM} cuts a stanza (page holds ${pageLines.length} lines, ` +
+            `tallest stanza is ${tallest}); got ${JSON.stringify(pageLines)}`,
+        ).toEqual(stanza);
+        consumed += stanza.length;
+        at += 1;
+      }
+      expect(consumed, `page ${i + 1} has lines left over after its stanzas`).toBe(
+        pageLines.length,
+      );
+    }
+    expect(at, 'not every stanza was rendered').toBe(stanzas.length);
   });
 
   test('every line of the poem survives paging', async ({ page }) => {

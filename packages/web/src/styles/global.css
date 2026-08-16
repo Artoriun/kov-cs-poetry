@@ -1343,6 +1343,18 @@ html[data-prerendered] .poem-carousel-wrapper.carousel-loaded.image-ready .carou
   text-align: center;
 }
 
+/* The blank line between two stanzas is a separator, not a line of verse. At the poem's own
+   line-height it cost exactly as much room as a line of text — on a tall window that was
+   enough to push the last line of a stanza onto the next page by itself, which is what a
+   reader notices. Sized in em so it tracks the clamped font size at every viewport.
+
+   The height is read back by the pagination in PoemReader, so this rule is the single place
+   that decides how far apart two stanzas sit. */
+.detail-overlay .is-stanza-gap {
+  height: 0.4em;
+  line-height: 0;
+}
+
 .detail-overlay-line-revealed {
   display: block;
   width: fit-content;
