@@ -60,6 +60,11 @@ export const CUSTOM_SLIDE_POEM =
 /** A poem whose text is paginated by measurement. */
 export const MEASURED_POEM = POEMS.find((p) => !p.customSlidesEnabled)?.id ?? 'poem-1';
 
+/** A multi-stanza poem paginated by measurement — the shape the stanza rules govern. */
+export const STANZA_POEM =
+  POEMS.find((p) => !p.customSlidesEnabled && (p.overlay ?? '').split(/\n\s*\n/).length > 2)?.id ??
+  'poem-3';
+
 export const PAGES = [
   '/',
   '/poems',

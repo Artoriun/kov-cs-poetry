@@ -258,41 +258,104 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
     // while an over-long one is subdivided instead of overflowing off-screen.
     const pages: string[][] = [];
     const pageHeights: number[] = [];
+    const pushPage = (lines: string[], h: number) => {
+      pages.push(lines);
+      pageHeights.push(Math.ceil(h + containerPadV + overlayPadV));
+    };
     let idx = 0;
     for (const slide of sourceSlides) {
       const heights = slide.map((_, k) => spans[idx + k]?.getBoundingClientRect().height ?? 0);
       idx += slide.length;
 
-      // First: the fewest pages this slide can occupy, by filling each to capacity.
-      let needed = 1;
-      let accH = 0;
-      for (const h of heights) {
-        if (accH + h > available && accH > 0) {
-          needed += 1;
-          accH = 0;
+      // Group the slide into stanzas: runs of non-blank lines. Splitting purely by line
+      // count, as this did before, is blind to where a stanza ends — on a tall window
+      // Phaäton came out as three pages of twelve, and the seventh line of a seven-line
+      // stanza was left alone at the top of page two. A stanza is the unit a reader sees,
+      // so it is the unit that gets placed.
+      const stanzas: { lines: string[]; heights: number[]; h: number }[] = [];
+      // The separator's own height, taken from the text rather than assumed, so the CSS
+      // stays the single source of truth for how far apart two stanzas sit.
+      let gapH = 0;
+      for (let k = 0; k < slide.length; k++) {
+        if (slide[k].trim() === '') {
+          gapH = Math.max(gapH, heights[k]);
+          continue;
         }
-        accH += h;
+        let stanza = stanzas[stanzas.length - 1];
+        if (!stanza || slide[k - 1]?.trim() === '') {
+          stanza = { lines: [], heights: [], h: 0 };
+          stanzas.push(stanza);
+        }
+        stanza.lines.push(slide[k]);
+        stanza.heights.push(heights[k]);
+        stanza.h += heights[k];
       }
 
-      // Then spread the lines evenly over exactly that many pages. Filling each page to
-      // capacity instead would strand the remainder on a near-empty page whenever a slide
-      // only just overflows — an 11-line slide against a 10-line viewport came out as
-      // 10 + 1 rather than 6 + 5. Page count is unchanged, so this costs no extra paging.
-      let i = 0;
-      for (let p = 0; i < slide.length; p++) {
-        const target = Math.ceil((slide.length - i) / Math.max(1, needed - p));
-        const current: string[] = [];
-        let h = 0;
-        while (i < slide.length) {
-          if (current.length >= target) break;
-          if (h + heights[i] > available && current.length > 0) break;
-          current.push(slide[i]);
-          h += heights[i];
-          i += 1;
+      // Fill each page with whole stanzas while they fit. The blank separator is re-inserted
+      // between two stanzas sharing a page and dropped at a seam — a page that opens on a
+      // blank line wastes a line and reads as a gap under the header.
+      let current: string[] = [];
+      let currentH = 0;
+      for (const stanza of stanzas) {
+        const gap = current.length > 0 ? gapH : 0;
+        if (currentH + gap + stanza.h <= available) {
+          if (gap > 0) {
+            current.push('');
+            currentH += gap;
+          }
+          current.push(...stanza.lines);
+          currentH += stanza.h;
+          continue;
         }
-        pages.push(current);
-        pageHeights.push(Math.ceil(h + containerPadV + overlayPadV));
+        if (current.length > 0) {
+          pushPage(current, currentH);
+          current = [];
+          currentH = 0;
+        }
+        // Fits a page of its own: start one, and leave it open so a following short stanza
+        // can still join it.
+        if (stanza.h <= available) {
+          current = [...stanza.lines];
+          currentH = stanza.h;
+          continue;
+        }
+
+        // Taller than any page, so it has to be broken. Same even spread as before, now
+        // applied within the one stanza that forces it: filling each page to capacity
+        // instead strands the remainder on a near-empty page whenever it only just
+        // overflows — 11 lines against a 10-line viewport came out as 10 + 1, not 6 + 5.
+        let needed = 1;
+        let accH = 0;
+        for (const h of stanza.heights) {
+          if (accH + h > available && accH > 0) {
+            needed += 1;
+            accH = 0;
+          }
+          accH += h;
+        }
+        let i = 0;
+        for (let p = 0; i < stanza.lines.length; p++) {
+          const target = Math.ceil((stanza.lines.length - i) / Math.max(1, needed - p));
+          const chunk: string[] = [];
+          let h = 0;
+          while (i < stanza.lines.length) {
+            if (chunk.length >= target) break;
+            if (h + stanza.heights[i] > available && chunk.length > 0) break;
+            chunk.push(stanza.lines[i]);
+            h += stanza.heights[i];
+            i += 1;
+          }
+          if (i < stanza.lines.length) {
+            pushPage(chunk, h);
+          } else {
+            current = chunk;
+            currentH = h;
+          }
+        }
       }
+      // Pages never span two source slides, so the open page closes with the slide — that is
+      // what keeps a hand-authored break a hard one.
+      if (current.length > 0) pushPage(current, currentH);
     }
     if (pages.length === 0) {
       pages.push([]);
@@ -550,7 +613,10 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
             // Poem lines are positional and never reorder, and two of the poems repeat a
             // line, so keying by text would collide.
             // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
-            <span key={i} className="detail-overlay-line-revealed">
+            <span
+              key={i}
+              className={`detail-overlay-line-revealed${line.trim() === '' ? ' is-stanza-gap' : ''}`}
+            >
               {line || ' '}
             </span>
           ))}
@@ -622,11 +688,11 @@ export default function PoemReader({ poem, onBack }: { poem: Poem; onBack: () =>
                     // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
                     key={i}
                     // Seen slides show immediately; new slides play the mask-wipe reveal
-                    className={
+                    className={`${
                       seenSlides.has(currentSlide)
                         ? 'detail-overlay-line-revealed'
                         : 'detail-overlay-line'
-                    }
+                    }${line.trim() === '' ? ' is-stanza-gap' : ''}`}
                     style={
                       !seenSlides.has(currentSlide)
                         ? {
