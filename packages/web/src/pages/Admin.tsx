@@ -11,6 +11,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import AdminLangToggle from '../components/AdminLangToggle';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+import PoemLines from '../components/PoemLines';
 import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import {
@@ -330,7 +331,9 @@ function PoemCard({
             {/* Stripped so the preview shows what a visitor sees, not the marker. The
                 textarea below keeps it — that is where it is edited. */}
             {edit.overlay && (
-              <div className="admin-poem-thumb-overlay">{stripPageBreaks(edit.overlay)}</div>
+              <div className="admin-poem-thumb-overlay">
+                <PoemLines text={edit.overlay} />
+              </div>
             )}
           </div>
           <label className="admin-file-label">
@@ -1249,7 +1252,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                         />
                       </div>
                       {poem.overlay && (
-                        <div className="admin-grid-card-overlay">{poem.overlay}</div>
+                        <div className="admin-grid-card-overlay">
+                          {/* Stripped, like every other place the poem is shown whole. This
+                              card was the one that missed it, so a poem with an author's page
+                              break showed the marker here as a line of literal text. */}
+                          <PoemLines text={poem.overlay} />
+                        </div>
                       )}
                     </div>
                   </div>

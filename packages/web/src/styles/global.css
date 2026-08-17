@@ -1349,10 +1349,28 @@ html[data-prerendered] .poem-carousel-wrapper.carousel-loaded.image-ready .carou
    reader notices. Sized in em so it tracks the clamped font size at every viewport.
 
    The height is read back by the pagination in PoemReader, so this rule is the single place
-   that decides how far apart two stanzas sit. */
-.detail-overlay .is-stanza-gap {
+   that decides how far apart two stanzas sit.
+
+   Deliberately unscoped. It was written for the reader alone, and the carousel, the poem grid
+   and the two admin previews went on spacing the same poem the old way — the same text, laid
+   out two different ways depending on where you met it. Nothing declares height or
+   line-height on the line spans themselves, so no scope is needed to win: an inherited
+   line-height loses to a rule that names the element whatever the specificity. */
+.is-stanza-gap {
   height: 0.4em;
   line-height: 0;
+}
+
+/* The wrapper PoemLines puts around a whole poem, and the lines inside it. Every overlay that
+   shows a poem whole is a flex column; this keeps the poem one flex item so it stays aligned
+   as a block, with ordinary block lines inside rather than a stack of individually centred
+   flex items. */
+.poem-lines {
+  display: block;
+}
+
+.poem-line {
+  display: block;
 }
 
 .detail-overlay-line-revealed {

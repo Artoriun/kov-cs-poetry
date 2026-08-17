@@ -202,6 +202,56 @@ test.describe('poem detail', () => {
     }
     expect(seen, 'lines were dropped between slides').toBe(total);
   });
+
+  test('the stanza gap is the same wherever the poem is shown', async ({ page }) => {
+    // The gap started life scoped to the reader, so the carousel and the grid cards went on
+    // spacing their stanzas at a full line-height — the same poem, laid out two ways depending
+    // on where you met it, which is what the client noticed.
+    //
+    // Measured as a ratio against the surrounding line rather than in pixels: each surface sets
+    // its own font size, so a shared pixel height would be wrong on every one of them. What has
+    // to match is that a blank line is *shorter* than a line of verse, everywhere.
+    const ratio = async (container: string, line: string) =>
+      page.evaluate(
+        ([c, l]) => {
+          const root = document.querySelector(c);
+          if (!root) return null;
+          const spans = [...root.querySelectorAll<HTMLElement>(l)];
+          const gap = spans.find((s) => s.className.includes('is-stanza-gap'));
+          const verse = spans.find((s) => !s.className.includes('is-stanza-gap'));
+          if (!gap || !verse) return null;
+          return gap.getBoundingClientRect().height / verse.getBoundingClientRect().height;
+        },
+        [container, line] as const,
+      );
+
+    await page.goto(`/poems/${STANZA_POEM}`);
+    await settled(page);
+    // The measuring copy, not the visible slide: a page that ends on a stanza boundary drops
+    // its separator, so the first slide often has no gap to measure. This copy holds the poem
+    // whole, and it is the one the pagination reads its numbers from.
+    const reader = await ratio('.detail-measure .detail-overlay', 'span');
+    expect(reader, 'no stanza gap found in the reader').not.toBeNull();
+    expect(reader as number, 'the reader gap is not shorter than a line').toBeLessThan(0.8);
+
+    await page.goto('/');
+    await settled(page);
+    const carousel = await ratio('.carousel-overlay', '.carousel-overlay-line');
+    expect(carousel, 'no stanza gap found in the carousel').not.toBeNull();
+    expect(
+      Math.abs((carousel as number) - (reader as number)),
+      `carousel gap ${carousel} does not match the reader's ${reader}`,
+    ).toBeLessThan(0.15);
+
+    await page.goto('/poems');
+    await settled(page);
+    const grid = await ratio('.poem-overlay', '.poem-line');
+    expect(grid, 'no stanza gap found on the grid cards').not.toBeNull();
+    expect(
+      Math.abs((grid as number) - (reader as number)),
+      `grid gap ${grid} does not match the reader's ${reader}`,
+    ).toBeLessThan(0.15);
+  });
 });
 
 test.describe('poems grid', () => {

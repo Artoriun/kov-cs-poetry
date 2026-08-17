@@ -229,7 +229,12 @@ export default function PoemCarousel() {
                                   // line, so keying by text would collide.
                                   // biome-ignore lint/suspicious/noArrayIndexKey: positional list, duplicate lines exist
                                   key={i}
-                                  className="carousel-overlay-line"
+                                  // The blank line between stanzas is a separator, sized by the
+                                  // same rule the reader uses — otherwise the poem sits one way
+                                  // on the home page and another way on its own page.
+                                  className={`carousel-overlay-line${
+                                    line.trim() === '' ? ' is-stanza-gap' : ''
+                                  }`}
                                   style={{ animationDelay: `${500 + (i + 1) * 100}ms` }}
                                 >
                                   {line || ' '}
