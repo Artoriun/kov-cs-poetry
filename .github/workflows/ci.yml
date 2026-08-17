@@ -110,10 +110,14 @@ jobs:
         # reason that has nothing to do with the code. It has already done so once, with
         # `Installation process exited with code: 100`, and passed unchanged on a re-run.
         # Three attempts with a growing pause; still fatal if apt is genuinely broken.
+        # `timeout` because a bare retry only helps with failures that return. apt on a shared
+        # runner also hangs holding a lock, and a hang never comes back to be retried: the job
+        # dies on its own limit with nothing useful in the log.
+        timeout-minutes: 12
         run: |
           for attempt in 1 2 3; do
-            npx playwright install-deps chromium && exit 0
-            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            timeout 180 npx playwright install-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed or hung; retrying"
             sleep $((attempt * 15))
           done
           echo "::error::npx playwright install-deps chromium failed three times"
@@ -241,10 +245,14 @@ jobs:
         # reason that has nothing to do with the code. It has already done so once, with
         # `Installation process exited with code: 100`, and passed unchanged on a re-run.
         # Three attempts with a growing pause; still fatal if apt is genuinely broken.
+        # `timeout` because a bare retry only helps with failures that return. apt on a shared
+        # runner also hangs holding a lock, and a hang never comes back to be retried: the job
+        # dies on its own limit with nothing useful in the log.
+        timeout-minutes: 12
         run: |
           for attempt in 1 2 3; do
-            npx playwright install-deps chromium && exit 0
-            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed; retrying"
+            timeout 180 npx playwright install-deps chromium && exit 0
+            [ "$attempt" = 3 ] || echo "apt attempt $attempt failed or hung; retrying"
             sleep $((attempt * 15))
           done
           echo "::error::npx playwright install-deps chromium failed three times"
