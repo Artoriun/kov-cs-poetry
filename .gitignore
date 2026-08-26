@@ -16,3 +16,9 @@ backups/
 
 # Lighthouse reports written by scripts/check-lighthouse.mjs
 lighthouse-*.json
+
+# Local tooling and OS clutter. Both of these had been committed by accident and were
+# published with the repo — the lock file holds a session id, a pid and a timestamp, and
+# rewrites itself, so without this it comes straight back.
+.claude/
+.DS_Store
