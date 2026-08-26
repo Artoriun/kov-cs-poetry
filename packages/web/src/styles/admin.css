@@ -1057,3 +1057,15 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   background: var(--text-primary);
   pointer-events: none;
 }
+
+/* The public rule underlines the active entry via `li.toc-active > a`. These entries are
+   buttons, so the same treatment is repeated here rather than loosening the selector on the
+   reader's stylesheet for the admin's benefit. */
+.admin-toc .poems-toc li.toc-active > button {
+  padding-bottom: 2px;
+  background-image: linear-gradient(var(--text-primary), var(--text-primary));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0% 1px;
+  animation: toc-underline 0.65s ease forwards;
+}

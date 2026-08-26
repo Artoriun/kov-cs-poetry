@@ -998,6 +998,66 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     onReorder: (from, to) => applyReorder(from, to, false),
   });
 
+  // The cards have had a mouse drag since before this hook existed and never a touch one, so
+  // on a tablet half the page reordered and half did not.
+  const listTouch = useTouchReorder({
+    indexAttr: 'data-li',
+    onDragStart: setDragIndex,
+    onDragOver: setDropIndex,
+    onDragEnd: () => {
+      setDragIndex(null);
+      setDropIndex(null);
+    },
+    onReorder: (from, to) => applyReorder(from, to, false),
+  });
+
+  // Which entry the sidebar underlines. The other direction — clicking an entry to reach a
+  // card — is scrollToPoem above; this is the same relationship read backwards.
+  const [activeTocId, setActiveTocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== 'list') return;
+    let observer: IntersectionObserver | null = null;
+    let frame = 0;
+
+    // The cards mount inside AnimatePresence, so they are not in the DOM during the commit
+    // that populates orderedPoems — querying for them from this effect found zero, returned,
+    // and never ran again, which is why the sidebar underlined nothing at all. Wait for them
+    // instead of assuming, bounded so a view that never renders cards cannot spin forever.
+    let attempts = 0;
+    const attach = () => {
+      const cards = document.querySelectorAll<HTMLElement>(
+        '.admin-list-content [id^="admin-poem-"]',
+      );
+      if (!cards.length) {
+        if (attempts++ < 60) frame = requestAnimationFrame(attach);
+        return;
+      }
+      observer = build();
+      for (const c of cards) observer.observe(c);
+    };
+
+    const build = () =>
+      // Topmost intersecting card wins, rather than whichever fired last: several are on screen
+      // at once in a list of full-width editors, and callback order is not position order.
+      new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible[0]) setActiveTocId(visible[0].target.id.replace('admin-poem-', ''));
+        },
+        // A band near the top, so the underline tracks what is being read rather than flicking
+        // to whatever happens to clip the viewport edge.
+        { rootMargin: '-15% 0px -70% 0px' },
+      );
+    attach();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [mode, orderedPoems.length]);
+
   // Same gesture the grid already had for jumping to a card, minus the mode switch: the entry
   // and its card are on screen together, so this only has to scroll if the card is out of view.
   const scrollToPoem = (id: string) => {
@@ -1090,9 +1150,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                           key={poem.id}
                           data-ti={i}
                           className={
-                            dropIndex === i && dragIndex !== null && dragIndex !== i
-                              ? 'drop-target'
-                              : undefined
+                            [
+                              dropIndex === i && dragIndex !== null && dragIndex !== i
+                                ? 'drop-target'
+                                : '',
+                              poem.id === activeTocId ? 'toc-active' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ') || undefined
                           }
                           draggable
                           onDragStart={() => setDragIndex(i)}
@@ -1134,11 +1199,13 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                         layout
                         transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
                         className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                        data-li={i}
                         onDragOver={(e) => {
                           e.preventDefault();
                           setDropIndex(i);
                         }}
                         onDrop={() => handleDrop(i)}
+                        onTouchStart={(e) => listTouch.onTouchStart(e, i)}
                       >
                         <PoemCard
                           poem={poem}
