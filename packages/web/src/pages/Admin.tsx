@@ -23,6 +23,7 @@ import {
   apiUploadImage,
 } from '../lib/api';
 import { clearToken, readToken, SESSION_EXPIRED_EVENT, storeToken } from '../lib/token';
+import { useTouchReorder } from '../lib/useTouchReorder';
 
 const PLACEHOLDER_IMAGE =
   'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png';
@@ -704,26 +705,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     return () => clearTimeout(timer);
   }, [mode, gridPulseId]);
 
-  // Only three refs needed: timer + ghost + active flag, all for the unmount guard below
-  const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchGhost = useRef<HTMLElement | null>(null);
-  const touchActive = useRef(false);
-
-  // Guard: if the component unmounts mid-drag, clean up whatever's in document.body
-  useEffect(() => {
-    return () => {
-      if (touchTimer.current) {
-        clearTimeout(touchTimer.current);
-        touchTimer.current = null;
-      }
-      if (touchGhost.current) {
-        touchGhost.current.remove();
-        touchGhost.current = null;
-      }
-      touchActive.current = false;
-    };
-  }, []);
-
   // After a grid card click switches to List, wait 0.5s for the view to settle,
   // then smooth-scroll to the target card if it's off-screen
   useEffect(() => {
@@ -956,25 +937,53 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // Grid drops swap the two cards; list drops lift the card out and reinsert it, shifting
   // everything in between. Dropping onto a specific tile reads as "put these two in each
   // other's place", where dragging down a list reads as "move this one to here".
-  const handleDrop = async (toIndex: number, swap = false) => {
-    if (dragIndex === null || dragIndex === toIndex) return;
-    const next = [...orderedPoems];
+  //
+  // Takes both indices rather than reading dragIndex from state. The touch path clears its
+  // drag state as the finger lifts, so a version that read state would find it already null
+  // and quietly do nothing — the divergence the old duplicated touch handler warned about
+  // and then worked around by reordering inline.
+  const applyReorder = async (from: number, to: number, swap = false) => {
+    if (from === to) return;
+    const previous = orderedPoems;
+    const next = [...previous];
     if (swap) {
-      [next[dragIndex], next[toIndex]] = [next[toIndex], next[dragIndex]];
+      [next[from], next[to]] = [next[to], next[from]];
     } else {
-      const [moved] = next.splice(dragIndex, 1);
-      next.splice(toIndex, 0, moved);
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
     }
     setOrderedPoems(next);
-    setDragIndex(null);
-    setDropIndex(null);
     try {
       await apiUpdateOrder(next.map((p) => p.id));
       refreshPoems();
     } catch {
-      setOrderedPoems(orderedPoems); // revert on error
+      setOrderedPoems(previous); // revert on error
     }
   };
+
+  const handleDrop = async (toIndex: number, swap = false) => {
+    if (dragIndex === null) return;
+    const from = dragIndex;
+    setDragIndex(null);
+    setDropIndex(null);
+    await applyReorder(from, toIndex, swap);
+  };
+
+  // Touch fires no HTML5 drag events, so every draggable surface needs this explicitly.
+  // Swap semantics here, matching the mouse path on the same grid.
+  const gridTouch = useTouchReorder({
+    indexAttr: 'data-gi',
+    onDragStart: (i) => {
+      gridDidDrag.current = true;
+      setDragIndex(i);
+    },
+    onDragOver: setDropIndex,
+    onDragEnd: () => {
+      setDragIndex(null);
+      setDropIndex(null);
+    },
+    onReorder: (from, to) => applyReorder(from, to, true),
+  });
 
   return (
     <div className="admin-page">
@@ -1093,106 +1102,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onMouseDown={() => {
                       gridDidDrag.current = false;
                     }}
-                    onTouchStart={(e) => {
-                      gridDidDrag.current = false;
-                      if (touchGhost.current) {
-                        touchGhost.current.remove();
-                        touchGhost.current = null;
-                      }
-                      if (touchTimer.current) {
-                        clearTimeout(touchTimer.current);
-                        touchTimer.current = null;
-                      }
-                      touchActive.current = false;
-
-                      const el = e.currentTarget as HTMLElement;
-                      const t = e.touches[0];
-                      const startX = t.clientX;
-                      const startY = t.clientY;
-                      const rect = el.getBoundingClientRect();
-                      const offsetX = t.clientX - rect.left;
-                      const offsetY = t.clientY - rect.top;
-                      let dst = i;
-
-                      const handleMove = (me: TouchEvent) => {
-                        const mt = me.touches[0];
-                        if (!touchActive.current) {
-                          if (
-                            Math.abs(mt.clientX - startX) > 10 ||
-                            Math.abs(mt.clientY - startY) > 10
-                          ) {
-                            clearTimeout(touchTimer.current!);
-                            touchTimer.current = null;
-                            el.removeEventListener('touchmove', handleMove);
-                            el.removeEventListener('touchend', handleEnd);
-                            el.removeEventListener('touchcancel', handleEnd);
-                          }
-                          return;
-                        }
-                        me.preventDefault();
-                        if (touchGhost.current) {
-                          touchGhost.current.style.visibility = 'hidden';
-                          const under = document
-                            .elementFromPoint(mt.clientX, mt.clientY)
-                            ?.closest<HTMLElement>('[data-gi]');
-                          touchGhost.current.style.visibility = '';
-                          touchGhost.current.style.left = `${mt.clientX - offsetX}px`;
-                          touchGhost.current.style.top = `${mt.clientY - offsetY}px`;
-                          if (under) {
-                            const idx = parseInt(under.dataset.gi ?? '', 10);
-                            if (!Number.isNaN(idx)) {
-                              dst = idx;
-                              setDropIndex(idx);
-                            }
-                          }
-                        }
-                      };
-
-                      const handleEnd = () => {
-                        if (touchTimer.current) {
-                          clearTimeout(touchTimer.current);
-                          touchTimer.current = null;
-                        }
-                        if (touchGhost.current) {
-                          touchGhost.current.remove();
-                          touchGhost.current = null;
-                        }
-                        el.removeEventListener('touchmove', handleMove);
-                        el.removeEventListener('touchend', handleEnd);
-                        el.removeEventListener('touchcancel', handleEnd);
-                        touchActive.current = false;
-                        setDragIndex(null);
-                        setDropIndex(null);
-                        if (i !== dst) {
-                          setOrderedPoems((prev) => {
-                            const next = [...prev];
-                            // Swap, matching the mouse path's handleDrop(i, true). Touch
-                            // drag is a separate code path, so it has to be kept in step.
-                            [next[i], next[dst]] = [next[dst], next[i]];
-                            apiUpdateOrder(next.map((p) => p.id))
-                              .then(() => refreshPoems())
-                              .catch(() => {});
-                            return next;
-                          });
-                        }
-                      };
-
-                      el.addEventListener('touchmove', handleMove, { passive: false });
-                      el.addEventListener('touchend', handleEnd);
-                      el.addEventListener('touchcancel', handleEnd);
-
-                      touchTimer.current = setTimeout(() => {
-                        if (!el.isConnected) return;
-                        touchActive.current = true;
-                        gridDidDrag.current = true;
-                        setDragIndex(i);
-                        const r = el.getBoundingClientRect();
-                        const ghost = el.cloneNode(true) as HTMLElement;
-                        ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;width:${r.width}px;left:${r.left}px;top:${r.top}px;opacity:0.9;transform:scale(1.05);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,0.35);`;
-                        document.body.appendChild(ghost);
-                        touchGhost.current = ghost;
-                      }, 300);
-                    }}
+                    onTouchStart={(e) => gridTouch.onTouchStart(e, i)}
                     onDragStart={(e) => {
                       gridDidDrag.current = true;
                       const el = e.currentTarget as HTMLElement;
