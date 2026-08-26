@@ -985,6 +985,37 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     onReorder: (from, to) => applyReorder(from, to, true),
   });
 
+  // Insert-and-shift, not swap: dragging down a list reads as "move this one to here", which
+  // is the same reasoning the mouse path's comment gives for the two behaving differently.
+  const tocTouch = useTouchReorder({
+    indexAttr: 'data-ti',
+    onDragStart: setDragIndex,
+    onDragOver: setDropIndex,
+    onDragEnd: () => {
+      setDragIndex(null);
+      setDropIndex(null);
+    },
+    onReorder: (from, to) => applyReorder(from, to, false),
+  });
+
+  // Same gesture the grid already had for jumping to a card, minus the mode switch: the entry
+  // and its card are on screen together, so this only has to scroll if the card is out of view.
+  const scrollToPoem = (id: string) => {
+    const el = document.getElementById(`admin-poem-${id}`);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const headerHeight =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) ||
+      72;
+    if (rect.top < headerHeight) {
+      window.scrollBy({ top: rect.top - headerHeight - 16, behavior: 'smooth' });
+    } else if (rect.bottom > window.innerHeight) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    const card = el.querySelector<HTMLElement>('.admin-poem-card');
+    if (card) playPulse(card);
+  };
+
   return (
     <div className="admin-page">
       <Header onLogout={onLogout} />
@@ -1044,50 +1075,102 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               )}
             </motion.div>
             {mode === 'list' ? (
-              orderedPoems.map((poem, i) => (
-                // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
-                // Combining layout and variants on the same element causes Motion to apply
-                // the y transform from hidden but skip opacity — split avoids the conflict.
-                <motion.div key={poem.id} id={`admin-poem-${poem.id}`} variants={cardVariants}>
-                  <motion.div
-                    layout
-                    transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
-                    className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDropIndex(i);
-                    }}
-                    onDrop={() => handleDrop(i)}
-                  >
-                    <PoemCard
-                      poem={poem}
-                      edit={
-                        edits[poem.id] ?? {
-                          title: poem.title,
-                          overlay: poem.overlay ?? '',
-                          imageFile: null,
-                          imagePreview: null,
-                          customSlides: poem.customSlides ?? null,
-                          customSlidesOpen: !!poem.customSlidesEnabled,
-                          customSlidesEnabled: !!poem.customSlidesEnabled,
-                        }
-                      }
-                      onChange={(patch) => patchEdit(poem.id, patch)}
-                      onSave={() => handleSave(poem.id)}
-                      onToggleFeature={() => handleToggleFeature(poem.id)}
-                      onDelete={() => setPendingDeleteId(poem.id)}
-                      onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
-                      status={statuses[poem.id] ?? 'idle'}
-                      onDragStart={() => setDragIndex(i)}
-                      onDragEnd={() => {
-                        setDragIndex(null);
-                        setDropIndex(null);
-                      }}
-                      isDragging={dragIndex === i}
-                    />
-                  </motion.div>
-                </motion.div>
-              ))
+              <div className="admin-list-layout">
+                {/* The same contents sidebar the public poems grid carries, reusing its class
+                    names so the look comes from global.css rather than a second copy that
+                    drifts. Dropped from the original: .toc-range-line, which marks which
+                    nine-poem page you are on — this list has no pagination, so the line would
+                    either span everything or mean nothing. */}
+                <div className="poems-toc-wrap admin-toc">
+                  <nav className="poems-toc">
+                    <p className="poems-toc-title">{t.poems.index}</p>
+                    <ul>
+                      {orderedPoems.map((poem, i) => (
+                        <li
+                          key={poem.id}
+                          data-ti={i}
+                          className={
+                            dropIndex === i && dragIndex !== null && dragIndex !== i
+                              ? 'drop-target'
+                              : undefined
+                          }
+                          draggable
+                          onDragStart={() => setDragIndex(i)}
+                          onDragEnd={() => {
+                            setDragIndex(null);
+                            setDropIndex(null);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDropIndex(i);
+                          }}
+                          onDrop={() => handleDrop(i)}
+                          onTouchStart={(e) => tocTouch.onTouchStart(e, i)}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // A drag ends with a click on the element it started from, so
+                              // without this every reorder would also scroll away to wherever
+                              // the entry landed.
+                              if (tocTouch.didDrag.current) return;
+                              scrollToPoem(poem.id);
+                            }}
+                          >
+                            {poem.title}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </div>
+                <div className="admin-list-content">
+                  {orderedPoems.map((poem, i) => (
+                    // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
+                    // Combining layout and variants on the same element causes Motion to apply
+                    // the y transform from hidden but skip opacity — split avoids the conflict.
+                    <motion.div key={poem.id} id={`admin-poem-${poem.id}`} variants={cardVariants}>
+                      <motion.div
+                        layout
+                        transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
+                        className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDropIndex(i);
+                        }}
+                        onDrop={() => handleDrop(i)}
+                      >
+                        <PoemCard
+                          poem={poem}
+                          edit={
+                            edits[poem.id] ?? {
+                              title: poem.title,
+                              overlay: poem.overlay ?? '',
+                              imageFile: null,
+                              imagePreview: null,
+                              customSlides: poem.customSlides ?? null,
+                              customSlidesOpen: !!poem.customSlidesEnabled,
+                              customSlidesEnabled: !!poem.customSlidesEnabled,
+                            }
+                          }
+                          onChange={(patch) => patchEdit(poem.id, patch)}
+                          onSave={() => handleSave(poem.id)}
+                          onToggleFeature={() => handleToggleFeature(poem.id)}
+                          onDelete={() => setPendingDeleteId(poem.id)}
+                          onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
+                          status={statuses[poem.id] ?? 'idle'}
+                          onDragStart={() => setDragIndex(i)}
+                          onDragEnd={() => {
+                            setDragIndex(null);
+                            setDropIndex(null);
+                          }}
+                          isDragging={dragIndex === i}
+                        />
+                      </motion.div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="admin-grid-view">
                 {orderedPoems.map((poem, i) => (

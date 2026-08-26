@@ -958,3 +958,102 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   background: var(--text-primary);
   color: var(--bg-primary-color);
 }
+
+/* ── Contents sidebar on the List view ────────────────────────────────────────
+   The markup reuses the public grid's class names, so everything about how it
+   *looks* — the mono-ish tracking, the 11px uppercase entries, the title, the
+   hover colour — comes from global.css and cannot drift from the real thing.
+   Only what is specific to being in the admin lives here. */
+
+.admin-list-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* The public sidebar starts at opacity 0 and is faded in by an ancestor
+   .poems-grid-page.is-revealed, once that page's images have loaded. There is no such
+   ancestor here and nothing to wait for, so without this the sidebar takes up its 160px
+   and renders nothing — which is exactly what it did, invisibly, past a green pipeline. */
+.poems-toc-wrap.admin-toc {
+  opacity: 1;
+  animation: none;
+}
+
+.admin-list-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Widen the page only when the sidebar is there, so the cards keep the width they
+   had rather than surrendering 200px of it. The Order grid is untouched. */
+.admin-poem-list:has(.admin-list-layout) {
+  max-width: 1160px;
+}
+
+/* The public rule hides the sidebar below 768px, which is right for a reader and
+   wrong here: reordering on a tablet is the reason it has a touch path at all.
+   Two class names on one element outrank one, so this wins wherever it applies. */
+@media (max-width: 768px) {
+  .poems-toc-wrap.admin-toc {
+    display: block;
+  }
+}
+
+/* Below this the two columns stop being two columns. The cards carry their own
+   drag on touch, so reordering still works — it just happens on the card. */
+@media (max-width: 600px) {
+  .poems-toc-wrap.admin-toc {
+    display: none;
+  }
+}
+
+/* Entries are buttons rather than anchors: they move a scroll position, they do
+   not navigate. These are the .poems-toc a rules, plus the resets a button needs
+   to stop looking like one. */
+.admin-toc .poems-toc button {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+}
+
+.admin-toc .poems-toc button:hover {
+  color: var(--text-hover);
+}
+
+.admin-toc .poems-toc li {
+  position: relative;
+  cursor: grab;
+  /* A long press on an entry otherwise raises the iOS callout and selects the text,
+     which lands on top of the drag it was meant to start. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.admin-toc .poems-toc li:active {
+  cursor: grabbing;
+}
+
+/* The same insertion bar the list cards use, so a drop reads the same on both. */
+.admin-toc .poems-toc li.drop-target::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text-primary);
+  pointer-events: none;
+}
