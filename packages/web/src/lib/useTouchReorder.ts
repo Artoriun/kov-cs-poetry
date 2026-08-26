@@ -17,6 +17,18 @@ import { useCallback, useEffect, useRef } from 'react';
 /** Movement during the hold that means "this is a scroll, not a drag". */
 const MOVE_CANCELS_PX = 10;
 
+/**
+ * How close to the top or bottom edge the finger has to get before the page scrolls under it.
+ *
+ * Without this a drag can only reach what is already on screen, which sounds academic and is
+ * not: an admin card on a phone is 653px tall in a 915px viewport, so the next card begins
+ * 19px from the bottom edge and everything past it is unreachable. Dragging simply did
+ * nothing, which is exactly how it was reported.
+ */
+const EDGE_PX = 90;
+/** Per frame. Fast enough to cross a tall card without feeling like it has run away. */
+const SCROLL_STEP_PX = 12;
+
 export interface TouchReorderOptions {
   /**
    * Data attribute carrying each item's index, e.g. `'data-ti'`. Hit-testing reads this from
@@ -47,6 +59,7 @@ export function useTouchReorder({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ghost = useRef<HTMLElement | null>(null);
   const active = useRef(false);
+  const edgeFrame = useRef(0);
   /** True from lift until the next touchstart, so the click that follows a drag is ignorable. */
   const didDrag = useRef(false);
 
@@ -54,6 +67,7 @@ export function useTouchReorder({
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
+      cancelAnimationFrame(edgeFrame.current);
       ghost.current?.remove();
       timer.current = null;
       ghost.current = null;
@@ -87,6 +101,55 @@ export function useTouchReorder({
       const offsetY = touch.clientY - rect.top;
       let target = index;
 
+      let lastX = startX;
+      let lastY = startY;
+
+      // Reads what is under the finger and records it as the drop target. Split out because
+      // the edge scroller has to redo it every frame: the page moves under a stationary
+      // finger, so the element beneath it changes without a touchmove ever firing.
+      const hitTest = () => {
+        const g = ghost.current;
+        if (!g) return;
+        // The clone sits under the finger, so it would hit-test as itself.
+        g.style.visibility = 'hidden';
+        const under = document
+          .elementFromPoint(lastX, lastY)
+          ?.closest<HTMLElement>(`[${indexAttr}]`);
+        g.style.visibility = '';
+        if (!under) return;
+        const idx = Number.parseInt(under.getAttribute(indexAttr) ?? '', 10);
+        if (!Number.isNaN(idx)) {
+          target = idx;
+          onDragOver?.(idx);
+        }
+      };
+
+      const stopEdgeScroll = () => {
+        cancelAnimationFrame(edgeFrame.current);
+        edgeFrame.current = 0;
+      };
+
+      const edgeScroll = () => {
+        if (!active.current) return stopEdgeScroll();
+        const fromTop = lastY;
+        const fromBottom = window.innerHeight - lastY;
+        const dy = fromTop < EDGE_PX ? -SCROLL_STEP_PX : fromBottom < EDGE_PX ? SCROLL_STEP_PX : 0;
+        if (!dy) return stopEdgeScroll();
+        const before = window.scrollY;
+        // 'instant' matters: the page sets scroll-behavior: smooth, so an ordinary scrollBy
+        // animates and leaves window.scrollY unchanged for this frame. The end-of-page check
+        // below then read that as "cannot scroll" and killed the loop after a single step —
+        // which looked like auto-scroll not working at all.
+        window.scrollTo({ top: before + dy, behavior: 'instant' });
+        // Now that the scroll is synchronous, an unchanged position really does mean the end.
+        if (window.scrollY === before) return stopEdgeScroll();
+        const g = ghost.current;
+        // The ghost is position:fixed, so it stays under the finger while the page moves.
+        if (g) g.style.top = `${lastY - offsetY}px`;
+        hitTest();
+        edgeFrame.current = requestAnimationFrame(edgeScroll);
+      };
+
       const handleMove = (me: TouchEvent) => {
         const mt = me.touches[0];
         if (!active.current) {
@@ -103,29 +166,24 @@ export function useTouchReorder({
         }
         // Only once the item has lifted: before that, preventing default would kill scrolling.
         me.preventDefault();
+        lastX = mt.clientX;
+        lastY = mt.clientY;
         const g = ghost.current;
         if (!g) return;
-        // The clone sits under the finger, so it would hit-test as itself. Hide it for the
-        // one call rather than tracking positions by hand.
-        g.style.visibility = 'hidden';
-        const under = document
-          .elementFromPoint(mt.clientX, mt.clientY)
-          ?.closest<HTMLElement>(`[${indexAttr}]`);
-        g.style.visibility = '';
-        g.style.left = `${mt.clientX - offsetX}px`;
-        g.style.top = `${mt.clientY - offsetY}px`;
-        if (under) {
-          const idx = Number.parseInt(under.getAttribute(indexAttr) ?? '', 10);
-          if (!Number.isNaN(idx)) {
-            target = idx;
-            onDragOver?.(idx);
-          }
+        g.style.left = `${lastX - offsetX}px`;
+        g.style.top = `${lastY - offsetY}px`;
+        hitTest();
+        // Near an edge the page has to come to the finger. A card is taller than the space
+        // left below it on a phone, so without this the next one is not reachable at all.
+        if ((lastY < EDGE_PX || window.innerHeight - lastY < EDGE_PX) && !edgeFrame.current) {
+          edgeFrame.current = requestAnimationFrame(edgeScroll);
         }
       };
 
       const handleEnd = () => {
         if (timer.current) clearTimeout(timer.current);
         timer.current = null;
+        stopEdgeScroll();
         ghost.current?.remove();
         ghost.current = null;
         detach();
