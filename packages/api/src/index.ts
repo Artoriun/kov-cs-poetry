@@ -60,7 +60,7 @@ app.get('/health/deps', async (_req, res) => {
   try {
     // A single doc get, not a scan — cheap, and enough to prove credentials and reachability.
     await Promise.race([
-      db.collection('config').doc('poemOrder').get(),
+      db().collection('config').doc('poemOrder').get(),
       new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error('timeout')), DEPS_TIMEOUT_MS);
       }),

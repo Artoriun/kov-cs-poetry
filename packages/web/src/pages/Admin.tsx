@@ -26,6 +26,13 @@ import {
 import { clearToken, readToken, SESSION_EXPIRED_EVENT, storeToken } from '../lib/token';
 import { useTouchReorder } from '../lib/useTouchReorder';
 
+/**
+ * m:ss for a countdown. The thirty-second lockout would read fine as plain seconds, but the
+ * fifteen-minute limit behind it would not — "try again in 873s" is a number nobody converts.
+ */
+const countdown = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
 const PLACEHOLDER_IMAGE =
   'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png';
 
@@ -184,7 +191,7 @@ function LoginPage({
     }
   };
 
-  const lockMessage = lockedFor ? t.admin.lockedOut.replace('{seconds}', String(lockedFor)) : '';
+  const lockMessage = lockedFor ? t.admin.lockedOut.replace('{time}', countdown(lockedFor)) : '';
 
   return (
     <div className="admin-page">

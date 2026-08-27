@@ -96,7 +96,7 @@ export const hu: Dict = {
     show: 'Megjelenítés',
     hide: 'Elrejtés',
     incorrectPassword: 'Helytelen jelszó.',
-    lockedOut: 'Túl sok hibás jelszó. Próbáld újra {seconds} másodperc múlva.',
+    lockedOut: 'Túl sok hibás jelszó. Próbáld újra {time} múlva.',
     tooManyAttempts: 'Túl sok próbálkozás. Próbáld újra később.',
     sessionExpired: 'A munkamenet lejárt. A folytatáshoz jelentkezz be újra.',
     loggingIn: 'Bejelentkezés…',

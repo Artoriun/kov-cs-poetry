@@ -3,28 +3,41 @@ import { describe, test } from 'node:test';
 import { createLockout, createRateLimiter } from './rateLimit';
 
 describe('rate limiter', () => {
-  test('allows up to max, then blocks', () => {
+  test('allows up to max, then reports the wait', () => {
     const limited = createRateLimiter({ windowMs: 60_000, max: 3 });
     assert.deepEqual(
       [1, 2, 3, 4, 5].map(() => limited('1.2.3.4')),
-      [false, false, false, true, true],
+      [0, 0, 0, 60, 60],
+      'zero while there is room, then the seconds until the oldest hit ages out',
     );
+  });
+
+  test('the reported wait shrinks as the window drains', async () => {
+    // The login screen counts this down, so it has to be the real remaining time rather
+    // than the window length restated on every rejection.
+    const limited = createRateLimiter({ windowMs: 3_000, max: 1 });
+    limited('1.2.3.9');
+    const first = limited('1.2.3.9');
+    await new Promise((r) => setTimeout(r, 1100));
+    const later = limited('1.2.3.9');
+    assert.ok(later < first, `expected the wait to shrink: ${first}s then ${later}s`);
+    assert.ok(later > 0, 'and never to read zero while still blocked');
   });
 
   test('counts each address separately', () => {
     const limited = createRateLimiter({ windowMs: 60_000, max: 2 });
     limited('1.1.1.1');
     limited('1.1.1.1');
-    assert.equal(limited('1.1.1.1'), true, 'first address is spent');
-    assert.equal(limited('2.2.2.2'), false, 'a different address is unaffected');
+    assert.ok(limited('1.1.1.1') > 0, 'first address is spent');
+    assert.equal(limited('2.2.2.2'), 0, 'a different address is unaffected');
   });
 
   test('the window expires', async () => {
     const limited = createRateLimiter({ windowMs: 40, max: 1 });
-    assert.equal(limited('3.3.3.3'), false);
-    assert.equal(limited('3.3.3.3'), true);
+    assert.equal(limited('3.3.3.3'), 0);
+    assert.ok(limited('3.3.3.3') > 0);
     await new Promise((r) => setTimeout(r, 60));
-    assert.equal(limited('3.3.3.3'), false, 'allowed again once the window has passed');
+    assert.equal(limited('3.3.3.3'), 0, 'allowed again once the window has passed');
   });
 
   test('a blocked caller does not extend its own block by retrying', async () => {
@@ -34,7 +47,7 @@ describe('rate limiter', () => {
     limited('4.4.4.4');
     for (let i = 0; i < 5; i++) limited('4.4.4.4');
     await new Promise((r) => setTimeout(r, 80));
-    assert.equal(limited('4.4.4.4'), false);
+    assert.equal(limited('4.4.4.4'), 0);
   });
 });
 

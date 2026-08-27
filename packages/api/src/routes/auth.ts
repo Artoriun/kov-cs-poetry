@@ -30,8 +30,9 @@ const backoffMs = (failures: number) =>
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * `retryAfter` is what the login screen counts down, so it is only sent when the wait is
- * actually known — the two window-based limits above cannot say when they will let go.
+ * `retryAfter` is what the login screen counts down. All three limits can say how long they
+ * need, but the parameter stays optional: a 429 with no wait attached is still a valid answer,
+ * and the screen falls back to a plain "try again later" for it.
  */
 function tooManyAttempts(res: Response, seconds?: number) {
   if (seconds) res.set('Retry-After', String(seconds));
@@ -53,16 +54,17 @@ authRouter.post('/login', async (req, res) => {
     return;
   }
 
-  if (burstLimited(ip)) {
+  const burstWait = burstLimited(ip);
+  if (burstWait) {
     console.warn(`[auth] burst limit hit from ${ip}`);
-    tooManyAttempts(res);
+    tooManyAttempts(res, burstWait);
     return;
   }
 
-  const { blocked, recentFailures } = await recordAttempt(ip);
+  const { blocked, recentFailures, retryAfter } = await recordAttempt(ip);
   if (blocked) {
     console.warn(`[auth] rate limit hit from ${ip}`);
-    tooManyAttempts(res);
+    tooManyAttempts(res, retryAfter);
     return;
   }
 

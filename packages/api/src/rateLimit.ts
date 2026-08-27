@@ -8,17 +8,26 @@
 export function createRateLimiter({ windowMs, max }: { windowMs: number; max: number }) {
   const hits = new Map<string, number[]>();
 
-  return function rateLimited(ip: string): boolean {
+  /**
+   * Seconds the caller must wait, or 0 if it may proceed.
+   *
+   * A boolean would do for the callers that only gate on it, but the login screen counts this
+   * down — and "try again later" with no idea how much later is the version of a lockout that
+   * gets reported as a broken login.
+   */
+  return function retryAfterSeconds(ip: string): number {
     const now = Date.now();
     const recent = (hits.get(ip) ?? []).filter((t) => now - t < windowMs);
     if (recent.length >= max) {
       hits.set(ip, recent);
-      return true;
+      // The window frees up when its oldest hit ages out. Never rounded down to 0, which
+      // would read as "go ahead" to a caller and as a stuck countdown to a person.
+      return Math.max(1, Math.ceil((recent[0] + windowMs - now) / 1000));
     }
     recent.push(now);
     hits.set(ip, recent);
     if (hits.size > 5000) hits.clear(); // crude guard against unbounded growth
-    return false;
+    return 0;
   };
 }
 
