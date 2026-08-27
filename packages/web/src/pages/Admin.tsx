@@ -1023,6 +1023,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // is the same reasoning the mouse path's comment gives for the two behaving differently.
   const tocTouch = useTouchReorder({
     indexAttr: 'data-ti',
+    // No hold. The hold existed to tell a drag apart from a scroll when both started on the
+    // same place; a grip that only ever means "drag" has nothing to disambiguate, and waiting
+    // 300ms before anything moves just reads as an unresponsive control.
+    holdMs: 0,
     onDragStart: setDragIndex,
     onDragOver: setDropIndex,
     onDragEnd: () => {
@@ -1255,8 +1259,19 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                             setDropIndex(i);
                           }}
                           onDrop={() => handleDrop(i)}
-                          onTouchStart={(e) => tocTouch.onTouchStart(e, i)}
                         >
+                          {/* The drag handle, and the only place a touch starts a reorder.
+                              Dragging and scrolling are both vertical here, so the browser
+                              has to be told which one a touch means before it decides for
+                              itself — `touch-action: none` on the grip does that, and leaves
+                              the rest of the row scrolling normally. Long-pressing the title
+                              used to be the trigger, which meant competing with Chrome for
+                              the gesture and losing on Android. */}
+                          <span
+                            className="toc-grip"
+                            aria-hidden="true"
+                            onTouchStart={(e) => tocTouch.onTouchStart(e, i)}
+                          />
                           <button
                             type="button"
                             onClick={() => {
