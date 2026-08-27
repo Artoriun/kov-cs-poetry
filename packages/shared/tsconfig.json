@@ -3,6 +3,9 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    /* TypeScript 7 no longer picks up @types/node by walking to the workspace root, and the
+       tests here import node:test and node:assert. Naming it is what the compiler asks for. */
+    "types": ["node"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

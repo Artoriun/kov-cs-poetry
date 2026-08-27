@@ -11,6 +11,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    /* As in packages/shared: TypeScript 7 wants this named rather than discovered. Safe to
+       list only "node" even though this package needs Vite's types too, because
+       src/vite-env.d.ts pulls those in through a triple-slash reference rather than this field. */
+    "types": ["node"],
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
