@@ -1016,7 +1016,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTocId, setActiveTocId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (mode !== 'list') return;
+    if (mode !== 'grid') return;
     let observer: IntersectionObserver | null = null;
     let frame = 0;
 
@@ -1026,9 +1026,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     // instead of assuming, bounded so a view that never renders cards cannot spin forever.
     let attempts = 0;
     const attach = () => {
-      const cards = document.querySelectorAll<HTMLElement>(
-        '.admin-list-content [id^="admin-poem-"]',
-      );
+      const cards = document.querySelectorAll<HTMLElement>('.admin-grid-view [id^="admin-grid-"]');
       if (!cards.length) {
         if (attempts++ < 60) frame = requestAnimationFrame(attach);
         return;
@@ -1045,7 +1043,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           const visible = entries
             .filter((e) => e.isIntersecting)
             .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          if (visible[0]) setActiveTocId(visible[0].target.id.replace('admin-poem-', ''));
+          if (visible[0]) setActiveTocId(visible[0].target.id.replace('admin-grid-', ''));
         },
         // A band near the top, so the underline tracks what is being read rather than flicking
         // to whatever happens to clip the viewport edge.
@@ -1061,7 +1059,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   // Same gesture the grid already had for jumping to a card, minus the mode switch: the entry
   // and its card are on screen together, so this only has to scroll if the card is out of view.
   const scrollToPoem = (id: string) => {
-    const el = document.getElementById(`admin-poem-${id}`);
+    const el = document.getElementById(`admin-grid-${id}`);
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const headerHeight =
@@ -1072,8 +1070,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     } else if (rect.bottom > window.innerHeight) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-    const card = el.querySelector<HTMLElement>('.admin-poem-card');
-    if (card) playPulse(card);
+    const card = el.querySelector<HTMLElement>('.admin-grid-card') ?? el;
+    playPulse(card);
   };
 
   return (
@@ -1135,7 +1133,54 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               )}
             </motion.div>
             {mode === 'list' ? (
-              <div className="admin-list-layout">
+              orderedPoems.map((poem, i) => (
+                // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
+                // Combining layout and variants on the same element causes Motion to apply
+                // the y transform from hidden but skip opacity — split avoids the conflict.
+                <motion.div key={poem.id} id={`admin-poem-${poem.id}`} variants={cardVariants}>
+                  <motion.div
+                    layout
+                    transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
+                    className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                    data-li={i}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDropIndex(i);
+                    }}
+                    onDrop={() => handleDrop(i)}
+                    onTouchStart={(e) => listTouch.onTouchStart(e, i)}
+                  >
+                    <PoemCard
+                      poem={poem}
+                      edit={
+                        edits[poem.id] ?? {
+                          title: poem.title,
+                          overlay: poem.overlay ?? '',
+                          imageFile: null,
+                          imagePreview: null,
+                          customSlides: poem.customSlides ?? null,
+                          customSlidesOpen: !!poem.customSlidesEnabled,
+                          customSlidesEnabled: !!poem.customSlidesEnabled,
+                        }
+                      }
+                      onChange={(patch) => patchEdit(poem.id, patch)}
+                      onSave={() => handleSave(poem.id)}
+                      onToggleFeature={() => handleToggleFeature(poem.id)}
+                      onDelete={() => setPendingDeleteId(poem.id)}
+                      onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
+                      status={statuses[poem.id] ?? 'idle'}
+                      onDragStart={() => setDragIndex(i)}
+                      onDragEnd={() => {
+                        setDragIndex(null);
+                        setDropIndex(null);
+                      }}
+                      isDragging={dragIndex === i}
+                    />
+                  </motion.div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="admin-grid-layout">
                 {/* The same contents sidebar the public poems grid carries, reusing its class
                     names so the look comes from global.css rather than a second copy that
                     drifts. Dropped from the original: .toc-range-line, which marks which
@@ -1189,139 +1234,92 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     </ul>
                   </nav>
                 </div>
-                <div className="admin-list-content">
+                <div className="admin-grid-view">
                   {orderedPoems.map((poem, i) => (
-                    // Outer: stagger + fade via variants. Inner: FLIP reorder via layout.
-                    // Combining layout and variants on the same element causes Motion to apply
-                    // the y transform from hidden but skip opacity — split avoids the conflict.
-                    <motion.div key={poem.id} id={`admin-poem-${poem.id}`} variants={cardVariants}>
-                      <motion.div
-                        layout
-                        transition={{ layout: { duration: 0.35, ease: 'easeInOut' } }}
-                        className={`admin-card-wrapper${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
-                        data-li={i}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDropIndex(i);
-                        }}
-                        onDrop={() => handleDrop(i)}
-                        onTouchStart={(e) => listTouch.onTouchStart(e, i)}
-                      >
-                        <PoemCard
-                          poem={poem}
-                          edit={
-                            edits[poem.id] ?? {
-                              title: poem.title,
-                              overlay: poem.overlay ?? '',
-                              imageFile: null,
-                              imagePreview: null,
-                              customSlides: poem.customSlides ?? null,
-                              customSlidesOpen: !!poem.customSlidesEnabled,
-                              customSlidesEnabled: !!poem.customSlidesEnabled,
-                            }
-                          }
-                          onChange={(patch) => patchEdit(poem.id, patch)}
-                          onSave={() => handleSave(poem.id)}
-                          onToggleFeature={() => handleToggleFeature(poem.id)}
-                          onDelete={() => setPendingDeleteId(poem.id)}
-                          onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
-                          status={statuses[poem.id] ?? 'idle'}
-                          onDragStart={() => setDragIndex(i)}
-                          onDragEnd={() => {
-                            setDragIndex(null);
-                            setDropIndex(null);
-                          }}
-                          isDragging={dragIndex === i}
-                        />
-                      </motion.div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="admin-grid-view">
-                {orderedPoems.map((poem, i) => (
-                  <div
-                    key={poem.id}
-                    data-gi={i}
-                    style={{ '--gi': i } as React.CSSProperties}
-                    className={`admin-grid-item${dragIndex === i ? ' is-dragging' : ''}${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
-                    draggable
-                    onContextMenu={(e) => e.preventDefault()}
-                    onClick={() => handleGridPoemClick(poem.id)}
-                    onMouseDown={() => {
-                      gridDidDrag.current = false;
-                    }}
-                    onTouchStart={(e) => gridTouch.onTouchStart(e, i)}
-                    onDragStart={(e) => {
-                      gridDidDrag.current = true;
-                      const el = e.currentTarget as HTMLElement;
-                      const ghost = el.cloneNode(true) as HTMLElement;
-                      ghost.style.cssText += `;position:fixed;top:-9999px;left:-9999px;width:${el.offsetWidth}px;pointer-events:none;`;
-                      document.body.appendChild(ghost);
-                      e.dataTransfer.setDragImage(
-                        ghost,
-                        e.nativeEvent.offsetX,
-                        e.nativeEvent.offsetY,
-                      );
-                      requestAnimationFrame(() => document.body.removeChild(ghost));
-                      e.dataTransfer.effectAllowed = 'move';
-                      setDragIndex(i);
-                    }}
-                    onDragEnd={() => {
-                      setDragIndex(null);
-                      setDropIndex(null);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDropIndex(i);
-                    }}
-                    onDrop={() => handleDrop(i, true)}
-                  >
-                    <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                     <div
-                      id={`admin-grid-${poem.id}`}
-                      className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}
+                      key={poem.id}
+                      data-gi={i}
+                      style={{ '--gi': i } as React.CSSProperties}
+                      className={`admin-grid-item${dragIndex === i ? ' is-dragging' : ''}${dropIndex === i && dragIndex !== null && dragIndex !== i ? ' drop-target' : ''}`}
+                      draggable
+                      onContextMenu={(e) => e.preventDefault()}
+                      onClick={() => handleGridPoemClick(poem.id)}
+                      onMouseDown={() => {
+                        gridDidDrag.current = false;
+                      }}
+                      onTouchStart={(e) => gridTouch.onTouchStart(e, i)}
+                      onDragStart={(e) => {
+                        gridDidDrag.current = true;
+                        const el = e.currentTarget as HTMLElement;
+                        const ghost = el.cloneNode(true) as HTMLElement;
+                        ghost.style.cssText += `;position:fixed;top:-9999px;left:-9999px;width:${el.offsetWidth}px;pointer-events:none;`;
+                        document.body.appendChild(ghost);
+                        e.dataTransfer.setDragImage(
+                          ghost,
+                          e.nativeEvent.offsetX,
+                          e.nativeEvent.offsetY,
+                        );
+                        requestAnimationFrame(() => document.body.removeChild(ghost));
+                        e.dataTransfer.effectAllowed = 'move';
+                        setDragIndex(i);
+                      }}
+                      onDragEnd={() => {
+                        setDragIndex(null);
+                        setDropIndex(null);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDropIndex(i);
+                      }}
+                      onDrop={() => handleDrop(i, true)}
                     >
-                      {/* Live feature toggle badge, absolutely positioned over the image so
+                      <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
+                      <div
+                        id={`admin-grid-${poem.id}`}
+                        className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}
+                      >
+                        {/* Live feature toggle badge, absolutely positioned over the image so
                         it never shifts the layout — images stay aligned whether featured or not.
                         stopPropagation + draggable=false keep taps from starting a card drag. */}
-                      <button
-                        type="button"
-                        className="admin-grid-featured-label"
-                        draggable={false}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFeature(poem.id);
-                        }}
-                        title={poem.featured ? t.admin.unfeaturePoem : t.admin.featurePoem}
-                      >
-                        <span className="admin-grid-unfeature-x">{poem.featured ? '×' : '✓'}</span>
-                        <span>{poem.featured ? t.admin.featured : t.admin.featurePrompt}</span>
-                      </button>
-                      <div className="admin-grid-card-img-wrap">
-                        <img
-                          src={
-                            edits[poem.id]?.imagePreview ??
-                            gridThumb(poem.image ?? PLACEHOLDER_IMAGE)
-                          }
-                          alt={poem.title}
-                          loading="eager"
-                        />
-                      </div>
-                      {poem.overlay && (
-                        <div className="admin-grid-card-overlay">
-                          {/* Stripped, like every other place the poem is shown whole. This
+                        <button
+                          type="button"
+                          className="admin-grid-featured-label"
+                          draggable={false}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onTouchStart={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFeature(poem.id);
+                          }}
+                          title={poem.featured ? t.admin.unfeaturePoem : t.admin.featurePoem}
+                        >
+                          <span className="admin-grid-unfeature-x">
+                            {poem.featured ? '×' : '✓'}
+                          </span>
+                          <span>{poem.featured ? t.admin.featured : t.admin.featurePrompt}</span>
+                        </button>
+                        <div className="admin-grid-card-img-wrap">
+                          <img
+                            src={
+                              edits[poem.id]?.imagePreview ??
+                              gridThumb(poem.image ?? PLACEHOLDER_IMAGE)
+                            }
+                            alt={poem.title}
+                            loading="eager"
+                          />
+                        </div>
+                        {poem.overlay && (
+                          <div className="admin-grid-card-overlay">
+                            {/* Stripped, like every other place the poem is shown whole. This
                               card was the one that missed it, so a poem with an author's page
                               break showed the marker here as a line of literal text. */}
-                          <PoemLines text={poem.overlay} />
-                        </div>
-                      )}
+                            <PoemLines text={poem.overlay} />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>

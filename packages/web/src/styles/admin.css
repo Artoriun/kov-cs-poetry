@@ -965,10 +965,17 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
    hover colour — comes from global.css and cannot drift from the real thing.
    Only what is specific to being in the admin lives here. */
 
-.admin-list-layout {
+.admin-grid-layout {
   display: flex;
   gap: 40px;
   align-items: flex-start;
+}
+
+/* The grid is the surface the sidebar belongs beside: it is the admin's version of the
+   public poems grid, which is where the contents list sits on the reader's side. */
+.admin-grid-layout .admin-grid-view {
+  flex: 1;
+  min-width: 0;
 }
 
 /* The public sidebar starts at opacity 0 and is faded in by an ancestor
@@ -980,17 +987,9 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
   animation: none;
 }
 
-.admin-list-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* Widen the page only when the sidebar is there, so the cards keep the width they
-   had rather than surrendering 200px of it. The Order grid is untouched. */
-.admin-poem-list:has(.admin-list-layout) {
+/* Widen the page only when the sidebar is there, so the grid keeps the room it had
+   rather than surrendering 200px of it. The List view is untouched. */
+.admin-poem-list:has(.admin-grid-layout) {
   max-width: 1160px;
 }
 
