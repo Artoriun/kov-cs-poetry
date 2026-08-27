@@ -1033,12 +1033,59 @@ html.dark-mode .admin-btn-primary:hover:not(:disabled) {
 
 .admin-toc .poems-toc li {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: grab;
-  /* A long press on an entry otherwise raises the iOS callout and selects the text,
-     which lands on top of the drag it was meant to start. */
+  /* Mouse-dragging a row would otherwise select its text on the way, and a long press
+     still raises the iOS callout even though it no longer starts anything. */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* The drag handle.
+   `touch-action: none` is the whole reason this element exists. Reordering and scrolling
+   are both vertical in this list, so on Android Chrome decided the gesture was a scroll,
+   fired touchcancel, and tore the drag down mid-move — which is why it worked with a mouse
+   and not on a phone. Declaring it here, and only here, takes the grip out of that
+   arbitration while every other part of the row still scrolls the sidebar normally. */
+.admin-toc .toc-grip {
+  position: relative;
+  flex: 0 0 auto;
+  /* 24px so it is a real touch target, not just the width of the dots. */
+  width: 24px;
+  min-height: 24px;
+  align-self: stretch;
+  cursor: grab;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.admin-toc .toc-grip:active {
+  cursor: grabbing;
+}
+
+/* Drawn rather than shipped as an icon or a glyph, which would depend on a font that may
+   not have it. */
+.admin-toc .toc-grip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 14px;
+  background-image: radial-gradient(currentcolor 1px, transparent 1px);
+  background-size: 4px 4px;
+  color: var(--text-primary);
+  opacity: 0.4;
+}
+
+.admin-toc .poems-toc li:hover .toc-grip::before {
+  opacity: 0.75;
 }
 
 .admin-toc .poems-toc li:active {

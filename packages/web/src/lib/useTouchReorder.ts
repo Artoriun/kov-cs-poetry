@@ -82,6 +82,7 @@ export function useTouchReorder({
       // mid-drag — can leave these set. Clearing here rather than trusting the last handler
       // means one stuck drag cannot poison every gesture after it.
       didDrag.current = false;
+      const source = e.currentTarget as HTMLElement;
       if (ghost.current) {
         ghost.current.remove();
         ghost.current = null;
@@ -92,7 +93,12 @@ export function useTouchReorder({
       }
       active.current = false;
 
-      const el = e.currentTarget as HTMLElement;
+      // The row, not necessarily what was touched. A drag can be started from a grip inside
+      // the row, and cloning the grip would float a ghost of the grip alone. Where the handler
+      // sits on the row itself, closest() returns that same row.
+      const el =
+        (e.currentTarget as HTMLElement).closest<HTMLElement>(`[${indexAttr}]`) ??
+        (e.currentTarget as HTMLElement);
       const touch = e.touches[0];
       const startX = touch.clientX;
       const startY = touch.clientY;
@@ -238,15 +244,17 @@ export function useTouchReorder({
       };
 
       function detach() {
-        el.removeEventListener('touchmove', handleMove);
-        el.removeEventListener('touchend', handleEnd);
-        el.removeEventListener('touchcancel', handleEnd);
+        source.removeEventListener('touchmove', handleMove);
+        source.removeEventListener('touchend', handleEnd);
+        source.removeEventListener('touchcancel', handleEnd);
       }
 
       // passive: false, or preventDefault above is ignored and the page scrolls under the drag.
-      el.addEventListener('touchmove', handleMove, { passive: false });
-      el.addEventListener('touchend', handleEnd);
-      el.addEventListener('touchcancel', handleEnd);
+      // Bound to the element the touch actually landed on: touch events retarget to wherever
+      // the gesture began, so a drag started on a grip reports through the grip, not the row.
+      source.addEventListener('touchmove', handleMove, { passive: false });
+      source.addEventListener('touchend', handleEnd);
+      source.addEventListener('touchcancel', handleEnd);
 
       timer.current = setTimeout(() => {
         // A re-render between touchstart and the timer can detach this element; cloning a
