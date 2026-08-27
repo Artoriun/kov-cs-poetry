@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, signInAsAdmin, test } from './fixtures';
 
 /**
  * Reordering the admin contents sidebar with a finger.
@@ -15,20 +15,6 @@ import { expect, test } from './fixtures';
 
 // Pixel 8a, landscape. Wide enough that the sidebar is not hidden.
 test.use({ viewport: { width: 915, height: 412 } });
-
-/**
- * A token the portal will accept without a server.
- *
- * The gate is `if (!token) return <LoginPage>`, and readToken only reads the `exp` claim —
- * verification is the server's job on every request, which is the right split but also means
- * a well-formed unsigned token is enough to render the dashboard. apiRefreshToken returns
- * early unless the token is near expiry and swallows failures, so nothing signs us back out.
- */
-function fakeToken(): string {
-  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
-  const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
-  return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ admin: true, epoch: 0, exp })}.not-verified-here`;
-}
 
 /**
  * A real drag, by the grip.
@@ -59,8 +45,7 @@ async function dragGrip(page: Page, from: { x: number; y: number }, toY: number)
 const titles = (page: Page) => page.locator('.admin-toc .poems-toc li button').allTextContents();
 
 test.beforeEach(async ({ page }) => {
-  const token = fakeToken();
-  await page.addInitScript((t) => localStorage.setItem('admin_token', t), token);
+  await signInAsAdmin(page);
   // The reorder is optimistic and reverts if the write fails, so without this the list would
   // snap back and the assertion would be testing the revert.
   await page.route('**/api/poems/order', (route) =>

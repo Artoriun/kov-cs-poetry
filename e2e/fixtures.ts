@@ -51,6 +51,26 @@ export const test = base.extend<{ failOnPageError: void }>({
   },
 });
 
+/**
+ * Puts the portal in its signed-in state, without a server.
+ *
+ * The gate is `if (!token) return <LoginPage>`, and `readToken` only reads the `exp` claim —
+ * checking the signature is the server's job, on every request. That split is the right one,
+ * and it is also what makes the portal reachable from a test at all: a well-formed unsigned
+ * token renders the dashboard.
+ *
+ * This proves nothing about whether the API would accept the token, and is not meant to. That
+ * belongs in the API suite, which covers the signature, the expiry and the revocation epoch
+ * directly. What it buys is everything behind the gate — the largest and most intricate screen
+ * in the app, which until now no browser test had ever rendered.
+ */
+export async function signInAsAdmin(page: import('@playwright/test').Page) {
+  const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+  const token = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ admin: true, epoch: 0, exp })}.unverified`;
+  await page.addInitScript((value) => localStorage.setItem('admin_token', value), token);
+}
+
 export { expect } from '@playwright/test';
 
 /** A poem whose slides are hand-authored, so it takes the custom-slide layout path. */

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { CUSTOM_SLIDE_POEM, expect, MEASURED_POEM, settled, test } from './fixtures';
+import { CUSTOM_SLIDE_POEM, expect, MEASURED_POEM, settled, signInAsAdmin, test } from './fixtures';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -15,7 +15,18 @@ const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
  */
 async function animationsSettled(page: Page) {
   await page.evaluate(() =>
-    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))),
+    Promise.all(
+      document
+        .getAnimations()
+        // A decorative loop never finishes, so awaiting it waits forever rather than settling.
+        // The featured-poem border is one — `border-flow`, five seconds, infinite alternate —
+        // and it is on screen throughout the admin portal, which is why sweeping that screen
+        // timed out instead of reporting anything. Skipping them is safe for the reason this
+        // helper exists: it is here so contrast is not read mid-fade, and a loop that runs
+        // forever has no settled state to wait for in the first place.
+        .filter((a) => a.effect?.getTiming().iterations !== Number.POSITIVE_INFINITY)
+        .map((a) => a.finished.catch(() => {})),
+    ),
   );
 }
 
@@ -87,11 +98,38 @@ for (const [name, path] of ROUTES) {
 
 for (const theme of ['dark', 'light'] as const) {
   test(`the admin sign-in has no accessibility violations in ${theme} mode`, async ({ page }) => {
-    // The portal behind it needs a token, but the sign-in is the part reachable without one —
-    // and it is a form, which is where label and focus violations live.
+    // A form, which is where label and focus violations live.
     await pinTheme(page, theme);
     await page.goto('/admin');
     await expect(page.locator('#admin-password')).toBeVisible();
+    await assertNoViolations(page);
+  });
+
+  test(`the admin dashboard has no accessibility violations in ${theme} mode`, async ({ page }) => {
+    // This used to say the portal needed a token and only the sign-in was reachable. It is
+    // reachable now — the gate reads the `exp` claim and leaves the signature to the server —
+    // and the screen behind it is by far the largest in the app: every poem as an editable
+    // card, a drag-reorderable grid, a contents sidebar, tabs. It had never been swept, in a
+    // repository that gates its deploys on accessibility everywhere else.
+    await pinTheme(page, theme);
+    await signInAsAdmin(page);
+    await page.goto('/admin');
+    await expect(page.locator('.admin-card-wrapper').first()).toBeVisible();
+    await settled(page);
+    await assertNoViolations(page);
+  });
+
+  test(`the admin Order view has no accessibility violations in ${theme} mode`, async ({
+    page,
+  }) => {
+    // Swept separately because it is a different screen, not a variation on the one above:
+    // its own grid, its own sidebar, and controls the List view does not have.
+    await pinTheme(page, theme);
+    await signInAsAdmin(page);
+    await page.goto('/admin');
+    await page.getByRole('button', { name: 'Order', exact: true }).click();
+    await expect(page.locator('.admin-grid-item').first()).toBeVisible();
+    await settled(page);
     await assertNoViolations(page);
   });
 }
