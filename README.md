@@ -57,7 +57,9 @@ CLOUDINARY_URL=
 ```
 
 Contact email (`RESEND_API_KEY` or SMTP) is optional — without it the form returns 503 rather
-than dropping messages. The site also runs with no API at all: the poems are in the bundle,
+than dropping messages. Firestore is optional too: leave the `FIREBASE_*` lines commented and
+the API still starts and serves the bundled poems, so a fresh clone runs before you have signed
+up for anything. The site runs with no API at all in the same way — the poems are in the bundle,
 and the portal is simply unreachable.
 
 ### Scripts
@@ -93,9 +95,20 @@ npm run backup-poems     # writes the live poems to backups/
 Password login with JWT auth at `/admin`. Create, edit, delete and drag-to-reorder poems,
 feature them on the home carousel, and upload images.
 
+Sign-in is throttled three ways: three wrong passwords in a row pause it for thirty seconds,
+which the form counts down rather than calling a lockout an incorrect password, and two
+fifteen-minute limits sit behind that as the real ceiling — one in memory, one in Firestore so
+it survives a restart.
+
 **List** is where a poem is written: the image preview sits beside the fields that produce it,
 because the text is laid over the image rather than beside it. **Order** is the same poems as
-cards, dragged into the sequence readers meet them in.
+cards, dragged into the sequence readers meet them in, beside a contents sidebar that mirrors
+the public one. Dragging either the cards or the sidebar reorders both, and the change is live
+for visitors straight away.
+
+On a touch screen each sidebar entry is dragged by its grip. Reordering and scrolling are both
+vertical in a list like that, so the grip is what tells the browser which one a touch means —
+everywhere else on the row still scrolls.
 
 ![The portal's List view](docs/screenshot-admin-list.jpg)
 
