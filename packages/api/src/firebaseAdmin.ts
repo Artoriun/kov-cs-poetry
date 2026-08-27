@@ -1,6 +1,7 @@
-import admin from 'firebase-admin';
+import { cert, initializeApp } from 'firebase-admin/app';
+import { type Firestore, getFirestore } from 'firebase-admin/firestore';
 
-let cached: admin.firestore.Firestore | null = null;
+let cached: Firestore | null = null;
 
 /**
  * The Firestore handle, built on first use rather than at import.
@@ -14,18 +15,21 @@ let cached: admin.firestore.Firestore | null = null;
  * Callers already treat Firestore as something that can fail: every read here is inside a
  * try/catch that either falls back or fails open. A throw from this function lands in the
  * same place a rejected query would.
+ *
+ * Imported from the `firebase-admin/app` and `firebase-admin/firestore` entry points rather
+ * than the default export, which stopped carrying `.credential` and `.firestore` in v13.
  */
-export function db(): admin.firestore.Firestore {
+export function db(): Firestore {
   if (!cached) {
-    const app = admin.initializeApp({
-      credential: admin.credential.cert({
+    const app = initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       }),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
-    cached = admin.firestore(app);
+    cached = getFirestore(app);
   }
   return cached;
 }
