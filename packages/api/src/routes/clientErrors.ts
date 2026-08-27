@@ -23,7 +23,7 @@ const clamp = (value: unknown, limit: number): string =>
 
 clientErrorsRouter.post('/', (req, res) => {
   const ip = req.ip ?? 'unknown';
-  if (limited(ip)) {
+  if (limited(ip) > 0) {
     // 204 rather than 429: the client cannot act on it, and a page that is already broken
     // should not then report a failed report.
     res.status(204).end();

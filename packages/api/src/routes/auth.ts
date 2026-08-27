@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { type Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { clearAttempts, currentEpoch, recordAttempt, revokeAllTokens } from '../authState';
 import { type AuthedRequest, requireAuth } from '../middleware/requireAuth';
 import { adminPasswordConfigured, verifyAdminPassword } from '../password';
-import { createRateLimiter } from '../rateLimit';
+import { createLockout, createRateLimiter } from '../rateLimit';
 
 export const authRouter = Router();
 
@@ -13,13 +13,31 @@ export const authRouter = Router();
 const burstLimited = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 
 /**
+ * Three wrong passwords in a row, then thirty seconds. Asked for by the site's owner, and it
+ * sits on top of the two limits above rather than replacing them: on its own it would allow
+ * 360 guesses an hour against their 40. What it adds is something a person can see happening.
+ */
+const lockout = createLockout({ maxFailures: 3, lockMs: 30 * 1000 });
+
+/**
  * Wait a little longer after each failure — 0s, 0.5s, 1s, 2s… capped at 4s. Cheap for a
- * person who has mistyped once and expensive for a script, without ever locking the owner
- * out the way a hard lockout would.
+ * person who has mistyped once and expensive for a script. The count comes from the
+ * fifteen-minute window rather than the lockout, so it keeps climbing across lockouts
+ * instead of restarting at zero with each one.
  */
 const backoffMs = (failures: number) =>
   Math.min(4000, failures < 1 ? 0 : 2 ** (failures - 1) * 500);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * `retryAfter` is what the login screen counts down. All three limits can say how long they
+ * need, but the parameter stays optional: a 429 with no wait attached is still a valid answer,
+ * and the screen falls back to a plain "try again later" for it.
+ */
+function tooManyAttempts(res: Response, seconds?: number) {
+  if (seconds) res.set('Retry-After', String(seconds));
+  res.status(429).json({ error: 'Too many attempts. Try again later.', retryAfter: seconds });
+}
 
 authRouter.post('/login', async (req, res) => {
   const secret = process.env.JWT_SECRET;
@@ -30,27 +48,41 @@ authRouter.post('/login', async (req, res) => {
   }
 
   const ip = req.ip ?? 'unknown';
-  if (burstLimited(ip)) {
-    console.warn(`[auth] burst limit hit from ${ip}`);
-    res.status(429).json({ error: 'Too many attempts. Try again later.' });
+  const locked = lockout.lockedFor(ip);
+  if (locked) {
+    tooManyAttempts(res, locked);
     return;
   }
 
-  const { blocked, recentFailures } = await recordAttempt(ip);
+  const burstWait = burstLimited(ip);
+  if (burstWait) {
+    console.warn(`[auth] burst limit hit from ${ip}`);
+    tooManyAttempts(res, burstWait);
+    return;
+  }
+
+  const { blocked, recentFailures, retryAfter } = await recordAttempt(ip);
   if (blocked) {
     console.warn(`[auth] rate limit hit from ${ip}`);
-    res.status(429).json({ error: 'Too many attempts. Try again later.' });
+    tooManyAttempts(res, retryAfter);
     return;
   }
 
   const { password } = req.body as { password?: string };
   if (!password || !verifyAdminPassword(password)) {
-    await sleep(backoffMs(recentFailures));
     console.warn(`[auth] failed login from ${ip} (${recentFailures + 1} in window)`);
+    const nowLocked = lockout.fail(ip);
+    if (nowLocked) {
+      // No backoff on top: the wait is the lockout, and the screen is already counting it down.
+      tooManyAttempts(res, nowLocked);
+      return;
+    }
+    await sleep(backoffMs(recentFailures));
     res.status(401).json({ error: 'Invalid credentials' });
     return;
   }
 
+  lockout.clear(ip);
   await clearAttempts(ip);
   // The epoch is carried in the token and compared on every request, so bumping it via
   // /revoke-all invalidates everything issued before that moment.

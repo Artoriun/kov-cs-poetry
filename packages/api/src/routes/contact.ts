@@ -102,7 +102,7 @@ contactRouter.post('/', async (req, res) => {
   }
 
   const ip = req.ip ?? 'unknown';
-  if (rateLimited(ip)) {
+  if (rateLimited(ip) > 0) {
     res.status(429).json({ error: 'Too many messages, please try again later' });
     return;
   }

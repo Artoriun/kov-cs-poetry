@@ -95,33 +95,59 @@ describe('POST /api/auth/login', () => {
     assert.equal((await login(PASSWORD)).status, 503);
   });
 
-  test('repeated failures from one address are eventually rate-limited', async () => {
+  test('three wrong passwords in a row lock the login for thirty seconds', async () => {
     const ip = nextIp();
-    let sawLimit = false;
-    for (let i = 0; i < 14; i++) {
-      const res = await login('wrong', ip);
-      if (res.status === 429) {
-        sawLimit = true;
-        break;
-      }
-    }
-    assert.ok(sawLimit, 'a stream of wrong passwords should hit 429');
+    assert.equal((await login('wrong', ip)).status, 401, 'one mistype is free');
+    assert.equal((await login('wrong', ip)).status, 401, 'so is two');
+
+    const res = await login('wrong', ip);
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('retry-after'), '30');
+    const { retryAfter } = (await res.json()) as { retryAfter: number };
+    assert.equal(retryAfter, 30, 'the screen counts this down, so it has to be in the body too');
   });
+
+  test('even the right password waits out the lockout', async () => {
+    const ip = nextIp();
+    for (let i = 0; i < 3; i++) await login('wrong', ip);
+    assert.equal((await login(PASSWORD, ip)).status, 429);
+  });
+
+  test('two mistypes and then the right password is not a lockout', async () => {
+    const ip = nextIp();
+    await login('wrong', ip);
+    await login('wrong', ip);
+    assert.equal((await login(PASSWORD, ip)).status, 200);
+  });
+
+  // The fifteen-minute limits are not reachable from here any more: the lockout closes the
+  // door at three and retries while locked are not counted, so nothing gets as far as the
+  // tenth attempt without a thirty-second wait per group of three. They are covered directly
+  // in rateLimit.test.ts and authState.test.ts instead.
 
   test('a correct password clears the record, so one mistype costs nothing later', async () => {
     const ip = nextIp();
-    for (let i = 0; i < 3; i++) await login('wrong', ip);
+    for (let i = 0; i < 2; i++) await login('wrong', ip);
     assert.equal((await login(PASSWORD, ip)).status, 200);
     // Cleared: the next wrong attempt starts from zero rather than near the cap.
     assert.equal((await login('wrong', ip)).status, 401);
   });
 
   test('failures get slower, which costs a script and not a person', async () => {
+    // Measured as a difference rather than a total: the lockout ends the run at three, so
+    // only the first two failures carry backoff and a total would be mostly network noise.
     const ip = nextIp();
-    const started = Date.now();
-    for (let i = 0; i < 4; i++) await login('wrong', ip);
-    // 0 + 0.5 + 1 + 2 = 3.5s of deliberate delay.
-    assert.ok(Date.now() - started > 3000, `expected backoff, took ${Date.now() - started}ms`);
+    const timed = async () => {
+      const started = Date.now();
+      await login('wrong', ip);
+      return Date.now() - started;
+    };
+    const first = await timed();
+    const second = await timed();
+    assert.ok(
+      second - first > 300,
+      `expected the second to be slower: ${first}ms then ${second}ms`,
+    );
   });
 });
 
