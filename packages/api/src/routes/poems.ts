@@ -12,8 +12,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 poemsRouter.get('/', async (_req, res) => {
   try {
     const [poemsSnap, orderDoc] = await Promise.all([
-      db.collection('poems').get(),
-      db.collection('config').doc('poemOrder').get(),
+      db().collection('poems').get(),
+      db().collection('config').doc('poemOrder').get(),
     ]);
     const overrides: Record<
       string,
@@ -73,7 +73,7 @@ poemsRouter.post('/', requireAuth, async (_req, res) => {
     image:
       'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png',
   };
-  await db.collection('poems').doc(id).set(data);
+  await db().collection('poems').doc(id).set(data);
   res.json({ id, ...data });
 });
 
@@ -83,7 +83,7 @@ poemsRouter.put('/order', requireAuth, async (req, res) => {
     res.status(400).json({ error: 'ids must be an array' });
     return;
   }
-  await db.collection('config').doc('poemOrder').set({ ids });
+  await db().collection('config').doc('poemOrder').set({ ids });
   res.json({ ok: true });
 });
 
@@ -107,12 +107,12 @@ poemsRouter.put('/:id', requireAuth, async (req, res) => {
   if (deleted !== undefined) data.deleted = deleted;
   if (customSlides !== undefined) data.customSlides = customSlides;
   if (customSlidesEnabled !== undefined) data.customSlidesEnabled = customSlidesEnabled;
-  await db.collection('poems').doc(id).set(data, { merge: true });
+  await db().collection('poems').doc(id).set(data, { merge: true });
   res.json({ ok: true });
 });
 
 poemsRouter.delete('/:id', requireAuth, async (req, res) => {
-  await db.collection('poems').doc(req.params.id).delete();
+  await db().collection('poems').doc(req.params.id).delete();
   res.json({ ok: true });
 });
 

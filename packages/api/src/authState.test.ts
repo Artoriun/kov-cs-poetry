@@ -59,6 +59,28 @@ describe('login attempt tracking', () => {
     );
   });
 
+  test('the reported wait agrees with blocked, and shrinks as the window drains', async () => {
+    // Two fields saying the same thing is a drift hazard, so pin it: the login screen counts
+    // retryAfter down, and a nonzero one while blocked is false would leave a live form
+    // showing a countdown.
+    for (let i = 0; i < 10; i++) {
+      const open = await recordAttempt('4.4.4.4');
+      assert.equal(open.retryAfter, 0, 'nothing to wait for while attempts remain');
+    }
+    const first = await recordAttempt('4.4.4.4');
+    assert.equal(first.blocked, true);
+    assert.ok(first.retryAfter > 0 && first.retryAfter <= 15 * 60, `got ${first.retryAfter}s`);
+
+    // The window is fifteen minutes and the test cannot wait it out, so the check is that
+    // the number tracks real time rather than being the window length restated.
+    await new Promise((r) => setTimeout(r, 1100));
+    const later = await recordAttempt('4.4.4.4');
+    assert.ok(
+      later.retryAfter < first.retryAfter,
+      `${first.retryAfter}s then ${later.retryAfter}s`,
+    );
+  });
+
   test('fails open when the store is unreachable', async () => {
     // A lockout that fires exactly when the database is down would be worse than the
     // window it closes — the owner could not get in to fix anything.
@@ -66,6 +88,7 @@ describe('login attempt tracking', () => {
     const state = await recordAttempt('1.2.3.4');
     assert.equal(state.blocked, false);
     assert.equal(state.recentFailures, 0);
+    assert.equal(state.retryAfter, 0);
   });
 });
 

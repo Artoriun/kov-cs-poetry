@@ -36,7 +36,7 @@ let store: AuthStore | null = null;
 async function getStore(): Promise<AuthStore> {
   if (!store) {
     const { db } = await import('./firebaseAdmin');
-    store = db as unknown as AuthStore;
+    store = db() as unknown as AuthStore;
   }
   return store;
 }
@@ -56,6 +56,11 @@ export interface AttemptState {
   blocked: boolean;
   /** Failures inside the current window, used to scale the delay before answering. */
   recentFailures: number;
+  /**
+   * Seconds until this address may try again. Zero unless `blocked` — the two always agree,
+   * and the pairing is pinned in authState.test.ts so they cannot drift apart.
+   */
+  retryAfter: number;
 }
 
 export async function recordAttempt(ip: string): Promise<AttemptState> {
@@ -67,14 +72,17 @@ export async function recordAttempt(ip: string): Promise<AttemptState> {
     const times = previous.filter((t) => now - t < WINDOW_MS);
     if (times.length >= MAX_ATTEMPTS) {
       await ref.set({ times, updated: now });
-      return { blocked: true, recentFailures: times.length };
+      // A rolling window, so the wait is until the oldest attempt in it ages out — not the
+      // full fifteen minutes restated on every rejection.
+      const retryAfter = Math.max(1, Math.ceil((times[0] + WINDOW_MS - now) / 1000));
+      return { blocked: true, recentFailures: times.length, retryAfter };
     }
     times.push(now);
     await ref.set({ times, updated: now });
-    return { blocked: false, recentFailures: times.length - 1 };
+    return { blocked: false, recentFailures: times.length - 1, retryAfter: 0 };
   } catch (err) {
     console.warn(`[auth] could not read attempt history (${(err as Error).message}); failing open`);
-    return { blocked: false, recentFailures: 0 };
+    return { blocked: false, recentFailures: 0, retryAfter: 0 };
   }
 }
 
