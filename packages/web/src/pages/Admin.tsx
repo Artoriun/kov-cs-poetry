@@ -21,6 +21,7 @@ import {
   apiUpdateOrder,
   apiUpdatePoem,
   apiUploadImage,
+  TooManyAttemptsError,
 } from '../lib/api';
 import { clearToken, readToken, SESSION_EXPIRED_EVENT, storeToken } from '../lib/token';
 import { useTouchReorder } from '../lib/useTouchReorder';
@@ -151,6 +152,16 @@ function LoginPage({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  /** Seconds left on the three-strikes lockout; 0 when the form is usable. */
+  const [lockedFor, setLockedFor] = useState(0);
+
+  // A timeout that reschedules itself rather than an interval. Over thirty seconds the drift
+  // is invisible, and this needs no separate path for the moment it reaches zero.
+  useEffect(() => {
+    if (!lockedFor) return;
+    const id = setTimeout(() => setLockedFor(lockedFor - 1), 1000);
+    return () => clearTimeout(id);
+  }, [lockedFor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,12 +170,21 @@ function LoginPage({
     try {
       const token = await apiLogin(password);
       onLogin(token);
-    } catch {
-      setError(t.admin.incorrectPassword);
+    } catch (err) {
+      if (err instanceof TooManyAttemptsError) {
+        // Shown as "incorrect password" this is a support call: someone typing a password
+        // they know is right, three times, concludes the site is broken.
+        setLockedFor(err.retryAfter ?? 0);
+        if (!err.retryAfter) setError(t.admin.tooManyAttempts);
+      } else {
+        setError(t.admin.incorrectPassword);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const lockMessage = lockedFor ? t.admin.lockedOut.replace('{seconds}', String(lockedFor)) : '';
 
   return (
     <div className="admin-page">
@@ -191,6 +211,7 @@ function LoginPage({
                 className="admin-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={lockedFor > 0}
                 autoFocus
                 required
               />
@@ -205,20 +226,26 @@ function LoginPage({
             </div>
           </div>
           <AnimatePresence>
-            {error && (
+            {(lockMessage || error) && (
               <motion.p
                 key="error"
                 className="admin-login-error"
+                role="status"
+                aria-live="polite"
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {error}
+                {lockMessage || error}
               </motion.p>
             )}
           </AnimatePresence>
-          <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
+          <button
+            type="submit"
+            className="admin-btn admin-btn-primary"
+            disabled={loading || lockedFor > 0}
+          >
             {loading ? t.admin.loggingIn : t.admin.logIn}
           </button>
         </motion.form>

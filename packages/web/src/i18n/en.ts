@@ -95,6 +95,8 @@ export const en = {
     show: 'Show',
     hide: 'Hide',
     incorrectPassword: 'Incorrect password.',
+    lockedOut: 'Too many wrong passwords. Try again in {seconds}s.',
+    tooManyAttempts: 'Too many attempts. Try again later.',
     sessionExpired: 'Your session has ended. Log in again to continue.',
     loggingIn: 'Logging in…',
     logIn: 'Log in',

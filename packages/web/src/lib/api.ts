@@ -62,12 +62,33 @@ export async function apiRefreshToken(): Promise<void> {
   }
 }
 
+/**
+ * The login is throttled, and the screen has to say so — "incorrect password" in front of
+ * someone who typed it correctly is how a lockout gets reported as a broken login.
+ * `retryAfter` is the seconds left, present only for the fixed thirty-second lockout: the
+ * two window-based limits behind it cannot say when they will let go.
+ */
+export class TooManyAttemptsError extends Error {
+  readonly retryAfter?: number;
+  constructor(retryAfter?: number) {
+    super('Too many attempts');
+    this.name = 'TooManyAttemptsError';
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function apiLogin(password: string): Promise<string> {
   const res = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
+  if (res.status === 429) {
+    const body = (await res.json().catch(() => ({}))) as { retryAfter?: unknown };
+    throw new TooManyAttemptsError(
+      typeof body.retryAfter === 'number' ? body.retryAfter : undefined,
+    );
+  }
   if (!res.ok) throw new Error('Invalid credentials');
   const { token } = (await res.json()) as { token: string };
   return token;
