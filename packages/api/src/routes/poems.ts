@@ -83,7 +83,16 @@ poemsRouter.put('/order', requireAuth, async (req, res) => {
     res.status(400).json({ error: 'ids must be an array' });
     return;
   }
-  await db().collection('config').doc('poemOrder').set({ ids });
+  try {
+    await db().collection('config').doc('poemOrder').set({ ids });
+  } catch (err) {
+    // Express 4 does not catch a rejected async handler, and Node ends the process on an
+    // unhandled rejection — so without this a Firestore blip during a reorder answered
+    // nothing at all and took the API with it, rather than failing the one request.
+    console.error('[poems] could not save the order:', err);
+    res.status(500).json({ error: 'Could not save the order' });
+    return;
+  }
   res.json({ ok: true });
 });
 
