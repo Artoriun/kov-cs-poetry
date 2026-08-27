@@ -124,6 +124,46 @@ export function useTouchReorder({
         }
       };
 
+      // The page is not always the thing that has to move. In landscape the sidebar is a
+      // 396px sticky column with its own overflow — five of thirty-four entries visible — so
+      // scrolling the window leaves it exactly where it was and everything past the fifth
+      // entry stays unreachable. Whatever is scrollable under the finger is what should move.
+      const scrollableUnder = (x: number, y: number): HTMLElement | null => {
+        const g = ghost.current;
+        if (g) g.style.visibility = 'hidden';
+        let el = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (g) g.style.visibility = '';
+        while (el && el !== document.body && el !== document.documentElement) {
+          // Skip form controls. A poem's textarea scrolls, sits directly under the finger for
+          // most of a card, and scrolling its text while dragging the card is never what was
+          // meant — the page should move instead.
+          const tag = el.tagName;
+          if (tag !== 'TEXTAREA' && tag !== 'INPUT' && tag !== 'SELECT') {
+            const oy = getComputedStyle(el).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+          }
+          el = el.parentElement;
+        }
+        return null; // nothing nested: the window scrolls
+      };
+
+      // Edges measured against whatever is scrolling, clamped to the part of it you can
+      // actually see. A viewport-relative margin inside a 396px column would call almost all
+      // of it an edge — and in landscape the sidebar's own rect runs from 195 to 591 in a
+      // 412px viewport, so its bottom edge is 179px below the screen and no finger can ever
+      // get near it. Measured against the visible band instead, the edge is where it looks.
+      const edgeBand = (box: HTMLElement | null) => {
+        const r = box?.getBoundingClientRect();
+        const top = Math.max(r ? r.top : 0, 0);
+        const bottom = Math.min(r ? r.bottom : window.innerHeight, window.innerHeight);
+        return { top, bottom, edge: Math.min(EDGE_PX, Math.max(bottom - top, 0) / 4) };
+      };
+
+      const nearEdge = (x: number, y: number) => {
+        const { top, bottom, edge } = edgeBand(scrollableUnder(x, y));
+        return y - top < edge || bottom - y < edge;
+      };
+
       const stopEdgeScroll = () => {
         cancelAnimationFrame(edgeFrame.current);
         edgeFrame.current = 0;
@@ -131,18 +171,23 @@ export function useTouchReorder({
 
       const edgeScroll = () => {
         if (!active.current) return stopEdgeScroll();
-        const fromTop = lastY;
-        const fromBottom = window.innerHeight - lastY;
-        const dy = fromTop < EDGE_PX ? -SCROLL_STEP_PX : fromBottom < EDGE_PX ? SCROLL_STEP_PX : 0;
+        const box = scrollableUnder(lastX, lastY);
+        const { top, bottom, edge } = edgeBand(box);
+        const dy =
+          lastY - top < edge ? -SCROLL_STEP_PX : bottom - lastY < edge ? SCROLL_STEP_PX : 0;
         if (!dy) return stopEdgeScroll();
-        const before = window.scrollY;
-        // 'instant' matters: the page sets scroll-behavior: smooth, so an ordinary scrollBy
-        // animates and leaves window.scrollY unchanged for this frame. The end-of-page check
-        // below then read that as "cannot scroll" and killed the loop after a single step —
-        // which looked like auto-scroll not working at all.
-        window.scrollTo({ top: before + dy, behavior: 'instant' });
-        // Now that the scroll is synchronous, an unchanged position really does mean the end.
-        if (window.scrollY === before) return stopEdgeScroll();
+
+        const before = box ? box.scrollTop : window.scrollY;
+        if (box) {
+          box.scrollTop = before + dy;
+        } else {
+          // 'instant' matters: the page sets scroll-behavior: smooth, so an ordinary scrollBy
+          // animates and leaves window.scrollY unchanged for this frame. The end check below
+          // read that as "cannot scroll" and killed the loop after a single step.
+          window.scrollTo({ top: before + dy, behavior: 'instant' });
+        }
+        // Both paths are synchronous, so an unchanged position really does mean the end.
+        if ((box ? box.scrollTop : window.scrollY) === before) return stopEdgeScroll();
         const g = ghost.current;
         // The ghost is position:fixed, so it stays under the finger while the page moves.
         if (g) g.style.top = `${lastY - offsetY}px`;
@@ -175,7 +220,7 @@ export function useTouchReorder({
         hitTest();
         // Near an edge the page has to come to the finger. A card is taller than the space
         // left below it on a phone, so without this the next one is not reachable at all.
-        if ((lastY < EDGE_PX || window.innerHeight - lastY < EDGE_PX) && !edgeFrame.current) {
+        if (!edgeFrame.current && nearEdge(lastX, lastY)) {
           edgeFrame.current = requestAnimationFrame(edgeScroll);
         }
       };
