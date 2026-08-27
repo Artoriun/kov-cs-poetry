@@ -1205,6 +1205,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                               .join(' ') || undefined
                           }
                           draggable
+                          // Android raises its selection and copy UI from the contextmenu a
+                          // long press fires, which lands on top of the drag that press was
+                          // starting. user-select: none is not enough on its own — the grid
+                          // tiles have suppressed this since before the sidebar existed, and
+                          // it is the only reason they do not have the same problem.
+                          onContextMenu={(e) => e.preventDefault()}
                           onDragStart={() => setDragIndex(i)}
                           onDragEnd={() => {
                             setDragIndex(null);
