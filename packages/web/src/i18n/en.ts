@@ -121,6 +121,7 @@ export const en = {
     pageBreakHintCustomSlides: 'With Custom Slides on, each slide below is already its own page.',
     pageBreakHintCustomSlidesLinked: (marker: string) =>
       `The slides below follow the ${marker} marks in this text — edit it and they update.`,
+    slideLabel: 'Slide {n}',
     customSlides: 'Custom Slides',
     original: 'Original',
     save: 'Save',

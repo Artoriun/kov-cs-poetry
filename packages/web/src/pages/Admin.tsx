@@ -386,8 +386,11 @@ function PoemCard({
 
         <div className="admin-poem-fields">
           <div>
-            <span className="admin-field-label">{t.admin.titleLabel}</span>
+            <label className="admin-field-label" htmlFor={`admin-title-${poem.id}`}>
+              {t.admin.titleLabel}
+            </label>
             <input
+              id={`admin-title-${poem.id}`}
               type="text"
               className="admin-title-input"
               value={edit.title}
@@ -395,8 +398,11 @@ function PoemCard({
             />
           </div>
           <div>
-            <span className="admin-field-label">{t.admin.poemText}</span>
+            <label className="admin-field-label" htmlFor={`admin-text-${poem.id}`}>
+              {t.admin.poemText}
+            </label>
             <textarea
+              id={`admin-text-${poem.id}`}
               className="admin-overlay-textarea"
               value={edit.overlay}
               onChange={(e) => onChange(overlayEdit(edit, e.target.value))}
@@ -456,8 +462,14 @@ function PoemCard({
                   key={idx}
                   className="admin-slide-row"
                 >
-                  <span className="admin-slide-num">{idx + 1}</span>
+                  <span className="admin-slide-num" aria-hidden="true">
+                    {idx + 1}
+                  </span>
                   <textarea
+                    // The number beside it is the visual label, and "1" on its own is a poor
+                    // thing to hear read out. This names the field properly without changing
+                    // what is on screen.
+                    aria-label={t.admin.slideLabel.replace('{n}', String(idx + 1))}
                     className="admin-overlay-textarea admin-slide-textarea"
                     value={slide}
                     onChange={(e) => {
