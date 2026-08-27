@@ -24,6 +24,23 @@ export function createFakeStore(): AuthStore & {
   return {
     collection(name: string) {
       return {
+        /**
+         * Collection-level read, which the poems route uses to fetch every override at once.
+         * Shaped like a real QuerySnapshot's forEach — id and data() per document — because
+         * that is all the route touches.
+         */
+        async get() {
+          fail();
+          const prefix = `${name}/`;
+          const rows = [...docs.entries()]
+            .filter(([key]) => key.startsWith(prefix))
+            .map(([key, value]) => ({ id: key.slice(prefix.length), data: () => value }));
+          return {
+            forEach: (fn: (doc: { id: string; data: () => unknown }) => void) => {
+              for (const row of rows) fn(row);
+            },
+          };
+        },
         doc(id: string) {
           const key = `${name}/${id}`;
           return {

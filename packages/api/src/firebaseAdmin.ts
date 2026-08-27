@@ -2,6 +2,18 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { type Firestore, getFirestore } from 'firebase-admin/firestore';
 
 let cached: Firestore | null = null;
+let override: Firestore | null = null;
+
+/**
+ * Test seam: pass a stand-in, or null to restore. Nothing in the running app calls this.
+ *
+ * Without it the poem routes could only be tested with no Firestore at all, which exercises
+ * the fallback and nothing else — so `PUT /order`, the endpoint every drag in the admin
+ * portal writes through, had no way to be tested and duly never was.
+ */
+export function setStore(store: Firestore | null): void {
+  override = store;
+}
 
 /**
  * The Firestore handle, built on first use rather than at import.
@@ -20,6 +32,7 @@ let cached: Firestore | null = null;
  * than the default export, which stopped carrying `.credential` and `.firestore` in v13.
  */
 export function db(): Firestore {
+  if (override) return override;
   if (!cached) {
     const app = initializeApp({
       credential: cert({
