@@ -51,6 +51,18 @@ async function measureH1(url, javaScriptEnabled) {
   const page = await ctx.newPage();
   await page.goto(url, { waitUntil: 'load' });
   if (javaScriptEnabled) await page.waitForTimeout(500); // let hydration commit
+  /**
+   * Both passes wait for the webfont, or this gate reports a difference that is only timing.
+   *
+   * The font stylesheet ships `swap`, so a heading paints in the fallback face and reflows
+   * when the real one arrives. `load` does not wait for a font requested by CSS, so the JS
+   * pass — which has a timeout — nearly always measured the real face while the no-JS pass
+   * sometimes measured the fallback, whose wider metrics can wrap a heading onto an extra
+   * line. Found in qalor-website, where it failed about one run in fifteen and passed on
+   * retry; this repo has the same gate and the same gap, and was only luckier in its
+   * headings.
+   */
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const measured = await page
     .locator('h1')
     .first()
