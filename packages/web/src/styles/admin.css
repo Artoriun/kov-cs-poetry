@@ -250,6 +250,44 @@ html.dark-mode .admin-delete-btn:hover {
   pointer-events: none;
 }
 
+/*
+ * A hidden poem: still in the portal, in its place in the order, but off the site until
+ * someone puts it back. Dimmed rather than removed — the whole point of the state is that it
+ * stays visible to the person who can undo it.
+ *
+ * Sits at the right so it can share the row with the featured label, which a poem can carry
+ * at the same time, and clears the round button in the corner.
+ */
+.admin-hidden-label {
+  position: absolute;
+  top: -20px;
+  right: 24px;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/*
+ * Dimming the children rather than the card, because opacity on the card would cap everything
+ * inside it — the restore button could not then set itself back to full, and the way out of
+ * the state would be as faint as the state itself.
+ */
+.admin-poem-card--hidden > *:not(.admin-restore-btn):not(.admin-hidden-label) {
+  opacity: 0.45;
+}
+
+.admin-restore-btn {
+  font-size: 15px;
+}
+
+.admin-restore-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
 .admin-poem-card:active {
   cursor: grabbing;
 }

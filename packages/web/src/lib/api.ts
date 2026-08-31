@@ -100,6 +100,26 @@ export async function apiGetPoems(): Promise<Poem[]> {
   return res.json() as Promise<Poem[]>;
 }
 
+/**
+ * The admin's copy of the list, which includes hidden poems. The public one filters them out,
+ * so loading the portal from it meant a hidden poem was invisible to the only person who could
+ * bring it back.
+ *
+ * Falls back to the public list on a 404: the API and the site deploy from the same push but
+ * not in the same instant, and a portal showing nothing at all during that window looks a great
+ * deal like data loss.
+ */
+export async function apiGetAllPoems(): Promise<Poem[]> {
+  const res = await fetch(`${BASE}/api/poems/all`, { headers: authHeader() });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
+  if (res.status === 404) return apiGetPoems();
+  if (!res.ok) throw new Error('Failed to fetch poems');
+  return res.json() as Promise<Poem[]>;
+}
+
 export interface ContactMessage {
   name: string;
   email: string;
@@ -196,16 +216,4 @@ export async function apiUpdateOrder(ids: string[]): Promise<void> {
     throw new Error('Unauthorized');
   }
   if (!res.ok) throw new Error('Failed to update order');
-}
-
-export async function apiResetPoem(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/poems/${id}`, {
-    method: 'DELETE',
-    headers: authHeader(),
-  });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error('Unauthorized');
-  }
-  if (!res.ok) throw new Error('Failed to reset poem');
 }

@@ -9,56 +9,80 @@ export const poemsRouter = Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+/**
+ * The merged poem list: the bundled poems with their Firestore overrides applied, plus any
+ * poem written in the portal, in the saved order.
+ *
+ * `includeHidden` is what separates the two callers. A hidden poem must not reach a visitor,
+ * but it has to reach the admin — otherwise hiding one removes it from the portal as well and
+ * there is nothing left that could put it back. Hidden poems keep their place in the order
+ * rather than being pulled out of it, so restoring one returns it to where it was.
+ */
+async function loadPoems(includeHidden: boolean) {
+  const [poemsSnap, orderDoc] = await Promise.all([
+    db().collection('poems').get(),
+    db().collection('config').doc('poemOrder').get(),
+  ]);
+  const overrides: Record<
+    string,
+    {
+      title?: string;
+      image?: string;
+      overlay?: string;
+      featured?: boolean;
+      deleted?: boolean;
+      customSlides?: string[];
+      customSlidesEnabled?: boolean;
+    }
+  > = {};
+  poemsSnap.forEach((doc) => {
+    overrides[doc.id] = doc.data() as (typeof overrides)[string];
+  });
+
+  const hardcodedIds = new Set(POEMS.map((p) => p.id));
+  const merged = POEMS.map((p) => (overrides[p.id] ? { ...p, ...overrides[p.id] } : p)).filter(
+    (p) => includeHidden || !p.deleted,
+  );
+  const custom = Object.entries(overrides)
+    .filter(([id, d]) => !hardcodedIds.has(id) && (includeHidden || !d.deleted))
+    .map(([id, d]) => ({
+      id,
+      title: d.title ?? 'New Poem',
+      image:
+        d.image ||
+        'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png',
+      overlay: d.overlay,
+      featured: d.featured,
+      // Carried so the portal can mark the card. A bundled poem gets this from the spread
+      // above; without it here, a poem written in the portal would come back looking visible
+      // and its only copy would stay unreachable.
+      deleted: d.deleted,
+      customSlides: d.customSlides,
+      customSlidesEnabled: d.customSlidesEnabled,
+    }));
+  const all = [...merged, ...custom];
+
+  if (!orderDoc.exists) return all;
+  const ids = orderDoc.data()?.ids as string[];
+  const map = new Map(all.map((p) => [p.id, p]));
+  const sorted = ids.map((id) => map.get(id)).filter(Boolean) as typeof all;
+  const inOrder = new Set(ids);
+  return [...sorted, ...all.filter((p) => !inOrder.has(p.id))];
+}
+
 poemsRouter.get('/', async (_req, res) => {
   try {
-    const [poemsSnap, orderDoc] = await Promise.all([
-      db().collection('poems').get(),
-      db().collection('config').doc('poemOrder').get(),
-    ]);
-    const overrides: Record<
-      string,
-      {
-        title?: string;
-        image?: string;
-        overlay?: string;
-        featured?: boolean;
-        deleted?: boolean;
-        customSlides?: string[];
-        customSlidesEnabled?: boolean;
-      }
-    > = {};
-    poemsSnap.forEach((doc) => {
-      overrides[doc.id] = doc.data() as (typeof overrides)[string];
-    });
+    res.json(await loadPoems(false));
+  } catch {
+    res.json(POEMS);
+  }
+});
 
-    const hardcodedIds = new Set(POEMS.map((p) => p.id));
-    const merged = POEMS.map((p) => (overrides[p.id] ? { ...p, ...overrides[p.id] } : p)).filter(
-      (p) => !p.deleted,
-    );
-    const custom = Object.entries(overrides)
-      .filter(([id, d]) => !hardcodedIds.has(id) && !d.deleted)
-      .map(([id, d]) => ({
-        id,
-        title: d.title ?? 'New Poem',
-        image:
-          d.image ||
-          'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png',
-        overlay: d.overlay,
-        featured: d.featured,
-        customSlides: d.customSlides,
-        customSlidesEnabled: d.customSlidesEnabled,
-      }));
-    const all = [...merged, ...custom];
-
-    if (orderDoc.exists) {
-      const ids = orderDoc.data()?.ids as string[];
-      const map = new Map(all.map((p) => [p.id, p]));
-      const sorted = ids.map((id) => map.get(id)).filter(Boolean) as typeof all;
-      const inOrder = new Set(ids);
-      res.json([...sorted, ...all.filter((p) => !inOrder.has(p.id))]);
-    } else {
-      res.json(all);
-    }
+// Above the /:id routes. Nothing shadows it today because no GET /:id exists, but a literal
+// path registered after a parameter sibling is a trap that has already cost time elsewhere.
+poemsRouter.get('/all', requireAuth, async (_req, res) => {
+  try {
+    res.json(await loadPoems(true));
   } catch {
     res.json(POEMS);
   }
@@ -73,7 +97,13 @@ poemsRouter.post('/', requireAuth, async (_req, res) => {
     image:
       'https://res.cloudinary.com/dgk299isx/image/upload/v1781699336/1000008716_LE_ultra_custom_kcfcsj.png',
   };
-  await db().collection('poems').doc(id).set(data);
+  try {
+    await db().collection('poems').doc(id).set(data);
+  } catch (err) {
+    console.error('[poems] could not create a poem:', err);
+    res.status(500).json({ error: 'Could not create the poem' });
+    return;
+  }
   res.json({ id, ...data });
 });
 
@@ -116,12 +146,33 @@ poemsRouter.put('/:id', requireAuth, async (req, res) => {
   if (deleted !== undefined) data.deleted = deleted;
   if (customSlides !== undefined) data.customSlides = customSlides;
   if (customSlidesEnabled !== undefined) data.customSlidesEnabled = customSlidesEnabled;
-  await db().collection('poems').doc(id).set(data, { merge: true });
+  try {
+    await db().collection('poems').doc(id).set(data, { merge: true });
+  } catch (err) {
+    // Express 4 does not catch a rejected async handler, so without this the request is never
+    // answered at all — the portal hangs on every save while Firestore is unwell, rather than
+    // being told the save failed. This route runs on every save there is.
+    console.error('[poems] could not save the poem:', err);
+    res.status(500).json({ error: 'Could not save the poem' });
+    return;
+  }
   res.json({ ok: true });
 });
 
+/**
+ * Removes the override document outright, which for a bundled poem means reverting it to the
+ * text in packages/shared and for a poem written in the portal means losing it. The portal
+ * deliberately does not call this — it hides poems instead, which is undoable. Kept as the
+ * manual escape hatch.
+ */
 poemsRouter.delete('/:id', requireAuth, async (req, res) => {
-  await db().collection('poems').doc(req.params.id).delete();
+  try {
+    await db().collection('poems').doc(req.params.id).delete();
+  } catch (err) {
+    console.error('[poems] could not delete the poem:', err);
+    res.status(500).json({ error: 'Could not delete the poem' });
+    return;
+  }
   res.json({ ok: true });
 });
 

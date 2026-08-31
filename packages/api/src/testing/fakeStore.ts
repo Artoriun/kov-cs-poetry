@@ -52,9 +52,14 @@ export function createFakeStore(): AuthStore & {
                 data: () => value,
               };
             },
-            async set(value: Record<string, unknown>) {
+            /**
+             * `merge` is honoured because the poems route depends on it: every admin save is a
+             * partial write, and a stand-in that replaced the document instead would let a test
+             * pass while the real thing dropped every field the save did not mention.
+             */
+            async set(value: Record<string, unknown>, options?: { merge?: boolean }) {
               fail();
-              docs.set(key, value);
+              docs.set(key, options?.merge ? { ...docs.get(key), ...value } : value);
               return undefined;
             },
             async delete() {
