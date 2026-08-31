@@ -16,6 +16,7 @@ import { usePoemsContext } from '../context/PoemsContext';
 import { useT } from '../i18n';
 import {
   apiAddPoem,
+  apiGetAllPoems,
   apiLogin,
   apiRefreshToken,
   apiUpdateOrder,
@@ -269,7 +270,8 @@ function PoemCard({
   onChange,
   onSave,
   onToggleFeature,
-  onDelete,
+  onHide,
+  onRestore,
   onCancelCustomSlides,
   status,
   onDragStart,
@@ -281,7 +283,8 @@ function PoemCard({
   onChange: (patch: Partial<EditState>) => void;
   onSave: () => void;
   onToggleFeature: () => void;
-  onDelete: () => void;
+  onHide: () => void;
+  onRestore: () => void;
   onCancelCustomSlides: () => void;
   status: SaveStatus;
   onDragStart: () => void;
@@ -318,7 +321,7 @@ function PoemCard({
   return (
     <>
       <div
-        className={`admin-poem-card${isDragging ? ' dragging' : ''}${poem.featured ? ' poem-highlight-static' : ''}`}
+        className={`admin-poem-card${isDragging ? ' dragging' : ''}${poem.featured ? ' poem-highlight-static' : ''}${poem.deleted ? ' admin-poem-card--hidden' : ''}`}
         draggable
         onMouseDown={(e) => {
           const card = e.currentTarget as HTMLElement;
@@ -343,14 +346,32 @@ function PoemCard({
         }}
       >
         {poem.featured && <span className="admin-featured-label">{t.admin.featured}</span>}
-        <button
-          type="button"
-          className="admin-delete-btn"
-          onClick={onDelete}
-          title={t.admin.deletePoem}
-        >
-          ×
-        </button>
+        {poem.deleted && <span className="admin-hidden-label">{t.admin.hidden}</span>}
+        {/* Hiding asks first, restoring does not: one takes a poem off the site, the other
+            puts it back, and only one of those is worth interrupting someone over.
+            ponytail: the fields stay editable while hidden — fixing a poem up before putting
+            it back is the likeliest reason to be looking at a hidden card at all. */}
+        {poem.deleted ? (
+          <button
+            type="button"
+            className="admin-delete-btn admin-restore-btn"
+            onClick={onRestore}
+            title={t.admin.restorePoem}
+            aria-label={t.admin.restorePoem}
+          >
+            ↩
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="admin-delete-btn"
+            onClick={onHide}
+            title={t.admin.hidePoem}
+            aria-label={t.admin.hidePoem}
+          >
+            ×
+          </button>
+        )}
         <div className="admin-poem-image-col">
           <span className="admin-field-label">{t.admin.poemPreview}</span>
           {/* Same overlay preview as the grid cards, so the list shows how the text sits on
@@ -688,7 +709,13 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [draftIds, setDraftIds] = useState<Set<string>>(new Set());
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingHideId, setPendingHideId] = useState<string | null>(null);
+  /**
+   * The portal's own copy of the list. It differs from the context's in one way that matters:
+   * it includes hidden poems. The context feeds the public pages too, so it cannot carry them.
+   * Null until the first fetch settles, which is what the init effect below waits on.
+   */
+  const [adminPoems, setAdminPoems] = useState<Poem[] | null>(null);
   // State (not ref) so setInitialized + setOrderedPoems batch into one commit,
   // guaranteeing cards mount fresh with initial="hidden" on both login and refresh
   const [initialized, setInitialized] = useState(false);
@@ -778,14 +805,28 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     return () => clearTimeout(timer);
   }, [mode, scrollTargetId]);
 
+  useEffect(() => {
+    if (loading || adminPoems) return;
+    let cancelled = false;
+    apiGetAllPoems()
+      .then((fresh) => !cancelled && setAdminPoems(fresh))
+      // The public list is the fallback rather than an empty dashboard. It is missing the
+      // hidden poems, which is a smaller problem than a portal that appears to have lost
+      // every poem the moment the API has a bad minute.
+      .catch(() => !cancelled && setAdminPoems(poems));
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, poems, adminPoems]);
+
   // Initialize once when live poem data loads
   useEffect(() => {
-    if (initialized || loading) return;
+    if (initialized || !adminPoems) return;
     setInitialized(true);
-    setOrderedPoems(poems);
+    setOrderedPoems(adminPoems);
     setEdits(
       Object.fromEntries(
-        poems.map((p) => [
+        adminPoems.map((p) => [
           p.id,
           {
             title: p.title,
@@ -799,7 +840,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         ]),
       ),
     );
-  }, [poems, loading, initialized]);
+  }, [adminPoems, initialized]);
 
   // After refreshPoems: update existing poems and append any newly added ones
   useEffect(() => {
@@ -949,9 +990,28 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setDraftIds((prev) => new Set([...prev, tempId]));
   };
 
-  const handleDelete = async (id: string) => {
-    setOrderedPoems((prev) => prev.filter((p) => p.id !== id));
+  /**
+   * Takes a poem off the site without destroying it.
+   *
+   * This used to drop the card as well, which made it a one-way door: the poem left the site
+   * and the portal at the same moment, and for a poem written here the text then existed only
+   * in a database row nobody could reach. The card now stays, marked, with a way back.
+   */
+  const setHidden = async (id: string, deleted: boolean) => {
+    setOrderedPoems((prev) => prev.map((p) => (p.id === id ? { ...p, deleted } : p)));
+    try {
+      await apiUpdatePoem(id, { deleted });
+    } catch {
+      setOrderedPoems((prev) => prev.map((p) => (p.id === id ? { ...p, deleted: !deleted } : p)));
+    }
+    await refreshPoems();
+  };
+
+  const handleHide = async (id: string) => {
+    // A draft has never been saved, so there is nothing to hide and nothing to lose —
+    // discarding it is the only thing the button can mean.
     if (draftIds.has(id)) {
+      setOrderedPoems((prev) => prev.filter((p) => p.id !== id));
       setDraftIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -959,12 +1019,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       });
       return;
     }
-    try {
-      await apiUpdatePoem(id, { deleted: true });
-      await refreshPoems();
-    } catch {
-      await refreshPoems();
-    }
+    await setHidden(id, true);
   };
 
   const handleToggleFeature = async (id: string) => {
@@ -1216,7 +1271,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       onChange={(patch) => patchEdit(poem.id, patch)}
                       onSave={() => handleSave(poem.id)}
                       onToggleFeature={() => handleToggleFeature(poem.id)}
-                      onDelete={() => setPendingDeleteId(poem.id)}
+                      onHide={() => setPendingHideId(poem.id)}
+                      onRestore={() => setHidden(poem.id, false)}
                       onCancelCustomSlides={() => handleCancelCustomSlides(poem.id)}
                       status={statuses[poem.id] ?? 'idle'}
                       onDragStart={() => setDragIndex(i)}
@@ -1250,6 +1306,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                                 ? 'drop-target'
                                 : '',
                               poem.id === activeTocId ? 'toc-active' : '',
+                              // Otherwise a hidden poem reads as a live one in the list of
+                              // contents, which is the confusion this whole change is about.
+                              poem.deleted ? 'admin-poem-card--hidden' : '',
                             ]
                               .filter(Boolean)
                               .join(' ') || undefined
@@ -1343,7 +1402,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <p className="admin-grid-card-title">{edits[poem.id]?.title ?? poem.title}</p>
                       <div
                         id={`admin-grid-${poem.id}`}
-                        className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}`}
+                        className={`admin-grid-card${poem.featured ? ' poem-highlight-static' : ''}${poem.deleted ? ' admin-poem-card--hidden' : ''}`}
                       >
                         {/* Live feature toggle badge, absolutely positioned over the image so
                         it never shifts the layout — images stay aligned whether featured or not.
@@ -1395,14 +1454,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* AnimatePresence lets the modal animate out before unmounting */}
       <AnimatePresence>
-        {pendingDeleteId && (
+        {pendingHideId && (
           <motion.div
             className="admin-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            onClick={() => setPendingDeleteId(null)}
+            onClick={() => setPendingHideId(null)}
           >
             <motion.div
               className="admin-modal"
@@ -1412,25 +1471,28 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               transition={{ duration: 0.18 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="admin-modal-title">{t.admin.deletePoem}</p>
-              <p className="admin-modal-body">{t.admin.deletePoemBody}</p>
+              {/* A draft has never been saved, so discarding it really is permanent —
+                  promising it can be brought back "whenever you like" would be the same
+                  one-way door this change exists to close. */}
+              <p className="admin-modal-title">
+                {draftIds.has(pendingHideId) ? t.admin.discardDraft : t.admin.hidePoem}
+              </p>
+              <p className="admin-modal-body">
+                {draftIds.has(pendingHideId) ? t.admin.discardDraftBody : t.admin.hidePoemBody}
+              </p>
               <div className="admin-modal-actions">
-                <button
-                  type="button"
-                  className="admin-btn"
-                  onClick={() => setPendingDeleteId(null)}
-                >
+                <button type="button" className="admin-btn" onClick={() => setPendingHideId(null)}>
                   {t.admin.cancel}
                 </button>
                 <button
                   type="button"
                   className="admin-btn admin-btn-danger"
                   onClick={() => {
-                    handleDelete(pendingDeleteId);
-                    setPendingDeleteId(null);
+                    handleHide(pendingHideId);
+                    setPendingHideId(null);
                   }}
                 >
-                  {t.admin.delete}
+                  {draftIds.has(pendingHideId) ? t.admin.delete : t.admin.hide}
                 </button>
               </div>
             </motion.div>

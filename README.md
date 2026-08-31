@@ -92,8 +92,13 @@ npm run backup-poems     # writes the live poems to backups/
 
 ## Admin portal
 
-Password login with JWT auth at `/admin`. Create, edit, delete and drag-to-reorder poems,
+Password login with JWT auth at `/admin`. Create, edit, hide and drag-to-reorder poems,
 feature them on the home carousel, and upload images.
+
+Hiding takes a poem off the site without destroying it: the card stays in the portal, marked
+and in its place in the order, with a button that puts it back. Nothing in the portal deletes
+anything permanently, which matters most for poems written there — their text exists nowhere
+else.
 
 Sign-in is throttled three ways: three wrong passwords in a row pause it for thirty seconds,
 which the form counts down rather than calling a lockout an incorrect password, and two
