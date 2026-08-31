@@ -92,3 +92,31 @@ test('restoring puts the poem back, in its own place in the order', async ({ pag
     .evaluateAll((els) => els.map((el) => el.querySelector('[id^="admin-poem-"]')?.id ?? ''));
   expect(after).toEqual(before);
 });
+
+test('the corner buttons are opaque, and only hiding looks destructive', async ({ page }) => {
+  // The portal defaults to dark, where these two used to be frosted glass over the corner of a
+  // card — the card edge showed through and they read as unfinished next to every solid control
+  // around them. A translucent element that still passes every other check has shipped here
+  // before, so the alpha is asserted rather than eyeballed.
+  const opacityOf = (l: import('@playwright/test').Locator) =>
+    l.evaluate((el) => {
+      // `rgb(34, 34, 34)` is opaque; only the four-component form carries an alpha. Reading
+      // the last number either way would call a solid #222 "34".
+      const parts = getComputedStyle(el)
+        .backgroundColor.match(/^rgba?\(([^)]+)\)$/)?.[1]
+        .split(',')
+        .map((v) => Number(v.trim()));
+      return parts && parts.length === 4 ? parts[3] : 1;
+    });
+
+  const hideBtn = cardFor(page, live.id).getByTitle('Hide poem');
+  const restoreBtn = cardFor(page, hiddenAtStart.id).getByTitle('Restore poem');
+
+  expect(await opacityOf(hideBtn)).toBe(1);
+  expect(await opacityOf(restoreBtn)).toBe(1);
+
+  // Restoring is not a destructive act and must not borrow the red the hide button hovers to.
+  await restoreBtn.hover();
+  const hovered = await restoreBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(hovered).not.toMatch(/192,\s*57,\s*43/);
+});
