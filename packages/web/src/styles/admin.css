@@ -298,8 +298,10 @@ html.dark-mode .admin-restore-btn:hover {
   opacity: 0.45;
 }
 
-.admin-restore-btn {
-  font-size: 15px;
+/* display:block so the icon has no baseline gap under it — with an inline SVG the flex
+   centring above is then exact, which is the whole point of not using a glyph. */
+.admin-restore-btn svg {
+  display: block;
 }
 
 .admin-poem-card:active {
