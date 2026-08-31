@@ -1,6 +1,7 @@
 import './loadEnv';
 import cors from 'cors';
 import express from 'express';
+import { errorHandler } from './errorHandler';
 import { db } from './firebaseAdmin';
 import { usingPlaintextPassword } from './password';
 import { authRouter } from './routes/auth';
@@ -83,6 +84,15 @@ app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/client-errors', clientErrorsRouter);
 app.use('/api/poems', poemsRouter);
+
+app.use(errorHandler);
+
+// A rejection that escapes the wrapper anyway is logged rather than fatal. Node's default is to
+// end the process, which on a free tier means a cold start for the next visitor because one
+// background call failed.
+process.on('unhandledRejection', (reason) => {
+  console.error('[api] unhandled rejection:', reason);
+});
 
 app.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
