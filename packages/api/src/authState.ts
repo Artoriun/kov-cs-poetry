@@ -126,6 +126,14 @@ export async function currentEpoch(): Promise<number> {
  * The alternative was rotating JWT_SECRET on Render, which works but needs a dashboard
  * visit and restarts the API. This is the thing to reach for if a laptop goes missing.
  */
+/**
+ * Deliberately not guarded, unlike every other function here.
+ *
+ * The rest fail open: a rate limiter that cannot reach Firestore should let people log in, not
+ * lock the site. This one is the opposite — reporting that every session was revoked when the
+ * write failed would leave a stolen token working while the person who revoked it believes it
+ * is dead. The route is wrapped in asyncHandler, so the failure reaches the caller as a 500.
+ */
 export async function revokeAllTokens(): Promise<number> {
   const value = Date.now();
   await (await getStore()).collection('config').doc('authEpoch').set({ value });
