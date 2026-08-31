@@ -120,3 +120,37 @@ test('the corner buttons are opaque, and only hiding looks destructive', async (
   const hovered = await restoreBtn.evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(hovered).not.toMatch(/192,\s*57,\s*43/);
 });
+
+test('the restore icon is drawn symmetric about its own centre', async ({ page }) => {
+  // It was a character (↩) whose position depended on which font the stack resolved to —
+  // measurably high in Chromium, reported low elsewhere. Drawing it removed the font from the
+  // question, but a drawn shape can be lopsided in its own box just as easily, which is what
+  // this measures: the path geometry's centre against the viewBox centre, in user units, where
+  // there is no pixel grid to round it away.
+  const btn = cardFor(page, hiddenAtStart.id).getByTitle('Restore poem');
+  await expect(btn.locator('svg')).toHaveCount(1, 'the icon must be drawn, not typed');
+
+  const box = await btn.evaluate((el) => {
+    const svg = el.querySelector('svg');
+    if (!svg) return null;
+    const vb = svg.getAttribute('viewBox')?.split(/\s+/).map(Number);
+    // Union of the paths' geometry, which is what "centred" has to be true of.
+    let x1 = Infinity;
+    let y1 = Infinity;
+    let x2 = -Infinity;
+    let y2 = -Infinity;
+    for (const path of svg.querySelectorAll('path')) {
+      const b = (path as SVGGraphicsElement).getBBox();
+      x1 = Math.min(x1, b.x);
+      y1 = Math.min(y1, b.y);
+      x2 = Math.max(x2, b.x + b.width);
+      y2 = Math.max(y2, b.y + b.height);
+    }
+    return { vb, cx: (x1 + x2) / 2, cy: (y1 + y2) / 2 };
+  });
+  if (!box || !box.vb) throw new Error('no icon geometry');
+
+  const [, , vw, vh] = box.vb;
+  expect(Math.abs(box.cy - vh / 2)).toBeLessThanOrEqual(0.01);
+  expect(Math.abs(box.cx - vw / 2)).toBeLessThanOrEqual(0.01);
+});

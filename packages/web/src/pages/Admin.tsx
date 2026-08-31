@@ -359,7 +359,30 @@ function PoemCard({
             title={t.admin.restorePoem}
             aria-label={t.admin.restorePoem}
           >
-            ↩
+            {/* Drawn rather than typed. As a character (↩ U+21A9) this sat off-centre, and by
+                how much depended on which font the stack resolved to — it measured 1.5px high
+                in Chromium/Arial while reading low elsewhere, so there was no one nudge that
+                was right everywhere. An SVG has the same geometry in every font. */}
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <title>{t.admin.restorePoem}</title>
+              {/* Geometry chosen so the shape is symmetric about the viewBox centre rather
+                  than nudged onto it: the head spans x 4-8 and the arc bulges to x 20, giving
+                  a centre of 12; y runs 5 to 19, also 12. Stroke widens both sides equally and
+                  so does not move it. No translate to drift out of step with the path. */}
+              <path d="M8 5 4 9l4 4" />
+              <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
+            </svg>
           </button>
         ) : (
           <button
