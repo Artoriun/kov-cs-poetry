@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@gedichtenv2/shared": "*",
-    "motion": "^12.42.2",
+    "motion": "^13.1.1",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^7.18.2"
