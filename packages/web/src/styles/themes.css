@@ -46,10 +46,18 @@
   --arrow-color: #ffffff;
   --img-brightness: 0.92;
   --img-brightness-overlay: 0.78;
+  /* `only light`, not nothing: Chrome's auto dark theme (Android's "dark theme for sites",
+     on by default when the phone itself is dark) force-darkens any page whose color-scheme
+     doesn't include dark, so on those phones the light theme came out near-black and the
+     toggle looked broken. `only light` opts out of that darkening. */
+  color-scheme: only light;
 }
 
 /* ===== DARK MODE ===== */
 html.dark-mode {
+  /* Declaring dark also opts out of Chrome's forced darkening, and draws native scrollbars
+     and form controls dark to match. */
+  color-scheme: dark;
   --bg-primary:
     url("https://res.cloudinary.com/dgk299isx/image/upload/f_auto,q_auto/v1781889359/parchment-bg-black_kcspmh.png"),
     #1a1a1a;
